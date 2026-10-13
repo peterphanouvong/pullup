@@ -7,12 +7,15 @@ export default function ProgramListScreen() {
   const programs = usePrograms();
   const active = useActiveProgram();
 
-  if (programs.isPending || active.isPending || programs.isError) {
+  if (programs.isPending || active.isPending || programs.isError || active.isError) {
     return (
       <QueryFallback
-        isError={programs.isError}
+        isError={programs.isError || active.isError}
         message="Couldn't load programmes."
-        onRetry={() => programs.refetch()}
+        onRetry={() => {
+          programs.refetch();
+          active.refetch();
+        }}
       />
     );
   }
@@ -33,13 +36,15 @@ export default function ProgramListScreen() {
             ))}
           </FieldGroup.Section>
         )}
-        <FieldGroup.Section title="Programmes">
-          {rest.map((program) => (
-            <ListItem key={program.id} onPress={() => router.push(`/program/${program.id}`)}>
-              {program.name}
-            </ListItem>
-          ))}
-        </FieldGroup.Section>
+        {rest.length > 0 && (
+          <FieldGroup.Section title="Programmes">
+            {rest.map((program) => (
+              <ListItem key={program.id} onPress={() => router.push(`/program/${program.id}`)}>
+                {program.name}
+              </ListItem>
+            ))}
+          </FieldGroup.Section>
+        )}
       </FieldGroup>
     </Host>
   );
