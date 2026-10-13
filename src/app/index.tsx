@@ -27,7 +27,7 @@ export default function ProgramListScreen() {
         {activeProgram.length > 0 && (
           <FieldGroup.Section title="Your programme">
             {activeProgram.map((program) => (
-              <ListItem key={program.id} onPress={() => router.push(`/program/${program.id}` as never)}>
+              <ListItem key={program.id} onPress={() => router.push(`/program/${program.id}`)}>
                 {`✓ ${program.name}`}
               </ListItem>
             ))}
@@ -35,7 +35,7 @@ export default function ProgramListScreen() {
         )}
         <FieldGroup.Section title="Programmes">
           {rest.map((program) => (
-            <ListItem key={program.id} onPress={() => router.push(`/program/${program.id}` as never)}>
+            <ListItem key={program.id} onPress={() => router.push(`/program/${program.id}`)}>
               {program.name}
             </ListItem>
           ))}
