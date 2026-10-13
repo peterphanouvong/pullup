@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Button, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native-unistyles';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
@@ -36,18 +37,36 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (error) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24 }}>
-        <Text>Couldn&apos;t connect. Check your connection and try again.</Text>
+      <View style={styles.container}>
+        <Text style={styles.message}>Couldn&apos;t connect. Check your connection and try again.</Text>
         <Button title="Retry" onPress={() => setAttempt((a) => a + 1)} />
       </View>
     );
   }
   if (!session) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator />
       </View>
     );
   }
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;
 }
+
+const styles = StyleSheet.create((theme) => ({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    padding: theme.spacing.xl,
+    backgroundColor: theme.colors.bg,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.bg,
+  },
+  message: { ...theme.type.body, color: theme.colors.text },
+}));

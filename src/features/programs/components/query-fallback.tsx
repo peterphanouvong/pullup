@@ -1,4 +1,5 @@
 import { ActivityIndicator, Button, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native-unistyles';
 
 export function QueryFallback({
   isError,
@@ -10,10 +11,10 @@ export function QueryFallback({
   onRetry: () => void;
 }) {
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24 }}>
+    <View style={styles.container}>
       {isError ? (
         <>
-          <Text>{message}</Text>
+          <Text style={styles.message}>{message}</Text>
           <Button title="Retry" onPress={onRetry} />
         </>
       ) : (
@@ -22,3 +23,15 @@ export function QueryFallback({
     </View>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    padding: theme.spacing.xl,
+    backgroundColor: theme.colors.bg,
+  },
+  message: { ...theme.type.body, color: theme.colors.text },
+}));
