@@ -1,6 +1,6 @@
 import { FieldGroup, Host, ListItem } from '@expo/ui';
 import { router } from 'expo-router';
-import { StyleSheet } from 'react-native-unistyles';
+import { StyleSheet, withUnistyles } from 'react-native-unistyles';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, usePrograms } from '@/features/programs/hooks';
 
@@ -26,7 +26,7 @@ export default function ProgramListScreen() {
   const rest = programs.data.filter((p) => p.id !== activeId);
 
   return (
-    <Host style={styles.host}>
+    <ThemedHost style={styles.host}>
       <FieldGroup>
         {activeProgram.length > 0 && (
           <FieldGroup.Section title="Your programme">
@@ -47,9 +47,11 @@ export default function ProgramListScreen() {
           </FieldGroup.Section>
         )}
       </FieldGroup>
-    </Host>
+    </ThemedHost>
   );
 }
+
+const ThemedHost = withUnistyles(Host);
 
 const styles = StyleSheet.create((theme) => ({
   host: { flex: 1, backgroundColor: theme.colors.bg },
