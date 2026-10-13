@@ -1,11 +1,46 @@
-import { Text, View } from 'react-native';
-import { useSession } from '@/lib/auth';
+import { FieldGroup, Host, ListItem } from '@expo/ui';
+import { router } from 'expo-router';
+import { QueryFallback } from '@/features/programs/components/query-fallback';
+import { useActiveProgram, usePrograms } from '@/features/programs/hooks';
 
 export default function ProgramListScreen() {
-  const session = useSession();
+  const programs = usePrograms();
+  const active = useActiveProgram();
+
+  if (programs.isPending || active.isPending || programs.isError) {
+    return (
+      <QueryFallback
+        isError={programs.isError}
+        message="Couldn't load programmes."
+        onRetry={() => programs.refetch()}
+      />
+    );
+  }
+
+  const activeId = active.data?.programId ?? null;
+  const activeProgram = programs.data.filter((p) => p.id === activeId);
+  const rest = programs.data.filter((p) => p.id !== activeId);
+
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Pull Up — signed in as {session.user.id.slice(0, 8)}</Text>
-    </View>
+    <Host style={{ flex: 1 }}>
+      <FieldGroup>
+        {activeProgram.length > 0 && (
+          <FieldGroup.Section title="Your programme">
+            {activeProgram.map((program) => (
+              <ListItem key={program.id} onPress={() => router.push(`/program/${program.id}` as never)}>
+                {`✓ ${program.name}`}
+              </ListItem>
+            ))}
+          </FieldGroup.Section>
+        )}
+        <FieldGroup.Section title="Programmes">
+          {rest.map((program) => (
+            <ListItem key={program.id} onPress={() => router.push(`/program/${program.id}` as never)}>
+              {program.name}
+            </ListItem>
+          ))}
+        </FieldGroup.Section>
+      </FieldGroup>
+    </Host>
   );
 }
