@@ -1,0 +1,53 @@
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { ActivityIndicator, Button, Text, View } from 'react-native';
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from './supabase';
+
+const SessionContext = createContext<Session | null>(null);
+
+export function useSession(): Session {
+  const session = useContext(SessionContext);
+  if (!session) throw new Error('useSession must be used inside <AuthGate>');
+  return session;
+}
+
+export function AuthGate({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setError(null);
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (data.session) {
+        setSession(data.session);
+        return;
+      }
+      const { data: anon, error: anonError } = await supabase.auth.signInAnonymously();
+      if (cancelled) return;
+      if (anonError) setError(anonError.message);
+      else setSession(anon.session);
+    })();
+    return () => { cancelled = true; };
+  }, [attempt]);
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24 }}>
+        <Text>Couldn&apos;t connect. Check your connection and try again.</Text>
+        <Button title="Retry" onPress={() => setAttempt((a) => a + 1)} />
+      </View>
+    );
+  }
+  if (!session) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+  return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;
+}
