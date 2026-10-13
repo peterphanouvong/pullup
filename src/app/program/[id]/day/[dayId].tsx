@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { StyleSheet } from 'react-native-unistyles';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { ExerciseTable } from '@/features/programs/components/exercise-table';
 import { Markdown } from '@/features/programs/components/markdown';
@@ -22,17 +23,17 @@ export default function DayScreen() {
   const day = program.data.weeks.flatMap((w) => w.days).find((d) => d.id === dayId);
   if (!day) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Day not found.</Text>
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>Day not found.</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       <Stack.Screen options={{ title: day.name }} />
       {day.notes != null && (
-        <View style={{ padding: 16 }}>
+        <View style={styles.notes}>
           <Markdown>{day.notes}</Markdown>
         </View>
       )}
@@ -40,3 +41,15 @@ export default function DayScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  container: { flex: 1, backgroundColor: theme.colors.bg },
+  notes: { padding: theme.spacing.lg },
+  empty: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.bg,
+  },
+  emptyText: { ...theme.type.body, color: theme.colors.text },
+}));

@@ -1,4 +1,5 @@
 import { ScrollView, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native-unistyles';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { DayRow } from '@/features/programs/components/day-row';
 import { Markdown } from '@/features/programs/components/markdown';
@@ -22,16 +23,16 @@ export default function WeekScreen() {
   const week = program.data.weeks.find((w) => w.id === weekId);
   if (!week) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Week not found.</Text>
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>Week not found.</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Stack.Screen options={{ title: week.name }} />
-      <Text>{week.phase}</Text>
+      <Text style={styles.phase}>{week.phase}</Text>
       {week.description != null && <Markdown>{week.description}</Markdown>}
       {week.days.map((day) => (
         <DayRow
@@ -43,3 +44,19 @@ export default function WeekScreen() {
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create((theme) => ({
+  scroll: { flex: 1, backgroundColor: theme.colors.bg },
+  container: {
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+  },
+  phase: { ...theme.type.heading, color: theme.colors.accent },
+  empty: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.bg,
+  },
+  emptyText: { ...theme.type.body, color: theme.colors.text },
+}));
