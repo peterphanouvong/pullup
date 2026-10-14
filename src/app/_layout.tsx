@@ -1,3 +1,4 @@
+import '@/styles/unistyles'; // <-- must run before any StyleSheet.create() in this module graph
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { AuthGate } from '@/lib/auth';
