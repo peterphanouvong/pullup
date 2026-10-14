@@ -1,7 +1,10 @@
-import { Button as UIButton, Host } from '@expo/ui';
-import { Button, ScrollView, Text, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { ScrollView, Text } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native-unistyles';
+import { Card } from '@/components/ui/card';
+import { PrimaryButton } from '@/components/ui/primary-button';
+import { Screen } from '@/components/ui/screen';
+import { SectionLabel } from '@/components/ui/section-label';
 import { Markdown } from '@/features/programs/components/markdown';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { buildPhaseTimeline } from '@/features/programs/mapping';
@@ -27,63 +30,53 @@ export default function ProgramOverviewScreen() {
   const isActive = active.data?.programId === data.id;
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+    <Screen>
       <Stack.Screen options={{ title: data.name }} />
-      <Text style={styles.summary}>{data.summary}</Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.summary}>{data.summary}</Text>
 
-      <Host matchContents>
-        <UIButton
-          disabled={isActive || select.isPending}
-          label={isActive ? '✓ Your programme' : select.isPending ? 'Selecting…' : 'Make this my programme'}
+        <PrimaryButton
+          title={isActive ? '✓ Your programme' : select.isPending ? 'Selecting…' : 'Make this my programme'}
+          disabled={isActive}
+          loading={select.isPending}
           onPress={() => select.mutate({ programId: data.id })}
         />
-      </Host>
-      {select.isError && <Text style={styles.error}>Couldn&apos;t select — try again.</Text>}
+        {select.isError && <Text style={styles.error}>Couldn&apos;t select — try again.</Text>}
 
-      <Section title="Timeline">
-        {buildPhaseTimeline(data.weeks).map((entry) => (
-          <Text key={entry.weekName} style={styles.body}>
-            {entry.weekName} — {entry.phase}
-            {entry.compDayName ? `  ·  ${entry.compDayName}` : ''}
-          </Text>
-        ))}
-      </Section>
+        <SectionLabel>Timeline</SectionLabel>
+        <Card style={styles.timelineCard}>
+          {buildPhaseTimeline(data.weeks).map((entry) => (
+            <Text key={entry.weekName} style={styles.body}>
+              {entry.weekName} — {entry.phase}
+              {entry.compDayName ? `  ·  ${entry.compDayName}` : ''}
+            </Text>
+          ))}
+        </Card>
 
-      <Section title="Weeks">
+        <SectionLabel>Weeks</SectionLabel>
         {data.weeks.map((week) => (
-          <Button
+          <Card
             key={week.id}
-            title={`${week.name} (${week.phase})`}
+            style={styles.weekCard}
             onPress={() => router.push(`/program/${data.id}/week/${week.id}`)}
-          />
+          >
+            <Text style={styles.weekName}>{`${week.name} (${week.phase})`}</Text>
+          </Card>
         ))}
-      </Section>
 
-      <Section title="About this programme">
+        <SectionLabel>About this programme</SectionLabel>
         <Markdown>{data.description}</Markdown>
-      </Section>
-    </ScrollView>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </View>
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
-  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
-  container: {
-    padding: theme.spacing.lg,
-    gap: theme.spacing.xl,
-  },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   summary: { ...theme.type.body, color: theme.colors.ink },
   error: { ...theme.type.body, color: theme.colors.danger },
   body: { ...theme.type.body, color: theme.colors.ink },
-  section: { gap: theme.spacing.sm },
-  sectionTitle: { ...theme.type.heading, color: theme.colors.ink },
+  timelineCard: { gap: theme.spacing.xs },
+  weekCard: { gap: theme.spacing.xs },
+  weekName: { ...theme.type.heading, color: theme.colors.ink },
 }));

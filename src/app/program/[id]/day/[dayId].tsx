@@ -1,6 +1,7 @@
-import { Text, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { ScrollView, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
+import { StyleSheet } from 'react-native-unistyles';
+import { Screen } from '@/components/ui/screen';
 import { ExerciseTable } from '@/features/programs/components/exercise-table';
 import { Markdown } from '@/features/programs/components/markdown';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
@@ -23,33 +24,27 @@ export default function DayScreen() {
   const day = program.data.weeks.flatMap((w) => w.days).find((d) => d.id === dayId);
   if (!day) {
     return (
-      <View style={styles.empty}>
-        <Text style={styles.emptyText}>Day not found.</Text>
-      </View>
+      <Screen>
+        <View style={styles.empty}>
+          <Text style={styles.emptyText}>Day not found.</Text>
+        </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Screen>
       <Stack.Screen options={{ title: day.name }} />
-      {day.notes != null && (
-        <View style={styles.notes}>
-          <Markdown>{day.notes}</Markdown>
-        </View>
-      )}
-      <ExerciseTable exercises={day.exercises} />
-    </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {day.notes != null && <Markdown>{day.notes}</Markdown>}
+        <ExerciseTable exercises={day.exercises} />
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create((theme) => ({
-  container: { flex: 1, backgroundColor: theme.colors.canvas },
-  notes: { padding: theme.spacing.lg },
-  empty: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.colors.canvas,
-  },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
+  empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { ...theme.type.body, color: theme.colors.ink },
 }));

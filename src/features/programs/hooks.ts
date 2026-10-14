@@ -7,7 +7,11 @@ export function usePrograms() {
 }
 
 export function useProgram(id: string) {
-  return useQuery({ queryKey: ['programs', id], queryFn: () => fetchProgram(id) });
+  return useQuery({
+    queryKey: ['programs', id],
+    queryFn: () => fetchProgram(id),
+    enabled: id.length > 0,
+  });
 }
 
 export function useActiveProgram() {

@@ -10,7 +10,7 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <AuthGate>
         <Stack>
-          <Stack.Screen name="index" options={{ title: 'Pull Up' }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
       </AuthGate>
     </QueryClientProvider>

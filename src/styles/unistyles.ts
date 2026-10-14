@@ -8,7 +8,9 @@ const shared = {
     numeralXL: {
       fontSize: 44,
       fontWeight: '800',
-      fontVariant: ['tabular-nums'],
+      // Cast away the outer `as const`'s readonly-tuple inference — RN's
+      // TextStyle wants a mutable FontVariant[], not a readonly tuple.
+      fontVariant: ['tabular-nums'] as ('tabular-nums')[],
     },
     title: { fontSize: 22, fontWeight: '700' },
     heading: { fontSize: 17, fontWeight: '600' },
@@ -60,6 +62,10 @@ const lightColors = {
   border: '#E3E5EA',
   gradientRecap: ['#0E2A5C', '#1D4ED8'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
+  // Text drawn over gradientRecap/gradientEmber — both gradients stay dark
+  // navy/ember in light AND dark theme, so this is deliberately the same
+  // literal in both palettes rather than flipping with onAccent.
+  onGradient: '#FFFFFF',
 } as const;
 
 const darkColors = {
@@ -77,6 +83,7 @@ const darkColors = {
   border: '#262B33',
   gradientRecap: ['#0A1F44', '#1E40AF'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
+  onGradient: '#FFFFFF',
 } as const;
 
 const lightTheme = {
