@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
@@ -11,9 +12,10 @@ import { ProgressSegments } from '@/components/ui/progress-segments';
 import { Screen } from '@/components/ui/screen';
 import { ScreenTitle } from '@/components/ui/screen-title';
 import { WeekDayCard } from '@/components/ui/week-day-card';
+import { WeekPickerSheet } from '@/components/ui/week-picker-sheet';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
-import { currentProgramPosition, nextCompDay } from '@/features/programs/schedule';
+import { currentProgramPosition } from '@/features/programs/schedule';
 import type { ProgramDay } from '@/features/programs/types';
 import { useSession } from '@/lib/auth';
 import {
@@ -26,6 +28,10 @@ import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
 import { dayState, floatingAction } from '@/features/workouts/today-state';
 
 const WEEKDAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+
+/** Roughly the sticky bar's height — jump-nav scroll targets subtract it so
+ * the tapped card lands below the bar, not under it. */
+const STICKY_BAR_CLEARANCE = 48;
 
 /** Local-calendar-date arithmetic for the day strip — day positions are
  * template order (1 = Monday), matching schedule.ts. */
@@ -68,17 +74,22 @@ export default function TodayScreen() {
   // Scroll-aware floating action: which day card the viewport is "on". Null
   // until the user scrolls — the button then targets today's session.
   const [focusedDayId, setFocusedDayId] = useState<string | null>(null);
+  // Which programme week the screen shows. Null = follow the calendar's
+  // current week; a number pins the view to that week (via the week sheet).
+  const [viewedWeekPosition, setViewedWeekPosition] = useState<number | null>(null);
+  const [weekSheetOpen, setWeekSheetOpen] = useState(false);
 
   // Derived ahead of the early returns so the completion hook can be called
   // unconditionally (Rules of Hooks); empty until programme data loads.
-  const currentWeek = (() => {
+  const viewedWeek = (() => {
     const data = program.data;
     const startDate = active.data?.startDate;
     if (!data || !startDate) return null;
     const position = currentProgramPosition(startDate, new Date(), data.weeks.length);
-    return data.weeks.find((w) => w.position === position.week) ?? data.weeks[0] ?? null;
+    const wanted = viewedWeekPosition ?? position.week;
+    return data.weeks.find((w) => w.position === wanted) ?? data.weeks[0] ?? null;
   })();
-  const completion = useWeekCompletion(currentWeek?.days.map((d) => d.id) ?? []);
+  const completion = useWeekCompletion(viewedWeek?.days.map((d) => d.id) ?? []);
 
   function guardedStart(startFn: () => void) {
     startWorkoutOrPrompt(activeWorkout, startFn);
@@ -169,10 +180,17 @@ export default function TodayScreen() {
   const data = program.data;
   const today = new Date();
   const position = currentProgramPosition(startDate, today, data.weeks.length);
-  const compDay = nextCompDay(data.weeks, position, startDate, today);
-  const week = currentWeek;
+  const week = viewedWeek;
   const days = week?.days ?? [];
-  const todayDay = days.find((d) => d.position === position.day) ?? null;
+  const isCurrentWeek = !position.finished && week?.position === position.week;
+  const todayDay = isCurrentWeek ? days.find((d) => d.position === position.day) ?? null : null;
+  // Which position counts as "today" for missed/upcoming states: in a past
+  // week every day is behind us (8), in a future week none are (0).
+  const effectiveTodayPosition = week == null || isCurrentWeek
+    ? position.day
+    : week.position < position.week
+      ? 8
+      : 0;
 
   // The button's target: the scrolled-to day when the user has scrolled,
   // today's session otherwise.
@@ -195,9 +213,18 @@ export default function TodayScreen() {
       dayNumber: date.getDate(),
       dotColor,
       isToday: isSameYMD(date, today),
-      isSelected: !position.finished && d.position === position.day,
+      isSelected: isCurrentWeek && d.position === position.day,
     };
   });
+
+  function handleSelectWeek(selected: number) {
+    // Selecting the calendar's current week clears the pin so the view keeps
+    // tracking day changes.
+    setViewedWeekPosition(selected === position.week ? null : selected);
+    setWeekSheetOpen(false);
+    setFocusedDayId(null);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }
 
   return (
     <Screen>
@@ -206,6 +233,7 @@ export default function TodayScreen() {
         contentContainerStyle={[styles.content, styles.contentWithFloating]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
+        stickyHeaderIndices={[0]}
         scrollEventThrottle={100}
         onScroll={(e) => {
           // Focus = the last day card whose top sits above a third of the
@@ -220,10 +248,12 @@ export default function TodayScreen() {
           setFocusedDayId(focused);
         }}
       >
-        <ScreenTitle title="Today" />
-        {compDay != null && !position.finished && (
-          <Text style={styles.eyebrow}>{`T–${compDay.daysAway} DAYS · ${compDay.dayName}`}</Text>
-        )}
+        <View style={styles.stickyBar}>
+          <Pressable style={styles.stickyBarInner} onPress={() => router.push(`/program/${programId}`)}>
+            <Text style={styles.stickyTitle} numberOfLines={1}>{data.name}</Text>
+            <SymbolView name="chevron.right" size={13} tintColor={theme.colors.inkMuted} />
+          </Pressable>
+        </View>
 
         {position.finished ? (
           <Card style={styles.messageCard}>
@@ -235,25 +265,29 @@ export default function TodayScreen() {
           </Card>
         ) : (
           <>
-            <Pressable onPress={() => router.push(`/program/${programId}`)}>
-              <Text style={styles.weekLine}>
-                {`Week ${position.week} of ${data.weeks.length} · ${week?.phase ?? ''}`}
-              </Text>
+            <Pressable style={styles.weekHeader} onPress={() => setWeekSheetOpen(true)}>
+              <View style={styles.weekTitleRow}>
+                <Text style={styles.weekTitle}>{`Week ${weekPosition}`}</Text>
+                <SymbolView name="chevron.down" size={17} tintColor={theme.colors.inkMuted} />
+              </View>
+              <Text style={styles.weekSubtitle}>{week?.phase ?? ''}</Text>
             </Pressable>
 
             <DayStrip
               items={stripItems}
               onSelect={(key) => {
                 const y = cardOffsets.current[key];
-                if (y != null) scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+                if (y != null) {
+                  scrollRef.current?.scrollTo({ y: Math.max(0, y - STICKY_BAR_CLEARANCE), animated: true });
+                }
               }}
             />
 
             <ProgressSegments total={liftingDays.length} filled={doneCount} />
 
             {days.map((d) => {
-              const state = dayState(d, position.day, completion[d.id] === true);
-              const isToday = d.position === position.day;
+              const state = dayState(d, effectiveTodayPosition, completion[d.id] === true);
+              const isToday = isCurrentWeek && d.position === position.day;
               return (
                 <Pressable
                   key={d.id}
@@ -265,6 +299,7 @@ export default function TodayScreen() {
                     day={d}
                     state={state}
                     isToday={isToday}
+                    eyebrow={WEEKDAY_LABELS[d.position - 1] ?? ''}
                     meta={metaFor(d)}
                     onPress={
                       d.kind === 'lifting' ? () => router.push(`/program/${programId}/day/${d.id}`) : undefined
@@ -277,15 +312,41 @@ export default function TodayScreen() {
         )}
       </ScrollView>
       {renderFloating(position.finished ? null : targetDay, targetCompleted, targetIsToday)}
+      <WeekPickerSheet
+        visible={weekSheetOpen}
+        weeks={data.weeks}
+        currentPosition={position.week}
+        viewedPosition={weekPosition}
+        onSelect={handleSelectWeek}
+        onClose={() => setWeekSheetOpen(false)}
+      />
     </Screen>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
-  content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
+  content: { padding: theme.spacing.lg, paddingTop: 0, gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
   contentWithFloating: { paddingBottom: FLOATING_ACTION_CLEARANCE + 96 },
-  eyebrow: { ...theme.type.label, color: theme.colors.comp },
-  weekLine: { ...theme.type.caption, color: theme.colors.inkMuted },
+  // Full-bleed sticky strip: pulls out of the content padding so scrolled
+  // content never peeks past its edges, Nike-style hairline underneath.
+  stickyBar: {
+    marginHorizontal: -theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.canvas,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: theme.colors.border,
+  },
+  stickyBarInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  stickyTitle: { ...theme.type.heading, color: theme.colors.ink, flexShrink: 1 },
+  weekHeader: { gap: 2, marginTop: theme.spacing.sm },
+  weekTitleRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  weekTitle: { ...theme.type.display, color: theme.colors.ink },
+  weekSubtitle: { ...theme.type.display, color: theme.colors.inkMuted },
   messageCard: { gap: theme.spacing.sm },
   messageTitle: { ...theme.type.heading, color: theme.colors.ink },
   messageBody: { ...theme.type.body, color: theme.colors.inkMuted },

@@ -45,23 +45,26 @@ function shadowsFor(ink: string) {
   } as const;
 }
 
+// Nike-app-inspired palette (Peter's call): neutral near-black/greys doing
+// all the structural work, with one rose-pink "done" accent. `accent` is
+// deliberately the ink black — primary buttons are black pills, Nike-style.
 const lightColors = {
-  canvas: '#F4F5F7',
+  canvas: '#F5F5F5',
   card: '#FFFFFF',
   cardElevated: '#FFFFFF',
-  ink: '#0B0D12',
-  inkMuted: '#697080',
-  accent: '#208AEF',
+  ink: '#111111',
+  inkMuted: '#707072',
+  accent: '#111111',
   onAccent: '#FFFFFF',
-  done: '#30C25B',
+  done: '#CE4F92',
   comp: '#E8590C',
   success: '#1F9D55',
   danger: '#C0392B',
-  border: '#E3E5EA',
+  border: '#E6E6E6',
   // `done` @ ~14% alpha flattened over `card` (solid, not actual alpha — see
   // darkColors.doneSoft for why these are precomputed instead of using RN's
   // rgba()): the active-workout set row's "completed" fill.
-  doneSoft: '#E2F6E8',
+  doneSoft: '#F8E6F0',
   gradientRecap: ['#0E2A5C', '#1D4ED8'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
   // Text drawn over gradientRecap/gradientEmber — both gradients stay dark
@@ -71,21 +74,21 @@ const lightColors = {
 } as const;
 
 const darkColors = {
-  canvas: '#0B0D12',
-  card: '#15181E',
-  cardElevated: '#1D212A',
-  ink: '#F4F5F7',
-  inkMuted: '#8A91A0',
-  accent: '#4DA6F5',
-  onAccent: '#0B0D12',
-  done: '#3AD66B',
+  canvas: '#0B0B0C',
+  card: '#1A1A1C',
+  cardElevated: '#242426',
+  ink: '#F5F5F5',
+  inkMuted: '#8E8E93',
+  accent: '#F5F5F5',
+  onAccent: '#111111',
+  done: '#E27BB6',
   comp: '#FF7A33',
   success: '#34C277',
   danger: '#E05B4D',
-  border: '#262B33',
+  border: '#2C2C2E',
   // `done` @ ~14% alpha flattened over `card`, same rationale as the light
   // theme's doneSoft — precomputed solid color, no RN rgba() call needed.
-  doneSoft: '#1A3329',
+  doneSoft: '#322633',
   gradientRecap: ['#0A1F44', '#1E40AF'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
   onGradient: '#FFFFFF',

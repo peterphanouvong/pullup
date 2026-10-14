@@ -1,44 +1,74 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
-import type { ProgramDay } from '@/features/programs/types';
+import type { DayKind, ProgramDay } from '@/features/programs/types';
 import type { TodayDayState } from '@/features/workouts/today-state';
 
-/** One row of the Today week checklist (Nike-style). Builds on WorkoutCard's
- * look (kind edge, title/meta, done check) with week-list states: a promoted
- * TODAY treatment, muted done rows, a "Missed" marker on past undone lifting
- * days, and quiet informational rows for court/rest/comp days. */
+/** Day names in the seed data lead with the weekday ("Mon — Lower power");
+ * the card's eyebrow already says MON, so the title drops the prefix. */
+function stripWeekdayPrefix(name: string): string {
+  return name.replace(/^(mon|tue|wed|thu|fri|sat|sun)[a-z]*\s*[—–-]\s*/i, '');
+}
+
+const TILE_SYMBOLS: Record<DayKind, SFSymbol> = {
+  lifting: 'dumbbell.fill',
+  court: 'figure.basketball',
+  comp: 'trophy.fill',
+  rest: 'moon.zzz.fill',
+};
+
+/** One row of the Today week checklist, modelled on Nike's plan rows: a
+ * kind-icon tile standing in for Nike's artwork square, a weekday eyebrow
+ * ("Day 1" in Nike, "MON"/"TODAY" here), title + meta, and a rose "done"
+ * check circle on the right. Done rows mute, past undone lifting days read
+ * "Missed", informational court/rest/comp rows aren't pressable. */
 export function WeekDayCard({
   day,
   state,
   isToday,
+  eyebrow,
   meta,
   onPress,
 }: {
   day: ProgramDay;
   state: TodayDayState;
   isToday: boolean;
+  /** Weekday label ("MON"…"SUN") — replaced by "TODAY" when `isToday`. */
+  eyebrow: string;
   meta: string;
   onPress?: () => void;
 }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
-  const edgeColor =
-    day.kind === 'lifting'
-      ? theme.colors.accent
-      : day.kind === 'rest'
-        ? theme.colors.inkMuted
-        : theme.colors.comp;
 
   const muted = state === 'done' || (state === 'info' && !isToday);
 
+  // Tile palette per kind: lifting gets the bold ink tile (Nike's statement
+  // square), comp the rose accent, court/rest stay quiet neutrals.
+  const tileStyle =
+    day.kind === 'lifting'
+      ? styles.tileLifting
+      : day.kind === 'comp'
+        ? styles.tileComp
+        : styles.tileQuiet;
+  const tileTint =
+    day.kind === 'lifting'
+      ? theme.colors.canvas
+      : day.kind === 'comp'
+        ? theme.colors.onGradient
+        : theme.colors.inkMuted;
+
   const body = (
     <View style={styles.row}>
-      <View style={[styles.edge, { backgroundColor: edgeColor }]} />
+      <View style={[styles.tile, tileStyle]}>
+        <SymbolView name={TILE_SYMBOLS[day.kind]} size={22} tintColor={tileTint} />
+      </View>
       <View style={styles.body}>
-        {isToday && <Text style={styles.todayEyebrow}>TODAY</Text>}
-        <Text style={[styles.title, muted && styles.mutedText]}>{day.name}</Text>
+        <Text style={[styles.eyebrow, isToday && styles.eyebrowToday]}>
+          {isToday ? 'TODAY' : eyebrow}
+        </Text>
+        <Text style={[styles.title, muted && styles.mutedText]}>{stripWeekdayPrefix(day.name)}</Text>
         <Text style={styles.meta}>
           {state === 'missed' ? `Missed · ${meta}` : meta}
         </Text>
@@ -46,7 +76,7 @@ export function WeekDayCard({
       <View style={styles.trailing}>
         {state === 'done' ? (
           <View style={styles.checkCircle}>
-            <SymbolView name="checkmark" size={14} tintColor={theme.colors.onAccent} />
+            <SymbolView name="checkmark" size={14} tintColor={theme.colors.onGradient} />
           </View>
         ) : onPress != null ? (
           <SymbolView name="chevron.right" size={16} tintColor={theme.colors.inkMuted} />
@@ -55,7 +85,7 @@ export function WeekDayCard({
     </View>
   );
 
-  const cardStyle = [styles.card, isToday && styles.cardToday, muted && styles.cardMuted];
+  const cardStyle = [styles.card, muted && styles.cardMuted];
 
   if (onPress) {
     return (
@@ -74,24 +104,30 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     overflow: 'hidden',
     ...theme.shadow.card,
   },
-  cardToday: {
-    borderWidth: 1.5,
-    borderColor: theme.colors.accent,
-  },
   cardMuted: { opacity: 0.75 },
   pressed: { opacity: 0.85 },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  edge: { width: 4, alignSelf: 'stretch' },
-  body: { flex: 1, padding: theme.spacing.lg, gap: 4 },
-  todayEyebrow: { ...theme.type.label, color: theme.colors.accent },
+  row: { flexDirection: 'row', alignItems: 'center', padding: theme.spacing.lg, gap: theme.spacing.lg },
+  tile: {
+    width: 52,
+    height: 52,
+    borderRadius: theme.radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileLifting: { backgroundColor: theme.colors.ink },
+  tileComp: { backgroundColor: theme.colors.done },
+  tileQuiet: { backgroundColor: theme.colors.canvas },
+  body: { flex: 1, gap: 2 },
+  eyebrow: { ...theme.type.label, color: theme.colors.inkMuted },
+  eyebrowToday: { color: theme.colors.done },
   title: { ...theme.type.heading, color: theme.colors.ink },
   mutedText: { color: theme.colors.inkMuted },
   meta: { ...theme.type.caption, color: theme.colors.inkMuted },
-  trailing: { paddingRight: theme.spacing.lg },
+  trailing: { paddingLeft: theme.spacing.sm },
   checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: theme.colors.done,
     alignItems: 'center',
     justifyContent: 'center',
