@@ -1,9 +1,10 @@
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { ExerciseCard } from '@/features/workouts/components/exercise-card';
+import { openExercisePicker } from '@/features/workouts/components/exercise-menu';
 import { RestTimerBar } from '@/features/workouts/components/rest-timer-bar';
 import { WorkoutHeader } from '@/features/workouts/components/workout-header';
 import { discardWorkout, finishWorkout, useWorkout } from '@/features/workouts/hooks';
@@ -96,12 +97,22 @@ export default function WorkoutScreen() {
         />
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {exercises.length === 0 && (
-            <Text style={styles.empty}>No exercises yet. Add-exercise support is coming soon.</Text>
-          )}
-          {exercises.map((exercise) => (
-            <ExerciseCard key={exercise.id} exercise={exercise} workoutId={workout.id} />
+          {exercises.length === 0 && <Text style={styles.empty}>No exercises yet — add one to get started.</Text>}
+          {exercises.map((exercise, index) => (
+            <ExerciseCard
+              key={exercise.id}
+              exercise={exercise}
+              workoutId={workout.id}
+              canMoveUp={index > 0}
+              canMoveDown={index < exercises.length - 1}
+            />
           ))}
+          <Pressable
+            style={({ pressed }) => [styles.addExercise, pressed && styles.addExercisePressed]}
+            onPress={() => openExercisePicker(workout.id, 'add')}
+          >
+            <Text style={styles.addExerciseLabel}>+ Add Exercise</Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
       <RestTimerBar />
@@ -114,4 +125,16 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   notFound: { ...theme.type.body, color: theme.colors.ink, padding: theme.spacing.lg },
   empty: { ...theme.type.body, color: theme.colors.inkMuted, textAlign: 'center', paddingTop: theme.spacing.xl },
+  // Quiet outlined CTA (not a filled PrimaryButton pill) — the editing
+  // surface's own affordance, kept visually subordinate to the header's
+  // accent-filled "Finish" button, Hevy-style.
+  addExercise: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.accent,
+    borderRadius: theme.radii.md,
+    paddingVertical: theme.spacing.md,
+    alignItems: 'center',
+  },
+  addExercisePressed: { opacity: 0.7 },
+  addExerciseLabel: { ...theme.type.heading, color: theme.colors.accent },
 });

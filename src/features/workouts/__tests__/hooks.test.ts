@@ -3,11 +3,15 @@
 // a fresh user id via initWorkoutStore so observables start empty.
 
 import {
+  addExerciseToWorkout,
   addSet,
   completeSet,
   discardWorkout,
   finishWorkout,
+  moveExerciseInWorkout,
   nextSetType,
+  removeExercise,
+  replaceExercise,
   selectWorkoutView,
   softDeleteSet,
   startEmptyWorkout,
@@ -17,6 +21,7 @@ import {
 } from '../hooks';
 import { restTimer$, startRestTimer } from '../rest-timer';
 import { initWorkoutStore, workoutExercises$, workoutSets$, workouts$ } from '../store';
+import type { Exercise, WorkoutExercise, WorkoutSet } from '../types';
 import type { ProgramDay } from '@/features/programs/types';
 
 jest.mock('@/lib/supabase', () => ({
@@ -287,6 +292,170 @@ describe('discardWorkout', () => {
     discardWorkout(workoutId);
 
     expect(restTimer$.get()).toBeNull();
+  });
+});
+
+function libraryExercise(overrides: Partial<Exercise> & Pick<Exercise, 'id' | 'name'>): Exercise {
+  const nowIso = new Date('2026-10-14T09:00:00.000Z').toISOString();
+  return {
+    muscle_group: 'Back',
+    equipment: 'Cable',
+    owner_id: null,
+    created_at: nowIso,
+    updated_at: nowIso,
+    deleted: false,
+    ...overrides,
+  };
+}
+
+describe('addExerciseToWorkout', () => {
+  it('appends at position = max over ALL exercises (incl. deleted) + 1, with one empty set', () => {
+    const userId = freshUser();
+    initWorkoutStore(userId);
+    const workoutId = startWorkoutFromDay(liftingDay, 'day-1', userId); // one live exercise at position 1
+
+    // A soft-deleted exercise sitting at a higher position than anything
+    // live — addExerciseToWorkout must still jump past it (position 6), not
+    // reuse the gap it left behind.
+    const nowIso = new Date().toISOString();
+    const deletedExercise: WorkoutExercise = {
+      id: 'we-deleted-gap',
+      user_id: userId,
+      workout_id: workoutId,
+      exercise_id: null,
+      exercise_name: 'Removed earlier',
+      position: 5,
+      rest_seconds: null,
+      notes: null,
+      created_at: nowIso,
+      updated_at: nowIso,
+      deleted: true,
+    };
+    workoutExercises$[deletedExercise.id].set(deletedExercise);
+
+    const pick = libraryExercise({ id: 'ex-lat-pulldown', name: 'Lat pulldown' });
+    addExerciseToWorkout(workoutId, userId, pick);
+
+    const added = Object.values(workoutExercises$.get() ?? {}).find(
+      (e): e is WorkoutExercise => !!e && e.exercise_id === 'ex-lat-pulldown',
+    );
+    expect(added).toBeDefined();
+    expect(added?.position).toBe(6);
+    expect(added?.exercise_name).toBe('Lat pulldown');
+    expect(added?.deleted).toBe(false);
+
+    const sets = Object.values(workoutSets$.get() ?? {}).filter(
+      (s): s is WorkoutSet => !!s && s.workout_exercise_id === added?.id,
+    );
+    expect(sets).toHaveLength(1);
+    expect(sets[0].completed_at).toBeNull();
+  });
+});
+
+describe('replaceExercise', () => {
+  it('swaps exercise_id/exercise_name only — sets and notes survive untouched', () => {
+    const userId = freshUser();
+    initWorkoutStore(userId);
+    const workoutId = startWorkoutFromDay(liftingDay, 'day-1', userId);
+    const exerciseId = Object.keys(workoutExercises$.get() ?? {})[0];
+    updateExerciseNotes(exerciseId, 'knees hurt today');
+    const setIdsBefore = Object.values(workoutSets$.get() ?? {})
+      .filter((s): s is WorkoutSet => !!s && s.workout_exercise_id === exerciseId)
+      .map((s) => s.id)
+      .sort();
+
+    const pick = libraryExercise({ id: 'ex-leg-press', name: 'Leg press', muscle_group: 'Legs', equipment: 'Machine' });
+    replaceExercise(exerciseId, pick);
+
+    expect(workoutExercises$[exerciseId].exercise_id.get()).toBe('ex-leg-press');
+    expect(workoutExercises$[exerciseId].exercise_name.get()).toBe('Leg press');
+    expect(workoutExercises$[exerciseId].notes.get()).toBe('knees hurt today');
+
+    const setIdsAfter = Object.values(workoutSets$.get() ?? {})
+      .filter((s): s is WorkoutSet => !!s && s.workout_exercise_id === exerciseId)
+      .map((s) => s.id)
+      .sort();
+    expect(setIdsAfter).toEqual(setIdsBefore);
+    void workoutId;
+  });
+});
+
+describe('removeExercise', () => {
+  it('soft-deletes the exercise row and cascades to every live set under it', () => {
+    const userId = freshUser();
+    initWorkoutStore(userId);
+    const workoutId = startWorkoutFromDay(liftingDay, 'day-1', userId);
+    const exerciseId = Object.keys(workoutExercises$.get() ?? {})[0];
+    const setIds = Object.keys(workoutSets$.get() ?? {});
+
+    removeExercise(exerciseId);
+
+    expect(workoutExercises$[exerciseId].deleted.get()).toBe(true);
+    for (const setId of setIds) {
+      expect(workoutSets$[setId].deleted.get()).toBe(true);
+    }
+    void workoutId;
+  });
+});
+
+describe('moveExerciseInWorkout', () => {
+  const twoExerciseDay: ProgramDay = {
+    id: 'day-2',
+    position: 1,
+    name: 'Tue — Pull',
+    kind: 'lifting',
+    notes: null,
+    exercises: [
+      {
+        id: 'de-1',
+        position: 1,
+        exerciseName: 'Lat pulldown',
+        exerciseId: 'ex-lat-pulldown',
+        sets: 3,
+        reps: '10',
+        load: '60%',
+        notes: null,
+      },
+      {
+        id: 'de-2',
+        position: 2,
+        exerciseName: 'Seated row',
+        exerciseId: 'ex-seated-row',
+        sets: 3,
+        reps: '10',
+        load: '60%',
+        notes: null,
+      },
+    ],
+  };
+
+  it('swaps positions with the neighbor and no-ops at the ends', () => {
+    const userId = freshUser();
+    initWorkoutStore(userId);
+    const workoutId = startWorkoutFromDay(twoExerciseDay, 'day-2', userId);
+    const [first, second] = Object.values(workoutExercises$.get() ?? {})
+      .filter((e): e is WorkoutExercise => !!e && e.workout_id === workoutId)
+      .sort((a, b) => a.position - b.position);
+    // Snapshot the original positions as plain numbers up front — `first`/
+    // `second` are live Legend-State nodes, so reading `.position` off them
+    // *after* a mutation below would reflect the post-mutation value, not
+    // the original one.
+    const firstPosition = first.position;
+    const secondPosition = second.position;
+
+    // Already at the top — no-op.
+    moveExerciseInWorkout(workoutId, first.id, 'up');
+    expect(workoutExercises$[first.id].position.get()).toBe(firstPosition);
+    expect(workoutExercises$[second.id].position.get()).toBe(secondPosition);
+
+    // Swap first/second.
+    moveExerciseInWorkout(workoutId, first.id, 'down');
+    expect(workoutExercises$[first.id].position.get()).toBe(secondPosition);
+    expect(workoutExercises$[second.id].position.get()).toBe(firstPosition);
+
+    // `first.id` is now at the bottom — no-op.
+    moveExerciseInWorkout(workoutId, first.id, 'down');
+    expect(workoutExercises$[first.id].position.get()).toBe(secondPosition);
   });
 });
 

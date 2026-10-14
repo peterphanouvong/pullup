@@ -13,16 +13,19 @@
 
 import { use$ } from '@legendapp/state/react';
 import type { ProgramDay } from '@/features/programs/types';
+import { buildAddedExercise, buildReplacement, moveExercise } from './edit';
 import { skipRestTimer, startRestTimer } from './rest-timer';
 import {
   activeWorkout,
   finishedWorkoutSummaries,
   hasFinishedWorkoutForDay,
+  recentExerciseIds,
+  searchExercises,
   type FinishedWorkoutSummary,
 } from './selectors';
 import { buildWorkoutFromDay } from './start';
-import { generateId, workoutExercises$, workoutSets$, workouts$ } from './store';
-import type { SetType, Workout, WorkoutExercise, WorkoutSet } from './types';
+import { exercises$, generateId, workoutExercises$, workoutSets$, workouts$ } from './store';
+import type { Exercise, SetType, Workout, WorkoutExercise, WorkoutSet } from './types';
 
 // ---------------------------------------------------------------------------
 // Mutations (plain functions — not hooks)
@@ -171,6 +174,73 @@ export function discardWorkout(id: string): void {
   }
 }
 
+/** "Add Exercise": appends a new `workout_exercise` row for `exercise` at
+ * position = (max position over ALL of the workout's exercises, including
+ * soft-deleted ones) + 1, plus its one empty working set. Scanning *all*
+ * rows (not just live ones) means a gap left by a removed exercise's old
+ * position is never reused. */
+export function addExerciseToWorkout(workoutId: string, userId: string, exercise: Exercise): void {
+  const allExercisesForWorkout = Object.values(workoutExercises$.get() ?? {}).filter(
+    (e): e is WorkoutExercise => !!e && e.workout_id === workoutId,
+  );
+  const maxPosition = allExercisesForWorkout.reduce((max, e) => Math.max(max, e.position), 0);
+
+  const { exercise: newExercise, set } = buildAddedExercise({
+    workoutId,
+    userId,
+    exercise,
+    position: maxPosition + 1,
+    now: new Date(),
+    idGen: generateId,
+  });
+
+  workoutExercises$[newExercise.id].set(newExercise);
+  workoutSets$[set.id].set(set);
+}
+
+/** "Replace exercise": swaps the SAME `workout_exercise` row's identity
+ * (`exercise_id` + `exercise_name` snapshot) for the newly-picked library
+ * exercise. Sets, notes, and rest_seconds are untouched — `buildReplacement`
+ * never mentions them. */
+export function replaceExercise(workoutExerciseId: string, exercise: Exercise): void {
+  workoutExercises$[workoutExerciseId].assign({
+    ...buildReplacement(exercise),
+    updated_at: new Date().toISOString(),
+  });
+}
+
+/** "Remove exercise": soft-deletes the `workout_exercise` row and every live
+ * set under it — mirrors `discardWorkout`'s cascade discipline, just scoped
+ * to one exercise instead of the whole workout. Confirmation is the call
+ * site's concern (the ⋮ menu's destructive Alert). */
+export function removeExercise(workoutExerciseId: string): void {
+  const nowIso = new Date().toISOString();
+  workoutExercises$[workoutExerciseId].assign({ deleted: true, updated_at: nowIso });
+
+  const sets = Object.values(workoutSets$.get() ?? {}).filter(
+    (s): s is WorkoutSet => !!s && !s.deleted && s.workout_exercise_id === workoutExerciseId,
+  );
+  for (const set of sets) {
+    workoutSets$[set.id].assign({ deleted: true, updated_at: nowIso });
+  }
+}
+
+/** "Move up"/"Move down": re-derives the workout's visible (non-deleted),
+ * position-sorted exercise list from the store, then applies whatever
+ * position writes `moveExercise` returns (empty at the ends, or when
+ * `workoutExerciseId` is unknown). */
+export function moveExerciseInWorkout(workoutId: string, workoutExerciseId: string, dir: 'up' | 'down'): void {
+  const visibleSorted = Object.values(workoutExercises$.get() ?? {})
+    .filter((e): e is WorkoutExercise => !!e && !e.deleted && e.workout_id === workoutId)
+    .sort((a, b) => a.position - b.position);
+
+  const writes = moveExercise(visibleSorted, workoutExerciseId, dir);
+  const nowIso = new Date().toISOString();
+  for (const write of writes) {
+    workoutExercises$[write.id].assign({ position: write.position, updated_at: nowIso });
+  }
+}
+
 /** Cycles a set's type on tap, per the design's "W -> 1..n -> drop ->
  * failure" order: warmup -> working (numbered) -> drop -> failure -> back to
  * warmup. Exported so SetRow's tap handler and any tests share one
@@ -254,4 +324,23 @@ export function useFinishedWorkouts(): FinishedWorkoutSummary[] {
   return use$(() =>
     finishedWorkoutSummaries(workouts$.get() ?? {}, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}),
   );
+}
+
+/** Exercise-picker search: name contains `query`, optionally narrowed to
+ * `group` — a thin reactive wrapper over `searchExercises`. */
+export function useExerciseSearch(query: string, group: string | null): Exercise[] {
+  return use$(() => searchExercises(exercises$.get() ?? {}, query, group));
+}
+
+/** Exercise-picker "Recent" section: up to 8 distinct exercises from the
+ * user's finished workouts, newest-first, resolved to their library rows
+ * (skipping any id that no longer resolves to a live `Exercise`). */
+export function useRecentExercises(): Exercise[] {
+  return use$(() => {
+    const ids = recentExerciseIds(workouts$.get() ?? {}, workoutExercises$.get() ?? {}, 8);
+    const exercisesRecord = exercises$.get() ?? {};
+    return ids
+      .map((id) => exercisesRecord[id] as Exercise | undefined)
+      .filter((e): e is Exercise => !!e && !e.deleted);
+  });
 }

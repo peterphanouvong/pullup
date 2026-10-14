@@ -1,32 +1,12 @@
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRef } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card } from '@/components/ui/card';
+import { IconCircle } from '@/components/ui/icon-circle';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
-import { addSet, updateExerciseNotes, updateExerciseRestSeconds, type WorkoutExerciseWithSets } from '../hooks';
+import { addSet, updateExerciseNotes, type WorkoutExerciseWithSets } from '../hooks';
+import { openExerciseMenu, openRestTimerSheet } from './exercise-menu';
 import { SET_TABLE_COLUMNS, SetRow } from './set-row';
-
-// Rest-timer preset chooser: an Alert with one button per preset is a
-// deliberately simple stand-in this task — sub-project C replaces it with a
-// proper sheet. `null` ("OFF") disables the auto-start-on-complete behavior
-// in `completeSet`.
-const REST_TIMER_PRESETS: { label: string; seconds: number | null }[] = [
-  { label: 'OFF', seconds: null },
-  { label: '1:00', seconds: 60 },
-  { label: '1:30', seconds: 90 },
-  { label: '2:00', seconds: 120 },
-  { label: '2:30', seconds: 150 },
-  { label: '3:00', seconds: 180 },
-];
-
-function openRestTimerPicker(workoutExerciseId: string): void {
-  Alert.alert('Rest Timer', undefined, [
-    ...REST_TIMER_PRESETS.map((preset) => ({
-      text: preset.label,
-      onPress: () => updateExerciseRestSeconds(workoutExerciseId, preset.seconds),
-    })),
-    { text: 'Cancel', style: 'cancel' as const },
-  ]);
-}
 
 // A fallback once a fresh exercise's sets are all still blank (no
 // weight/reps/duration logged yet): look for a time-shaped token ("20 s",
@@ -57,15 +37,43 @@ function formatRestTimer(restSeconds: number | null): string {
   return sec > 0 ? `${min}min ${sec}s` : `${min}min`;
 }
 
-export function ExerciseCard({ exercise, workoutId }: { exercise: WorkoutExerciseWithSets; workoutId: string }) {
+export function ExerciseCard({
+  exercise,
+  workoutId,
+  canMoveUp,
+  canMoveDown,
+}: {
+  exercise: WorkoutExerciseWithSets;
+  workoutId: string;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+}) {
   const styles = useThemedStyles(createStyles);
   const isDuration = isDurationExercise(exercise);
+  const notesRef = useRef<TextInput>(null);
 
   return (
     <Card style={styles.card}>
-      <Text style={styles.name}>{exercise.exercise_name}</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.name}>{exercise.exercise_name}</Text>
+        <IconCircle
+          name="ellipsis"
+          fallback="⋯"
+          size={28}
+          onPress={() =>
+            openExerciseMenu({
+              workoutId,
+              exercise,
+              canMoveUp,
+              canMoveDown,
+              onAddNote: () => notesRef.current?.focus(),
+            })
+          }
+        />
+      </View>
 
       <TextInput
+        ref={notesRef}
         style={styles.notes}
         placeholder="Add notes here…"
         value={exercise.notes ?? ''}
@@ -73,7 +81,7 @@ export function ExerciseCard({ exercise, workoutId }: { exercise: WorkoutExercis
         multiline
       />
 
-      <Pressable onPress={() => openRestTimerPicker(exercise.id)} hitSlop={4}>
+      <Pressable onPress={() => openRestTimerSheet(exercise.id)} hitSlop={4}>
         <Text style={styles.restRow}>{`Rest Timer: ${formatRestTimer(exercise.rest_seconds)}`}</Text>
       </Pressable>
 
@@ -111,7 +119,8 @@ export function ExerciseCard({ exercise, workoutId }: { exercise: WorkoutExercis
 
 const createStyles = (theme: Theme) => StyleSheet.create({
   card: { gap: theme.spacing.sm },
-  name: { ...theme.type.heading, color: theme.colors.accent },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.sm },
+  name: { ...theme.type.heading, color: theme.colors.accent, flex: 1 },
   notes: { ...theme.type.body, color: theme.colors.ink, paddingVertical: theme.spacing.xs },
   restRow: { ...theme.type.caption, color: theme.colors.inkMuted },
   header: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, marginTop: theme.spacing.xs },

@@ -44,6 +44,11 @@ function tableSynced<TRow extends { id: string }>(
       fieldUpdatedAt: 'updated_at',
       fieldDeleted: 'deleted',
       changesSince: 'last-sync',
+      // Batches keystroke-level writes (notes text, weight/reps typing) into
+      // one Supabase round-trip per table instead of one per keystroke —
+      // local reads/writes (and persisted-to-AsyncStorage state) are
+      // unaffected, only the remote `set` push is delayed/coalesced.
+      debounceSet: 1000,
       persist: {
         name: persistName,
         plugin: persistPlugin,
