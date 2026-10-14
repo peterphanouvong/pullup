@@ -46,7 +46,7 @@ export default function WeekScreen() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  scroll: { flex: 1, backgroundColor: theme.colors.bg },
+  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   container: {
     padding: theme.spacing.lg,
     gap: theme.spacing.md,
@@ -56,7 +56,7 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.bg,
+    backgroundColor: theme.colors.canvas,
   },
-  emptyText: { ...theme.type.body, color: theme.colors.text },
+  emptyText: { ...theme.type.body, color: theme.colors.ink },
 }));

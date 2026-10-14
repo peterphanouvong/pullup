@@ -43,13 +43,13 @@ export default function DayScreen() {
 }
 
 const styles = StyleSheet.create((theme) => ({
-  container: { flex: 1, backgroundColor: theme.colors.bg },
+  container: { flex: 1, backgroundColor: theme.colors.canvas },
   notes: { padding: theme.spacing.lg },
   empty: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.bg,
+    backgroundColor: theme.colors.canvas,
   },
-  emptyText: { ...theme.type.body, color: theme.colors.text },
+  emptyText: { ...theme.type.body, color: theme.colors.ink },
 }));

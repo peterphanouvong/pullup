@@ -54,5 +54,5 @@ export default function ProgramListScreen() {
 const ThemedHost = withUnistyles(Host);
 
 const styles = StyleSheet.create((theme) => ({
-  host: { flex: 1, backgroundColor: theme.colors.bg },
+  host: { flex: 1, backgroundColor: theme.colors.canvas },
 }));

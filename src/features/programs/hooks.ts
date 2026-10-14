@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
-import { fetchActiveProgramId, fetchProgram, fetchPrograms, selectProgram } from './api';
+import { fetchActiveProgram, fetchProgram, fetchPrograms, selectProgram } from './api';
 
 export function usePrograms() {
   return useQuery({ queryKey: ['programs'], queryFn: fetchPrograms });
@@ -14,10 +14,7 @@ export function useActiveProgram() {
   const session = useSession();
   return useQuery({
     queryKey: ['active-program', session.user.id],
-    queryFn: async () => {
-      const programId = await fetchActiveProgramId(session.user.id);
-      return programId ? { programId } : null;
-    },
+    queryFn: () => fetchActiveProgram(session.user.id),
   });
 }
 

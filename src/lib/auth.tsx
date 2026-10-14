@@ -60,13 +60,13 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     gap: theme.spacing.md,
     padding: theme.spacing.xl,
-    backgroundColor: theme.colors.bg,
+    backgroundColor: theme.colors.canvas,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.bg,
+    backgroundColor: theme.colors.canvas,
   },
-  message: { ...theme.type.body, color: theme.colors.text },
+  message: { ...theme.type.body, color: theme.colors.ink },
 }));

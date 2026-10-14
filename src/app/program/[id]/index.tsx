@@ -76,14 +76,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 const styles = StyleSheet.create((theme) => ({
-  scroll: { flex: 1, backgroundColor: theme.colors.bg },
+  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   container: {
     padding: theme.spacing.lg,
     gap: theme.spacing.xl,
   },
-  summary: { ...theme.type.body, color: theme.colors.text },
+  summary: { ...theme.type.body, color: theme.colors.ink },
   error: { ...theme.type.body, color: theme.colors.danger },
-  body: { ...theme.type.body, color: theme.colors.text },
+  body: { ...theme.type.body, color: theme.colors.ink },
   section: { gap: theme.spacing.sm },
-  sectionTitle: { ...theme.type.heading, color: theme.colors.text },
+  sectionTitle: { ...theme.type.heading, color: theme.colors.ink },
 }));

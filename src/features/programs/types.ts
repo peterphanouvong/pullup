@@ -40,6 +40,12 @@ export interface Program extends ProgramSummary {
   weeks: ProgramWeek[];
 }
 
+/** The user's currently-selected programme, with its "Today" anchor date. */
+export interface ActiveProgram {
+  programId: string;
+  startDate: string; // YYYY-MM-DD, Monday of the selection week
+}
+
 /** One row of the overview timeline: a week's phase plus its comp day, if any. */
 export interface PhaseEntry {
   weekName: string;

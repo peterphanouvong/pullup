@@ -22,6 +22,6 @@ export function DayRow({ day, onPress }: { day: ProgramDay; onPress: () => void 
 
 const styles = StyleSheet.create((theme) => ({
   container: { gap: theme.spacing.xs },
-  name: { ...theme.type.heading, color: theme.colors.text },
-  notes: { ...theme.type.caption, color: theme.colors.textMuted },
+  name: { ...theme.type.heading, color: theme.colors.ink },
+  notes: { ...theme.type.caption, color: theme.colors.inkMuted },
 }));
