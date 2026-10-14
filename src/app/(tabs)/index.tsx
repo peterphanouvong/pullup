@@ -13,6 +13,8 @@ import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
 import { currentProgramPosition, nextCompDay } from '@/features/programs/schedule';
 import type { ProgramDay } from '@/features/programs/types';
+import { useSession } from '@/lib/auth';
+import { startEmptyWorkout, startWorkoutFromDay } from '@/features/workouts/hooks';
 
 const WEEKDAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -48,9 +50,15 @@ function metaFor(day: ProgramDay): string {
 export default function TodayScreen() {
   const active = useActiveProgram();
   const program = useProgram(active.data?.programId ?? '');
+  const session = useSession();
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+  function handleStartEmpty() {
+    const workoutId = startEmptyWorkout(session.user.id);
+    router.push(`/workout/${workoutId}`);
+  }
 
   if (active.isPending) {
     return <QueryFallback isError={false} message="Loading…" onRetry={() => active.refetch()} />;
@@ -114,6 +122,8 @@ export default function TodayScreen() {
     <Screen>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <ScreenTitle title="Today" />
+        {/* Task 5 slot: "Resume workout" banner for an unfinished workout
+            (finished_at is null) renders here, above the comp-day eyebrow. */}
         {compDay != null && !position.finished && (
           <Text style={styles.eyebrow}>{`T–${compDay.daysAway} DAYS · ${compDay.dayName}`}</Text>
         )}
@@ -155,11 +165,18 @@ export default function TodayScreen() {
                 {day.kind === 'lifting' && (
                   <PrimaryButton
                     title="Start workout"
-                    onPress={() => router.push(`/program/${programId}/day/${day.id}`)}
+                    onPress={() => {
+                      const workoutId = startWorkoutFromDay(day, day.id, session.user.id);
+                      router.push(`/workout/${workoutId}`);
+                    }}
                   />
                 )}
               </>
             )}
+
+            <Pressable onPress={handleStartEmpty} hitSlop={8}>
+              <Text style={styles.quietAction}>Start empty workout</Text>
+            </Pressable>
           </>
         )}
       </ScrollView>
@@ -174,4 +191,5 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   messageCard: { gap: theme.spacing.sm },
   messageTitle: { ...theme.type.heading, color: theme.colors.ink },
   messageBody: { ...theme.type.body, color: theme.colors.inkMuted },
+  quietAction: { ...theme.type.body, color: theme.colors.inkMuted, textAlign: 'center' },
 });

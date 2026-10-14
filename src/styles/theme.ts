@@ -58,6 +58,10 @@ const lightColors = {
   success: '#1F9D55',
   danger: '#C0392B',
   border: '#E3E5EA',
+  // `done` @ ~14% alpha flattened over `card` (solid, not actual alpha — see
+  // darkColors.doneSoft for why these are precomputed instead of using RN's
+  // rgba()): the active-workout set row's "completed" fill.
+  doneSoft: '#E2F6E8',
   gradientRecap: ['#0E2A5C', '#1D4ED8'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
   // Text drawn over gradientRecap/gradientEmber — both gradients stay dark
@@ -79,6 +83,9 @@ const darkColors = {
   success: '#34C277',
   danger: '#E05B4D',
   border: '#262B33',
+  // `done` @ ~14% alpha flattened over `card`, same rationale as the light
+  // theme's doneSoft — precomputed solid color, no RN rgba() call needed.
+  doneSoft: '#1A3329',
   gradientRecap: ['#0A1F44', '#1E40AF'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
   onGradient: '#FFFFFF',

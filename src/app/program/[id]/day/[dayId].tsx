@@ -1,16 +1,21 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { Screen } from '@/components/ui/screen';
+import { PrimaryButton } from '@/components/ui/primary-button';
 import { ExerciseTable } from '@/features/programs/components/exercise-table';
 import { Markdown } from '@/features/programs/components/markdown';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
-import { useProgram } from '@/features/programs/hooks';
+import { useActiveProgram, useProgram } from '@/features/programs/hooks';
+import { useSession } from '@/lib/auth';
+import { startWorkoutFromDay } from '@/features/workouts/hooks';
 
 export default function DayScreen() {
   const { id, dayId } = useLocalSearchParams<{ id: string; dayId: string }>();
   const program = useProgram(id);
+  const active = useActiveProgram();
+  const session = useSession();
   const styles = useThemedStyles(createStyles);
 
   if (program.isPending || program.isError) {
@@ -34,12 +39,22 @@ export default function DayScreen() {
     );
   }
 
+  const isActiveProgram = active.data?.programId === id;
+
+  function handleStart() {
+    const workoutId = startWorkoutFromDay(day!, dayId, session.user.id);
+    router.push(`/workout/${workoutId}`);
+  }
+
   return (
     <Screen>
       <Stack.Screen options={{ title: day.name }} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {day.notes != null && <Markdown>{day.notes}</Markdown>}
         <ExerciseTable exercises={day.exercises} />
+        {day.kind === 'lifting' && isActiveProgram && (
+          <PrimaryButton title="Start workout" onPress={handleStart} />
+        )}
       </ScrollView>
     </Screen>
   );
