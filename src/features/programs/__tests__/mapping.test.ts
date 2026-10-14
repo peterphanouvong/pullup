@@ -15,8 +15,8 @@ const raw: RawProgram = {
         {
           id: 'd1', position: 1, name: 'Mon — Lower power', kind: 'lifting', notes: null,
           day_exercises: [
-            { id: 'e2', position: 2, exercise_name: 'Power clean', sets: 4, reps: '2', load: '85%', notes: null },
-            { id: 'e1', position: 1, exercise_name: 'Sprints', sets: 5, reps: '30 m', load: 'Max', notes: '2–3 min rest' },
+            { id: 'e2', position: 2, exercise_name: 'Power clean', exercise_id: 'ex-power-clean', sets: 4, reps: '2', load: '85%', notes: null },
+            { id: 'e1', position: 1, exercise_name: 'Sprints', exercise_id: null, sets: 5, reps: '30 m', load: 'Max', notes: '2–3 min rest' },
           ],
         },
         { id: 'd3', position: 3, name: 'Wed — Court', kind: 'court', notes: 'night', day_exercises: [] },
@@ -31,6 +31,13 @@ describe('toProgram', () => {
     expect(program.weeks.map((w) => w.id)).toEqual(['w1', 'w2']);
     expect(program.weeks[0].days.map((d) => d.id)).toEqual(['d1', 'd3', 'd7']);
     expect(program.weeks[0].days[0].exercises.map((e) => e.exerciseName)).toEqual(['Sprints', 'Power clean']);
+  });
+
+  it('carries day_exercises.exercise_id through as exerciseId, preserving null when unmatched', () => {
+    const program = toProgram(raw);
+    const [sprints, powerClean] = program.weeks[0].days[0].exercises;
+    expect(sprints.exerciseId).toBeNull();
+    expect(powerClean.exerciseId).toBe('ex-power-clean');
   });
 
   it('maps snake_case rows to camelCase and keeps non-lifting days with empty exercises', () => {

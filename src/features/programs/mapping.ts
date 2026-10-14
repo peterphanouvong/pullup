@@ -25,6 +25,7 @@ export function toProgram(raw: RawProgram): Program {
           id: exercise.id,
           position: exercise.position,
           exerciseName: exercise.exercise_name,
+          exerciseId: exercise.exercise_id,
           sets: exercise.sets,
           reps: exercise.reps,
           load: exercise.load,

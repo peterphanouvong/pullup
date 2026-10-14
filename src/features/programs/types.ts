@@ -4,6 +4,7 @@ export interface DayExercise {
   id: string;
   position: number;
   exerciseName: string;
+  exerciseId: string | null;
   sets: number | null;
   reps: string | null;
   load: string | null;
@@ -76,6 +77,7 @@ export interface RawProgram {
         id: string;
         position: number;
         exercise_name: string;
+        exercise_id: string | null;
         sets: number | null;
         reps: string | null;
         load: string | null;

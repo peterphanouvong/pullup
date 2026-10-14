@@ -9,7 +9,7 @@ const PROGRAM_SELECT = `
     id, position, name, phase, description,
     program_days (
       id, position, name, kind, notes,
-      day_exercises ( id, position, exercise_name, sets, reps, load, notes )
+      day_exercises ( id, position, exercise_name, exercise_id, sets, reps, load, notes )
     )
   )
 `;
