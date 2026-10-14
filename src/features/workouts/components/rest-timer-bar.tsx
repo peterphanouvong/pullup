@@ -38,7 +38,6 @@ export function RestTimerBar() {
 
   useEffect(() => {
     if (!timer) return;
-    setNow(new Date());
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, [timer]);

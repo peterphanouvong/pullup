@@ -24,6 +24,7 @@ import {
   type FinishedWorkoutSummary,
 } from './selectors';
 import { buildWorkoutFromDay } from './start';
+import { weekCompletion } from './today-state';
 import { exercises$, generateId, workoutExercises$, workoutSets$, workouts$ } from './store';
 import type { Exercise, SetType, Workout, WorkoutExercise, WorkoutSet } from './types';
 
@@ -316,6 +317,12 @@ export function useHasFinishedWorkoutForDay(programDayId: string | null): boolea
   return use$(() =>
     programDayId != null ? hasFinishedWorkoutForDay(workouts$.get() ?? {}, programDayId) : false,
   );
+}
+
+/** Which of the given programme days already have a finished workout — the
+ * Today week checklist's checkmarks and progress segments. */
+export function useWeekCompletion(dayIds: string[]): Record<string, boolean> {
+  return use$(() => weekCompletion(workouts$.get() ?? {}, dayIds));
 }
 
 /** Finished workouts newest-first, each with its `workoutSummary` — the
