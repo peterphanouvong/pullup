@@ -168,7 +168,7 @@ export default function TodayScreen() {
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
-  content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: 140 },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
   eyebrow: { ...theme.type.label, color: theme.colors.comp },
   weekLine: { ...theme.type.caption, color: theme.colors.inkMuted },
   messageCard: { gap: theme.spacing.sm },

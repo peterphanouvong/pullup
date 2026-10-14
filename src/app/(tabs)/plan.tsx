@@ -63,7 +63,7 @@ export default function PlanScreen() {
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
-  content: { padding: theme.spacing.lg, gap: theme.spacing.sm, paddingBottom: 140 },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.sm, paddingBottom: theme.spacing.xl },
   card: { gap: theme.spacing.xs },
   name: { ...theme.type.heading, color: theme.colors.ink },
   summary: { ...theme.type.caption, color: theme.colors.inkMuted },

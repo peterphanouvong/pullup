@@ -161,3 +161,7 @@ Token values and visual design are unchanged — the theme module moved
 verbatim to `src/styles/theme.ts` (light/dark theme objects + `Theme`
 type), with live light/dark switching now driven by RN's `useColorScheme()`
 instead of Unistyles' adaptive-themes setting.
+
+The custom `PillTabBar` was replaced by expo-router's native tabs
+(`expo-router/unstable-native-tabs`), giving the Apple-native translucent
+tab bar, at the user's direction.

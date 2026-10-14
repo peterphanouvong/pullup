@@ -31,7 +31,7 @@ export default function ActivitiesScreen() {
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
-  content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: 140, flexGrow: 1 },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: theme.spacing.xl, flexGrow: 1 },
   empty: {
     flex: 1,
     alignItems: 'center',
