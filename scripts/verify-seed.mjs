@@ -24,3 +24,25 @@ const bareLifting = days.filter((d) => d.kind === 'lifting' && d.day_exercises.l
 if (bareLifting.length > 0) fail(`${bareLifting.length} lifting day(s) with no exercises`);
 
 console.log('OK: 1 programme, 7 weeks, 49 days, all lifting days have exercises');
+
+const { count: exercisesCount, error: exercisesError } = await supabase
+  .from('exercises')
+  .select('*', { count: 'exact', head: true })
+  .is('owner_id', null);
+if (exercisesError) fail(exercisesError.message);
+if (exercisesCount < 100) fail(`exercises: global count ${exercisesCount} < 100`);
+
+const { data: unmatchedDayExercises, error: unmatchedError } = await supabase
+  .from('day_exercises')
+  .select('id, exercise_name')
+  .is('exercise_id', null);
+if (unmatchedError) fail(unmatchedError.message);
+if (unmatchedDayExercises.length > 0) {
+  console.error('Offending day_exercises rows (null exercise_id):');
+  for (const row of unmatchedDayExercises) {
+    console.error(`  - id=${row.id} exercise_name=${JSON.stringify(row.exercise_name)}`);
+  }
+  fail(`day_exercises: ${unmatchedDayExercises.length} row(s) with null exercise_id`);
+}
+
+console.log(`OK: ${exercisesCount} global exercises, 0 day_exercises rows with null exercise_id`);
