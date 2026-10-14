@@ -26,6 +26,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",
@@ -36,7 +44,8 @@
         }
       ],
       "expo-sqlite",
-      "react-native-edge-to-edge"
+      "react-native-edge-to-edge",
+      "expo-build-properties"
     ],
     "experiments": {
       "typedRoutes": true,
