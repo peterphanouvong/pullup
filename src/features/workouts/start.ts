@@ -94,7 +94,7 @@ export function buildWorkoutFromDay(
       exercise_name: dayExercise.exerciseName,
       position: dayExercise.position,
       rest_seconds: timed ? null : 150,
-      notes: null,
+      notes: dayExercise.notes ?? null,
       created_at: nowIso,
       updated_at: nowIso,
       deleted: false,

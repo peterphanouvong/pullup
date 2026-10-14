@@ -109,6 +109,18 @@ describe('buildWorkoutFromDay', () => {
     expect(exercises[1].exercise_id).toBe('ex-power-clean');
   });
 
+  it('carries DayExercise.notes forward as the prefilled, user-editable workout_exercise notes', () => {
+    const { exercises } = buildWorkoutFromDay(mondayLowerPower, opts);
+
+    // Standing calf raise: notes "Slow lower" — a per-exercise coaching cue.
+    expect(exercises[3].exercise_name).toBe('Standing calf raise');
+    expect(exercises[3].notes).toBe('Slow lower');
+
+    // Power clean: notes null — no cue for this row, stays null (not "").
+    expect(exercises[1].exercise_name).toBe('Power clean');
+    expect(exercises[1].notes).toBeNull();
+  });
+
   it('every workout_exercise belongs to the built workout', () => {
     const { workout, exercises } = buildWorkoutFromDay(mondayLowerPower, opts);
     for (const ex of exercises) {
