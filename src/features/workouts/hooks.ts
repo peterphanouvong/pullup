@@ -76,6 +76,7 @@ export function startEmptyWorkout(userId: string): string {
  * auto-starts the rest timer when the set's exercise has `rest_seconds` set —
  * a null/0 `rest_seconds` ("OFF") never starts one. */
 export function completeSet(setId: string, now: Date): void {
+  if (workoutSets$[setId].peek() == null) return;
   const current = workoutSets$[setId].completed_at.get();
   const completing = current == null;
   workoutSets$[setId].assign({
@@ -95,6 +96,7 @@ export function completeSet(setId: string, now: Date): void {
 export type SetPatch = Partial<Pick<WorkoutSet, 'weight_kg' | 'reps' | 'duration_seconds' | 'set_type' | 'target'>>;
 
 export function updateSet(setId: string, patch: SetPatch): void {
+  if (workoutSets$[setId].peek() == null) return;
   workoutSets$[setId].assign({ ...patch, updated_at: new Date().toISOString() });
 }
 
@@ -127,20 +129,27 @@ export function addSet(workoutExerciseId: string): void {
 }
 
 export function softDeleteSet(setId: string): void {
+  if (workoutSets$[setId].peek() == null) return;
   workoutSets$[setId].assign({ deleted: true, updated_at: new Date().toISOString() });
 }
 
 export function updateExerciseNotes(workoutExerciseId: string, notes: string): void {
+  if (workoutExercises$[workoutExerciseId].peek() == null) return;
   workoutExercises$[workoutExerciseId].assign({ notes, updated_at: new Date().toISOString() });
 }
 
 /** Writes the exercise's rest-timer preset (`null` = OFF) — the exercise
  * card's "Rest Timer: …" row preset chooser. */
 export function updateExerciseRestSeconds(workoutExerciseId: string, restSeconds: number | null): void {
+  if (workoutExercises$[workoutExerciseId].peek() == null) return;
   workoutExercises$[workoutExerciseId].assign({ rest_seconds: restSeconds, updated_at: new Date().toISOString() });
 }
 
 export function finishWorkout(id: string, now: Date): void {
+  // Guard every assign-style mutation: Legend-State's `assign` on an id with
+  // no row CREATES a partial object (no id/user_id) — a ghost row that can
+  // never sync and renders as a key-less Activities entry.
+  if (workouts$[id].peek() == null) return;
   workouts$[id].assign({ finished_at: now.toISOString(), updated_at: now.toISOString() });
   // A rest timer from the just-finished workout's last set must not keep
   // counting down (or reappear) once the workout is over.
@@ -153,6 +162,7 @@ export function finishWorkout(id: string, now: Date): void {
  * one behind with still-live sets; scoping the sets cascade to only the
  * currently-live exercises would silently skip those). */
 export function discardWorkout(id: string): void {
+  if (workouts$[id].peek() == null) return;
   const nowIso = new Date().toISOString();
   workouts$[id].assign({ deleted: true, updated_at: nowIso });
   // A rest timer started mid-workout must not survive discarding it.
@@ -204,6 +214,7 @@ export function addExerciseToWorkout(workoutId: string, userId: string, exercise
  * exercise. Sets, notes, and rest_seconds are untouched — `buildReplacement`
  * never mentions them. */
 export function replaceExercise(workoutExerciseId: string, exercise: Exercise): void {
+  if (workoutExercises$[workoutExerciseId].peek() == null) return;
   workoutExercises$[workoutExerciseId].assign({
     ...buildReplacement(exercise),
     updated_at: new Date().toISOString(),
@@ -215,6 +226,7 @@ export function replaceExercise(workoutExerciseId: string, exercise: Exercise): 
  * to one exercise instead of the whole workout. Confirmation is the call
  * site's concern (the ⋮ menu's destructive Alert). */
 export function removeExercise(workoutExerciseId: string): void {
+  if (workoutExercises$[workoutExerciseId].peek() == null) return;
   const nowIso = new Date().toISOString();
   workoutExercises$[workoutExerciseId].assign({ deleted: true, updated_at: nowIso });
 

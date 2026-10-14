@@ -133,7 +133,10 @@ export function workoutSummary(
 /** Finished (not deleted) workouts, newest `finished_at` first. */
 export function finishedWorkoutsNewestFirst(workouts: Record<string, Workout>): Workout[] {
   return Object.values(workouts)
-    .filter((w) => !w.deleted && w.finished_at != null)
+    // `!!w.id` guards against ghost rows: an `assign` on a stale id creates a
+    // partial object (e.g. `{finished_at}`) with no id, which would render a
+    // key-less Activities row.
+    .filter((w): w is Workout => !!w && !!w.id && !w.deleted && w.finished_at != null)
     .sort((a, b) => new Date(b.finished_at as string).getTime() - new Date(a.finished_at as string).getTime());
 }
 
@@ -142,7 +145,7 @@ export function finishedWorkoutsNewestFirst(workouts: Record<string, Workout>): 
  * empty workout started, abandoned, then a day workout started after it). */
 export function activeWorkout(workouts: Record<string, Workout>): Workout | null {
   const candidates = Object.values(workouts).filter(
-    (w): w is Workout => !!w && !w.deleted && w.finished_at == null,
+    (w): w is Workout => !!w && !!w.id && !w.deleted && w.finished_at == null,
   );
   if (candidates.length === 0) return null;
   return candidates.reduce((latest, w) =>

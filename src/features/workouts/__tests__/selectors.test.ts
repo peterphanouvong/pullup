@@ -390,6 +390,15 @@ describe('finishedWorkoutsNewestFirst', () => {
 
     expect(finishedWorkoutsNewestFirst(workouts).map((w) => w.id)).toEqual(['newer', 'older']);
   });
+
+  it('skips ghost rows without an id (partial objects left by an assign on a stale key)', () => {
+    const workouts: Record<string, Workout> = {
+      real: workout({ id: 'real', finished_at: ts }),
+      undefined: { finished_at: ts, updated_at: ts } as Workout,
+    };
+
+    expect(finishedWorkoutsNewestFirst(workouts).map((w) => w.id)).toEqual(['real']);
+  });
 });
 
 describe('activeWorkout', () => {
@@ -414,6 +423,13 @@ describe('activeWorkout', () => {
       }),
     };
     expect(activeWorkout(workouts)?.id).toBe('newer');
+  });
+
+  it('never resumes a ghost row without an id', () => {
+    const workouts: Record<string, Workout> = {
+      undefined: { updated_at: ts } as Workout,
+    };
+    expect(activeWorkout(workouts)).toBeNull();
   });
 });
 
