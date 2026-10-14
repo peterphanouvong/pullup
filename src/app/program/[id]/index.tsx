@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { BackRow } from '@/components/ui/back-row';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
@@ -33,8 +34,8 @@ export default function ProgramOverviewScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: data.name }} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <BackRow title={data.name} />
         <Text style={styles.summary}>{data.summary}</Text>
 
         <PrimaryButton

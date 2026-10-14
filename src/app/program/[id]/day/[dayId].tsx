@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { BackRow } from '@/components/ui/back-row';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { Screen } from '@/components/ui/screen';
@@ -52,8 +53,8 @@ export default function DayScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: day.name }} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <BackRow title={day.name} />
         {day.notes != null && <Markdown>{day.notes}</Markdown>}
         <ExerciseTable exercises={day.exercises} />
         {day.kind === 'lifting' && isActiveProgram && (

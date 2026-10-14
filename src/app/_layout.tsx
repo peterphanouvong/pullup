@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { AuthGate, useSession } from '@/lib/auth';
@@ -17,14 +19,16 @@ function WorkoutStoreGate({ children }: { children: ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthGate>
-        <WorkoutStoreGate>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack>
-        </WorkoutStoreGate>
-      </AuthGate>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+      <QueryClientProvider client={queryClient}>
+        <AuthGate>
+          <WorkoutStoreGate>
+            {/* All screens draw their own chrome (ScreenTitle/BackRow) — the
+                default navigation header (raw route names) is never wanted. */}
+            <Stack screenOptions={{ headerShown: false }} />
+          </WorkoutStoreGate>
+        </AuthGate>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

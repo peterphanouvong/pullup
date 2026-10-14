@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { BackRow } from '@/components/ui/back-row';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { NumeralRow } from '@/components/ui/numeral-row';
@@ -54,8 +55,8 @@ export default function WeekScreen() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: week.name }} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <BackRow title={week.name} />
         <SectionLabel>{week.phase}</SectionLabel>
         {week.description != null && <Markdown>{week.description}</Markdown>}
         {week.days.map((day) => {
