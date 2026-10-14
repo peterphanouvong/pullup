@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+// Gesture-handler's Pressable (not RN's): it participates in the gesture
+// system, so a row inside SwipeToDelete cancels its press when the swipe
+// pan activates instead of firing onPress on release.
+import { Pressable } from 'react-native-gesture-handler';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 
