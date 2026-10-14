@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { Pressable, ScrollView, Text } from 'react-native';
 import { router } from 'expo-router';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
 import { Card } from '@/components/ui/card';
@@ -59,7 +59,7 @@ export default function TodayScreen() {
     );
   }
 
-  if (!active.data) {
+  if (!active.data || !active.data.startDate) {
     return (
       <Screen>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -93,11 +93,11 @@ export default function TodayScreen() {
   const selectedDayPosition = selectedDay ?? position.day;
   const day = week?.days.find((d) => d.position === selectedDayPosition) ?? week?.days[0] ?? null;
 
+  const weekPosition = week?.position ?? position.week;
   const items: DayStripItem[] = (week?.days ?? []).map((d) => {
-    const offset = (position.week - 1) * 7 + (d.position - 1);
+    const offset = (weekPosition - 1) * 7 + (d.position - 1);
     const date = addDaysLocal(parseYMDLocal(startDate), offset);
-    const dotColor =
-      d.kind === 'lifting' ? theme.colors.accent : d.kind === 'rest' ? theme.colors.inkMuted : theme.colors.comp;
+    const dotColor = d.kind === 'rest' ? undefined : d.kind === 'lifting' ? theme.colors.accent : theme.colors.comp;
     return {
       key: d.id,
       weekdayLabel: WEEKDAY_LABELS[d.position - 1] ?? '',
@@ -126,9 +126,11 @@ export default function TodayScreen() {
           </Card>
         ) : (
           <>
-            <Text style={styles.weekLine}>
-              {`Week ${position.week} of ${data.weeks.length} · ${week?.phase ?? ''}`}
-            </Text>
+            <Pressable onPress={() => router.push(`/program/${programId}`)}>
+              <Text style={styles.weekLine}>
+                {`Week ${position.week} of ${data.weeks.length} · ${week?.phase ?? ''}`}
+              </Text>
+            </Pressable>
 
             <DayStrip
               items={items}
