@@ -1,6 +1,9 @@
-import { useRef } from 'react';
 import { use$ } from '@legendapp/state/react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+// Gesture-handler's Pressable: cancels its press when the row's delete
+// swipe activates instead of firing on release.
+import { Pressable } from 'react-native-gesture-handler';
+import { SwipeToDelete } from '@/components/ui/swipe-to-delete';
 import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
@@ -74,11 +77,6 @@ export function SetRow({
 }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
-  // Guards against onPress also firing on the release that ends a long
-  // press: Pressable doesn't suppress onPress just because onLongPress
-  // already fired for the same gesture, so without this a long-press
-  // delete would also cycle the (now soft-deleted) row's set type.
-  const longPressFired = useRef(false);
 
   const previous = use$(() => {
     if (!exerciseId) return null;
@@ -118,27 +116,13 @@ export function SetRow({
   }
 
   return (
+    <SwipeToDelete onDelete={() => softDeleteSet(set.id)} childStyle={styles.swipeChild}>
     <View style={[styles.row, isCompleted && styles.rowCompleted]}>
-      {/* Delete moved here (long-press) — fix-round-1 finding 1 — out of the
-          way of the completion target it used to crowd. The dotted
-          underline is a quiet, always-visible hint that this cell does more
-          than tap-to-cycle. */}
       <Pressable
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
-        onPress={() => {
-          if (longPressFired.current) {
-            longPressFired.current = false;
-            return;
-          }
-          updateSet(set.id, { set_type: nextSetType(set.set_type) });
-        }}
-        onLongPress={() => {
-          longPressFired.current = true;
-          softDeleteSet(set.id);
-        }}
+        onPress={() => updateSet(set.id, { set_type: nextSetType(set.set_type) })}
       >
         <Text style={[styles.setNumber, { color: typeColor }]}>{setNumberLabel(siblingSets, set)}</Text>
-        <View style={styles.deleteHint} />
       </Pressable>
 
       <Pressable style={styles.previousCell} onPress={copyGhost}>
@@ -190,10 +174,12 @@ export function SetRow({
         </View>
       </Pressable>
     </View>
+    </SwipeToDelete>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  swipeChild: { backgroundColor: theme.colors.card },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,13 +196,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'center',
   },
   setNumber: { ...theme.type.heading },
-  deleteHint: {
-    width: 14,
-    marginTop: 3,
-    borderBottomWidth: StyleSheet.hairlineWidth + 0.5,
-    borderStyle: 'dotted',
-    borderBottomColor: theme.colors.inkMuted,
-  },
   ghost: { ...theme.type.body, color: theme.colors.inkMuted },
   input: {
     ...theme.type.body,

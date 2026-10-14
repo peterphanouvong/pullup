@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
@@ -8,7 +8,17 @@ import type { Theme } from '@/styles/theme';
 /** Standard iOS swipe-left-to-reveal-Delete wrapper for list rows.
  * The revealed action only invokes `onDelete` — confirmation (if any) is the
  * caller's responsibility. Requires `GestureHandlerRootView` at the app root. */
-export function SwipeToDelete({ onDelete, children }: { onDelete: () => void; children: ReactNode }) {
+export function SwipeToDelete({
+  onDelete,
+  childStyle,
+  children,
+}: {
+  onDelete: () => void;
+  /** Opaque background for the swiped content (defaults to canvas) so the
+   * revealed action doesn't show through transparent rows. */
+  childStyle?: StyleProp<ViewStyle>;
+  children: ReactNode;
+}) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
 
@@ -17,7 +27,7 @@ export function SwipeToDelete({ onDelete, children }: { onDelete: () => void; ch
       friction={2}
       rightThreshold={40}
       overshootRight={false}
-      childrenContainerStyle={styles.children}
+      childrenContainerStyle={childStyle ?? styles.children}
       renderRightActions={() => (
         <Pressable style={styles.action} onPress={onDelete}>
           <SymbolView

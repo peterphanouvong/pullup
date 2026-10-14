@@ -27,21 +27,23 @@ function formatRemaining(totalSeconds: number): string {
 export function RestTimerBar() {
   const styles = useThemedStyles(createStyles);
   const timer = use$(() => restTimer$.get());
-  // A dumb re-render trigger, not a stored timestamp — `remaining` below
-  // always reads `Date.now()` fresh at render time, so there's no state
-  // value that can go stale between ticks (or across a backgrounded app).
-  const [, forceTick] = useState(0);
+  // The clock is real state: React Compiler memoizes render expressions by
+  // their dependencies, so deriving `remaining` from a bare re-render tick
+  // froze the countdown — `now` as state makes each tick a real dependency.
+  // Still timestamp-derived (endsAt − now), so backgrounding can't drift it.
+  const [now, setNow] = useState(() => new Date());
   // Tracks which timer's zero-crossing already fired a haptic (by its
   // endsAt), so re-rendering on every 1s tick never re-fires it.
   const firedForRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!timer) return;
-    const interval = setInterval(() => forceTick((t) => t + 1), 1000);
+    setNow(new Date());
+    const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, [timer]);
 
-  const remaining = timer ? remainingSeconds(timer, new Date()) : 0;
+  const remaining = timer ? remainingSeconds(timer, now) : 0;
 
   // Runs every render (no deps): cheap, and the only way to re-check
   // `remaining` against the latest tick without stashing time in state.

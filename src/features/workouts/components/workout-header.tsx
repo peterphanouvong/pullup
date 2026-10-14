@@ -32,16 +32,17 @@ export function WorkoutHeader({
 }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
-  // Forces a re-render every second; the elapsed value itself is always
-  // recomputed fresh from `started_at` below, never accumulated off a
-  // previous tick, so drift/background time are never an issue.
-  const [, setTick] = useState(0);
+  // The clock is real state (not a bare re-render tick): React Compiler
+  // memoizes render expressions by their dependencies, so computing
+  // `elapsedSeconds(workout, new Date())` off a dummy tick froze the display
+  // — `now` as state makes the recompute an explicit dependency.
+  const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const elapsed = elapsedSeconds(workout, new Date());
+  const elapsed = elapsedSeconds(workout, now);
 
   return (
     <View style={styles.container}>
