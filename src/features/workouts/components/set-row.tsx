@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
+import { useNumericField } from '../numeric-input';
 import { previousSet } from '../selectors';
 import { workoutExercises$, workouts$, workoutSets$ } from '../store';
 import type { WorkoutSet } from '../types';
@@ -58,12 +59,6 @@ function formatGhost(set: WorkoutSet | null, isDuration: boolean): string {
   return '—';
 }
 
-function parseNumeric(text: string): number | null {
-  if (text.trim().length === 0) return null;
-  const n = Number(text);
-  return Number.isFinite(n) ? n : null;
-}
-
 export function SetRow({
   set,
   siblingSets,
@@ -96,6 +91,16 @@ export function SetRow({
       sets: workoutSets$.get() ?? {},
     });
   });
+
+  // In-flight text for the three numeric inputs, independent of the store
+  // except when it changes from elsewhere (e.g. copyGhost below) — see
+  // numeric-input.ts for why: a fully store-controlled input eats the "."
+  // or "," the user just typed on every re-render.
+  const weightField = useNumericField(set.weight_kg, (value) => updateSet(set.id, { weight_kg: value }));
+  const repsField = useNumericField(set.reps, (value) => updateSet(set.id, { reps: value }));
+  const durationField = useNumericField(set.duration_seconds, (value) =>
+    updateSet(set.id, { duration_seconds: value }),
+  );
 
   const isCompleted = set.completed_at != null;
   const typeColor =
@@ -148,8 +153,8 @@ export function SetRow({
           keyboardType="number-pad"
           placeholder="sec"
           placeholderTextColor={theme.colors.inkMuted}
-          value={set.duration_seconds != null ? String(set.duration_seconds) : ''}
-          onChangeText={(text) => updateSet(set.id, { duration_seconds: parseNumeric(text) })}
+          value={durationField.text}
+          onChangeText={durationField.onChangeText}
         />
       ) : (
         <>
@@ -158,16 +163,16 @@ export function SetRow({
             keyboardType="decimal-pad"
             placeholder="kg"
             placeholderTextColor={theme.colors.inkMuted}
-            value={set.weight_kg != null ? String(set.weight_kg) : ''}
-            onChangeText={(text) => updateSet(set.id, { weight_kg: parseNumeric(text) })}
+            value={weightField.text}
+            onChangeText={weightField.onChangeText}
           />
           <TextInput
             style={[styles.input, { width: SET_TABLE_COLUMNS.cell }]}
             keyboardType="number-pad"
             placeholder="reps"
             placeholderTextColor={theme.colors.inkMuted}
-            value={set.reps != null ? String(set.reps) : ''}
-            onChangeText={(text) => updateSet(set.id, { reps: parseNumeric(text) })}
+            value={repsField.text}
+            onChangeText={repsField.onChangeText}
           />
         </>
       )}

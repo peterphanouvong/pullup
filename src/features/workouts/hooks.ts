@@ -13,7 +13,7 @@
 
 import { use$ } from '@legendapp/state/react';
 import type { ProgramDay } from '@/features/programs/types';
-import { startRestTimer } from './rest-timer';
+import { skipRestTimer, startRestTimer } from './rest-timer';
 import {
   activeWorkout,
   finishedWorkoutSummaries,
@@ -138,6 +138,9 @@ export function updateExerciseRestSeconds(workoutExerciseId: string, restSeconds
 
 export function finishWorkout(id: string, now: Date): void {
   workouts$[id].assign({ finished_at: now.toISOString(), updated_at: now.toISOString() });
+  // A rest timer from the just-finished workout's last set must not keep
+  // counting down (or reappear) once the workout is over.
+  skipRestTimer();
 }
 
 /** Soft-deletes the workout, every live exercise under it, and every live set
@@ -148,6 +151,8 @@ export function finishWorkout(id: string, now: Date): void {
 export function discardWorkout(id: string): void {
   const nowIso = new Date().toISOString();
   workouts$[id].assign({ deleted: true, updated_at: nowIso });
+  // A rest timer started mid-workout must not survive discarding it.
+  skipRestTimer();
 
   const allExercises = Object.values(workoutExercises$.get() ?? {}).filter(
     (e): e is WorkoutExercise => !!e && e.workout_id === id,

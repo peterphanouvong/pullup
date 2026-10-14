@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
@@ -16,12 +16,12 @@ import type { ProgramDay } from '@/features/programs/types';
 import { useSession } from '@/lib/auth';
 import { ResumeBanner } from '@/features/workouts/components/resume-banner';
 import {
-  discardWorkout,
   startEmptyWorkout,
   startWorkoutFromDay,
   useActiveWorkout,
   useHasFinishedWorkoutForDay,
 } from '@/features/workouts/hooks';
+import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
 
 const WEEKDAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -81,33 +81,8 @@ export default function TodayScreen() {
   })();
   const hasFinishedForDay = useHasFinishedWorkoutForDay(selectedProgramDayId);
 
-  /** Starting a new workout while one is already in progress prompts to
-   * resume it or discard it first, instead of silently abandoning it. */
-  function startNewWorkoutOrPrompt(startFn: () => void) {
-    if (activeWorkout) {
-      Alert.alert(
-        'Workout in progress',
-        `You have an unfinished workout — "${activeWorkout.title}". Resume it, or discard it and start new?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Resume', onPress: () => router.push(`/workout/${activeWorkout.id}`) },
-          {
-            text: 'Discard & start new',
-            style: 'destructive',
-            onPress: () => {
-              discardWorkout(activeWorkout.id);
-              startFn();
-            },
-          },
-        ],
-      );
-      return;
-    }
-    startFn();
-  }
-
   function handleStartEmpty() {
-    startNewWorkoutOrPrompt(() => {
+    startWorkoutOrPrompt(activeWorkout, () => {
       const workoutId = startEmptyWorkout(session.user.id);
       router.push(`/workout/${workoutId}`);
     });
@@ -125,7 +100,11 @@ export default function TodayScreen() {
   if (!active.data || !active.data.startDate) {
     return (
       <Screen>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          contentInsetAdjustmentBehavior="automatic"
+        >
           <ScreenTitle title="Today" />
           {activeWorkout != null && <ResumeBanner workout={activeWorkout} />}
           <Card style={styles.messageCard}>
@@ -177,7 +156,11 @@ export default function TodayScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+      >
         <ScreenTitle title="Today" />
         {activeWorkout != null && <ResumeBanner workout={activeWorkout} />}
         {compDay != null && !position.finished && (
@@ -228,7 +211,7 @@ export default function TodayScreen() {
                   <PrimaryButton
                     title="Start workout"
                     onPress={() =>
-                      startNewWorkoutOrPrompt(() => {
+                      startWorkoutOrPrompt(activeWorkout, () => {
                         const workoutId = startWorkoutFromDay(day, day.id, session.user.id);
                         router.push(`/workout/${workoutId}`);
                       })

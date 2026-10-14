@@ -15,6 +15,7 @@ import {
   updateExerciseNotes,
   updateSet,
 } from '../hooks';
+import { restTimer$, startRestTimer } from '../rest-timer';
 import { initWorkoutStore, workoutExercises$, workoutSets$, workouts$ } from '../store';
 import type { ProgramDay } from '@/features/programs/types';
 
@@ -197,6 +198,18 @@ describe('updateExerciseNotes / finishWorkout', () => {
     finishWorkout(workoutId, now);
     expect(workouts$[workoutId].finished_at.get()).toBe(now.toISOString());
   });
+
+  it('finishWorkout clears any running rest timer (fix-round-2 finding 4: a stale timer must not survive finish)', () => {
+    const userId = freshUser();
+    initWorkoutStore(userId);
+    const workoutId = startWorkoutFromDay(liftingDay, 'day-1', userId);
+    startRestTimer(90, new Date('2026-10-14T13:00:00.000Z'));
+    expect(restTimer$.get()).not.toBeNull();
+
+    finishWorkout(workoutId, new Date('2026-10-14T13:05:00.000Z'));
+
+    expect(restTimer$.get()).toBeNull();
+  });
 });
 
 describe('discardWorkout', () => {
@@ -262,6 +275,18 @@ describe('discardWorkout', () => {
     discardWorkout(workoutId);
 
     expect(workoutSets$[orphanSetId].deleted.get()).toBe(true);
+  });
+
+  it('clears any running rest timer (fix-round-2 finding 4: a stale timer must not survive discard)', () => {
+    const userId = freshUser();
+    initWorkoutStore(userId);
+    const workoutId = startWorkoutFromDay(liftingDay, 'day-1', userId);
+    startRestTimer(60, new Date('2026-10-14T12:00:00.000Z'));
+    expect(restTimer$.get()).not.toBeNull();
+
+    discardWorkout(workoutId);
+
+    expect(restTimer$.get()).toBeNull();
   });
 });
 

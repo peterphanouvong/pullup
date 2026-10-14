@@ -19,7 +19,11 @@ export default function ActivitiesScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+      >
         <ScreenTitle title="Activities" />
         {items.length === 0 ? (
           <View style={styles.empty}>

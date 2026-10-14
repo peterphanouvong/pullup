@@ -9,7 +9,8 @@ import { Markdown } from '@/features/programs/components/markdown';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
 import { useSession } from '@/lib/auth';
-import { startWorkoutFromDay } from '@/features/workouts/hooks';
+import { startWorkoutFromDay, useActiveWorkout } from '@/features/workouts/hooks';
+import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
 
 export default function DayScreen() {
   const { id, dayId } = useLocalSearchParams<{ id: string; dayId: string }>();
@@ -17,6 +18,7 @@ export default function DayScreen() {
   const active = useActiveProgram();
   const session = useSession();
   const styles = useThemedStyles(createStyles);
+  const activeWorkout = useActiveWorkout();
 
   if (program.isPending || program.isError) {
     return (
@@ -42,8 +44,10 @@ export default function DayScreen() {
   const isActiveProgram = active.data?.programId === id;
 
   function handleStart() {
-    const workoutId = startWorkoutFromDay(day!, dayId, session.user.id);
-    router.push(`/workout/${workoutId}`);
+    startWorkoutOrPrompt(activeWorkout, () => {
+      const workoutId = startWorkoutFromDay(day!, dayId, session.user.id);
+      router.push(`/workout/${workoutId}`);
+    });
   }
 
   return (
