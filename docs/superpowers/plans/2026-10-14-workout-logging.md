@@ -21,9 +21,10 @@
 - Previous-value rule (spec): same `position` set from the user's most recent FINISHED (`finished_at` non-null, not deleted) workout containing that `exercise_id`.
 - Default `rest_seconds` on prefill: 150 for weighted exercises, null for duration-based ones.
 - Legend-State store code lives in `src/features/workouts/`; programme content stays on React Query untouched.
-- UI uses Unistyles tokens (sub-project A) — no hex literals, no decorative redesign beyond the Hevy-reference layout; deps only via `npx expo install`.
+- UI uses the design-v2 system (spec: `docs/superpowers/specs/2026-10-14-design-v2-today-ia.md`, binding; components from `src/components/ui/` — Card, GradientCard, PrimaryButton, SectionLabel, IconCircle, NumeralRow): no hex literals outside the theme file, NO `@expo/ui` imports, Hevy layout skinned per that spec's "Logging-screen skin" section (done-tinted completed rows, label-type table headers, GradientCard finish recap). Deps only via `npx expo install`.
 - Every task ends with `npx jest --silent`, `npx expo lint`, `npx tsc --noEmit` clean. Commits stage only task files — never `git add -A`.
 - API reality rule (proven in slice 1): before coding against Legend-State, READ the installed package's exports (hook may be `use$` or `useValue` depending on beta build; sync import paths under `@legendapp/state/sync-plugins/supabase` and `@legendapp/state/persist-plugins/mmkv`) and https://legendapp.com/open-source/state/v3/sync/supabase/ — record the real API in the task report; the plan's snippets follow the docs at planning time, the installed package wins.
+- IA reality (post design-v2 plan): home is the Today tab at `src/app/(tabs)/index.tsx`; programme browse lives at `(tabs)/plan.tsx`; `(tabs)/activities.tsx` exists with an empty state awaiting this plan's store. Where tasks below say "home screen", read the Today tab.
 
 ## Review Focus
 
@@ -121,14 +122,14 @@ One per table (exercises$ is read-only: `actions: ['read']`, no user filter — 
 
 **Files:**
 - Create: `src/app/workout/[id]/index.tsx`, `src/features/workouts/components/workout-header.tsx`, `src/features/workouts/components/exercise-card.tsx`, `src/features/workouts/components/set-row.tsx`, `src/features/workouts/hooks.ts`
-- Modify: `src/app/program/[id]/day/[dayId].tsx` ("Start workout" CTA), `src/app/index.tsx` ("Empty workout" CTA + resume banner slot — banner logic lands Task 5), `src/app/_layout.tsx` (register the route group if needed)
+- Modify: `src/app/program/[id]/day/[dayId].tsx` ("Start workout" CTA), `src/app/(tabs)/index.tsx` (rewire Today's PrimaryButton from day-detail deep link to the real start flow; add "Start empty workout" secondary action; resume-banner slot — banner logic lands Task 5), `src/app/_layout.tsx` (register the workout route group if needed)
 
 **Interfaces:**
 - Consumes: store observables + `buildWorkoutFromDay` + selectors; Unistyles tokens.
 - Produces: `startWorkoutFromDay(day, programDayId): workoutId` and `startEmptyWorkout(): workoutId` in `hooks.ts` (write the built rows into the observables, return the new id); route `/workout/[id]`.
 
 - [ ] **Step 1: hooks.ts** — `startWorkoutFromDay`/`startEmptyWorkout` (writes via store), `useWorkout(id)` (reactive read of workout + its exercises + sets, sorted by position, deleted filtered — built on the installed react hook from Task 2's API notes), `completeSet(setId, now)`, `updateSet(setId, patch)`, `addSet(workoutExerciseId)` (copies last row's values/type), `softDeleteSet(setId)`, `finishWorkout(id, now)`, `discardWorkout(id)`.
-- [ ] **Step 2: Screen + components** — layout per the Hevy reference and spec: header (ticking elapsed from `started_at` — derive from timestamp on a 1s interval, never accumulate; volume; completed count; Finish button), exercise cards (name, notes input, rest-timer row placeholder [Task 5], set table header SET|PREVIOUS|KG|REPS|✓ or SET|PREVIOUS|TIME|✓), `SetRow` (set-number/type cycling on tap W→1..n→drop→failure, previous ghost ("—" when none; tap copies values), numeric inputs, complete toggle stamping `completed_at`, swipe-to-delete → soft delete), "+ Add Set". Keyboard: numeric pads. Styling: tokens only.
+- [ ] **Step 2: Screen + components** — layout per the Hevy reference, skinned per the design-v2 spec's "Logging-screen skin" section: header (collapse chevron + ticking elapsed in accent — derive from `started_at` timestamp on a 1s interval, never accumulate; volume; completed count; compact accent-pill Finish), exercise cards as `Card` (name in heading+accent, notes input, rest-timer row placeholder [Task 5], set table with `label`-type headers SET|PREVIOUS|KG|REPS|✓ or SET|PREVIOUS|TIME|✓), `SetRow` (set-number/type cycling on tap W→1..n→drop→failure, previous ghost ("—" when none; tap copies values), numeric inputs with tabular numerals, complete toggle stamping `completed_at` and applying the `done`-tinted row fill + filled check, swipe-to-delete → soft delete), "+ Add Set". Keyboard: numeric pads. Styling: tokens + kit only.
 - [ ] **Step 3: CTAs** — day screen: "Start workout" (active programme only) → `startWorkoutFromDay` → `router.push('/workout/' + id)`. Home: "Empty workout" button.
 - [ ] **Step 4: Gates + iOS bundle check + commit** ("feat: active workout logging screen").
 
@@ -138,15 +139,16 @@ One per table (exercises$ is read-only: `actions: ['read']`, no user filter — 
 
 **Files:**
 - Create: `src/features/workouts/components/rest-timer-bar.tsx`, `src/app/workout/[id]/summary.tsx`, `src/features/workouts/components/resume-banner.tsx`
-- Modify: `src/features/workouts/hooks.ts`, `src/app/workout/[id]/index.tsx`, `src/app/index.tsx`
-- Test: extend `selectors.test.ts` if summary logic grows
+- Modify: `src/features/workouts/hooks.ts`, `src/app/workout/[id]/index.tsx`, `src/app/(tabs)/index.tsx` (resume banner), `src/app/(tabs)/activities.tsx` (replace the empty-state-only screen with the real history list: finished workouts newest-first as NumeralRow — day-of-month numeral + month label rail; title, duration · volume · sets meta; tap → summary; keep the empty state)
+- Test: extend `selectors.test.ts` if summary logic grows (a `finishedWorkoutsNewestFirst` selector belongs there, tested incl. deleted/unfinished exclusion)
 
 **Interfaces:** consumes Task 4. Produces the finished flows.
 
 - [ ] **Step 1: Rest timer** — in-memory state `{ endsAt: Date } | null` (context or small observable): completing a set with the exercise's `rest_seconds` set starts it; `RestTimerBar` renders countdown derived from `endsAt - now` (1s tick), ±15s buttons adjust `endsAt`, skip clears, haptic (`expo-haptics`, install via expo install) at zero. Exercise card's "Rest Timer: 2min 30s / OFF" row cycles presets (OFF/60/90/120/150/180s) writing `rest_seconds`.
 - [ ] **Step 2: Resume + guards** — home banner for any workout `finished_at == null && !deleted` → push to it; starting a new workout while one is active → alert: Resume / Discard old & start new.
-- [ ] **Step 3: Finish + summary** — Finish: zero completed sets → "Discard instead?" alert; else stamp `finished_at`, route to `/workout/[id]/summary` (title, duration, volume, sets, per-exercise best set via `workoutSummary`), Done → home. Discard (from the workout's own menu/alert) soft-deletes workout + children.
-- [ ] **Step 4: Gates + commit** ("feat: rest timer, resume, finish summary").
+- [ ] **Step 3: Finish + summary** — Finish: zero completed sets → "Discard instead?" alert; else stamp `finished_at`, route to `/workout/[id]/summary` (GradientCard recap per the design-v2 spec: big tabular numerals for duration/volume/sets, per-exercise best-set list below via `workoutSummary`), Done → Today tab. Discard (from the workout's own menu/alert) soft-deletes workout + children.
+- [ ] **Step 4: Activities history list** per the Files note above (NumeralRow list + selector + empty state preserved) and Today-tab day-card checkmarks (a finished workout exists for the selected `program_day_id`).
+- [ ] **Step 5: Gates + commit** ("feat: rest timer, resume, finish summary, activity history").
 
 ---
 
