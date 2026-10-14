@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
@@ -65,6 +65,9 @@ export default function TodayScreen() {
   // Card y-offsets recorded from onLayout (not index math) so the strip's
   // jump-nav stays correct however tall individual cards render.
   const cardOffsets = useRef<Record<string, number>>({});
+  // Scroll-aware floating action: which day card the viewport is "on". Null
+  // until the user scrolls — the button then targets today's session.
+  const [focusedDayId, setFocusedDayId] = useState<string | null>(null);
 
   // Derived ahead of the early returns so the completion hook can be called
   // unconditionally (Rules of Hooks); empty until programme data loads.
@@ -88,27 +91,39 @@ export default function TodayScreen() {
     });
   }
 
-  function renderFloating(todayDay: ProgramDay | null, todayCompleted: boolean) {
-    const action = floatingAction({ activeWorkout, todayDay, todayCompleted });
+  /** The floating button follows the scroll: it targets the day card the
+   * viewport is on (when that day is a startable lifting session), labelled
+   * "Start today's session" / "Start THU session" accordingly. A live
+   * workout always wins; everything else falls back to an explicit
+   * "Start empty workout". */
+  function renderFloating(
+    targetDay: ProgramDay | null,
+    targetCompleted: boolean,
+    targetIsToday: boolean,
+  ) {
+    const action = floatingAction({ activeWorkout, todayDay: targetDay, todayCompleted: targetCompleted });
     if (action.kind === 'resume') {
       return (
         <FloatingAction label="Resume workout" onPress={() => router.push(`/workout/${action.workoutId}`)} />
       );
     }
-    if (action.kind === 'startToday' && todayDay != null) {
+    if (action.kind === 'startToday' && targetDay != null) {
+      const label = targetIsToday
+        ? "Start today's session"
+        : `Start ${WEEKDAY_LABELS[targetDay.position - 1] ?? ''} session`;
       return (
         <FloatingAction
-          label="Start today's session"
+          label={label}
           onPress={() =>
             guardedStart(() => {
-              const workoutId = startWorkoutFromDay(todayDay, todayDay.id, session.user.id);
+              const workoutId = startWorkoutFromDay(targetDay, targetDay.id, session.user.id);
               router.push(`/workout/${workoutId}`);
             })
           }
         />
       );
     }
-    return <FloatingAction label="Start workout" onPress={handleStartEmpty} />;
+    return <FloatingAction label="Start empty workout" onPress={handleStartEmpty} />;
   }
 
   if (active.isPending) {
@@ -135,7 +150,7 @@ export default function TodayScreen() {
             <PrimaryButton title="Browse programmes" onPress={() => router.push('/plan')} />
           </Card>
         </ScrollView>
-        {renderFloating(null, false)}
+        {renderFloating(null, false, false)}
       </Screen>
     );
   }
@@ -158,7 +173,13 @@ export default function TodayScreen() {
   const week = currentWeek;
   const days = week?.days ?? [];
   const todayDay = days.find((d) => d.position === position.day) ?? null;
-  const todayCompleted = todayDay != null && completion[todayDay.id] === true;
+
+  // The button's target: the scrolled-to day when the user has scrolled,
+  // today's session otherwise.
+  const focusedDay = focusedDayId != null ? days.find((d) => d.id === focusedDayId) ?? null : null;
+  const targetDay = focusedDay ?? todayDay;
+  const targetCompleted = targetDay != null && completion[targetDay.id] === true;
+  const targetIsToday = targetDay != null && todayDay != null && targetDay.id === todayDay.id;
 
   const liftingDays = days.filter((d) => d.kind === 'lifting');
   const doneCount = liftingDays.filter((d) => completion[d.id]).length;
@@ -185,6 +206,19 @@ export default function TodayScreen() {
         contentContainerStyle={[styles.content, styles.contentWithFloating]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
+        scrollEventThrottle={100}
+        onScroll={(e) => {
+          // Focus = the last day card whose top sits above a third of the
+          // viewport; offsets come from onLayout, so promoted/taller cards
+          // can't drift the math.
+          const anchorY = e.nativeEvent.contentOffset.y + e.nativeEvent.layoutMeasurement.height / 3;
+          let focused: string | null = null;
+          for (const d of days) {
+            const y = cardOffsets.current[d.id];
+            if (y != null && y <= anchorY) focused = d.id;
+          }
+          setFocusedDayId(focused);
+        }}
       >
         <ScreenTitle title="Today" />
         {compDay != null && !position.finished && (
@@ -242,7 +276,7 @@ export default function TodayScreen() {
           </>
         )}
       </ScrollView>
-      {renderFloating(position.finished ? null : todayDay, todayCompleted)}
+      {renderFloating(position.finished ? null : targetDay, targetCompleted, targetIsToday)}
     </Screen>
   );
 }

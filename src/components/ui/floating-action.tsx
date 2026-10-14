@@ -5,10 +5,10 @@ import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 
 /** Vertical room the floating button needs above the screen bottom: the
- * translucent native tab bar plus breathing space. Scroll content on screens
+ * translucent native tab bar plus a small gap. Scroll content on screens
  * hosting a FloatingAction should pad its bottom by this plus the button
  * height (~56). */
-export const FLOATING_ACTION_CLEARANCE = 72;
+export const FLOATING_ACTION_CLEARANCE = 54;
 
 /** Runna-style floating primary action, pinned above the glass tab bar. */
 export function FloatingAction({
