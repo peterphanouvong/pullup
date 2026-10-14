@@ -13,6 +13,13 @@
 
 import { use$ } from '@legendapp/state/react';
 import type { ProgramDay } from '@/features/programs/types';
+import { startRestTimer } from './rest-timer';
+import {
+  activeWorkout,
+  finishedWorkoutSummaries,
+  hasFinishedWorkoutForDay,
+  type FinishedWorkoutSummary,
+} from './selectors';
 import { buildWorkoutFromDay } from './start';
 import { generateId, workoutExercises$, workoutSets$, workouts$ } from './store';
 import type { SetType, Workout, WorkoutExercise, WorkoutSet } from './types';
@@ -61,13 +68,24 @@ export function startEmptyWorkout(userId: string): string {
 }
 
 /** Toggle: stamps `completed_at` with `now` if the set isn't completed,
- * clears it (back to null) if it already is. */
+ * clears it (back to null) if it already is. Completing (not un-completing)
+ * auto-starts the rest timer when the set's exercise has `rest_seconds` set —
+ * a null/0 `rest_seconds` ("OFF") never starts one. */
 export function completeSet(setId: string, now: Date): void {
   const current = workoutSets$[setId].completed_at.get();
+  const completing = current == null;
   workoutSets$[setId].assign({
-    completed_at: current == null ? now.toISOString() : null,
+    completed_at: completing ? now.toISOString() : null,
     updated_at: now.toISOString(),
   });
+
+  if (completing) {
+    const workoutExerciseId = workoutSets$[setId].workout_exercise_id.get();
+    const restSeconds = workoutExercises$[workoutExerciseId]?.rest_seconds.get();
+    if (restSeconds != null && restSeconds > 0) {
+      startRestTimer(restSeconds, now);
+    }
+  }
 }
 
 export type SetPatch = Partial<Pick<WorkoutSet, 'weight_kg' | 'reps' | 'duration_seconds' | 'set_type' | 'target'>>;
@@ -110,6 +128,12 @@ export function softDeleteSet(setId: string): void {
 
 export function updateExerciseNotes(workoutExerciseId: string, notes: string): void {
   workoutExercises$[workoutExerciseId].assign({ notes, updated_at: new Date().toISOString() });
+}
+
+/** Writes the exercise's rest-timer preset (`null` = OFF) — the exercise
+ * card's "Rest Timer: …" row preset chooser. */
+export function updateExerciseRestSeconds(workoutExerciseId: string, restSeconds: number | null): void {
+  workoutExercises$[workoutExerciseId].assign({ rest_seconds: restSeconds, updated_at: new Date().toISOString() });
 }
 
 export function finishWorkout(id: string, now: Date): void {
@@ -200,5 +224,29 @@ export function selectWorkoutView(
 export function useWorkout(id: string): UseWorkoutResult {
   return use$(() =>
     selectWorkoutView(id, workouts$.get() ?? {}, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}),
+  );
+}
+
+/** The unfinished workout to offer resuming (Today's resume banner, and the
+ * new-workout guard), or `null` when none is in progress. Re-renders on any
+ * workout write. */
+export function useActiveWorkout(): Workout | null {
+  return use$(() => activeWorkout(workouts$.get() ?? {}));
+}
+
+/** Whether a finished (non-deleted) workout exists for `programDayId` — the
+ * Today day-card's completed checkmark. `null` (no day selected) is always
+ * `false`. */
+export function useHasFinishedWorkoutForDay(programDayId: string | null): boolean {
+  return use$(() =>
+    programDayId != null ? hasFinishedWorkoutForDay(workouts$.get() ?? {}, programDayId) : false,
+  );
+}
+
+/** Finished workouts newest-first, each with its `workoutSummary` — the
+ * Activities tab's feed. */
+export function useFinishedWorkouts(): FinishedWorkoutSummary[] {
+  return use$(() =>
+    finishedWorkoutSummaries(workouts$.get() ?? {}, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}),
   );
 }

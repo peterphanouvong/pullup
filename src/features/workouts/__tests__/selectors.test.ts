@@ -12,6 +12,12 @@ import {
   previousSet,
   workoutSummary,
   finishedWorkoutsNewestFirst,
+  activeWorkout,
+  hasFinishedWorkoutForDay,
+  finishedWorkoutSummaries,
+  formatWorkoutDuration,
+  activityDateLabel,
+  activityMetaLabel,
 } from '../selectors';
 import type { Workout, WorkoutExercise, WorkoutSet } from '../types';
 
@@ -369,5 +375,109 @@ describe('finishedWorkoutsNewestFirst', () => {
     };
 
     expect(finishedWorkoutsNewestFirst(workouts).map((w) => w.id)).toEqual(['newer', 'older']);
+  });
+});
+
+describe('activeWorkout', () => {
+  it('returns null when there is no unfinished, non-deleted workout', () => {
+    const workouts: Record<string, Workout> = {
+      finished: workout({ id: 'finished', finished_at: ts }),
+      deletedActive: workout({ id: 'deletedActive', finished_at: null, deleted: true }),
+    };
+    expect(activeWorkout(workouts)).toBeNull();
+  });
+
+  it('returns the most recently started unfinished workout when several exist', () => {
+    const workouts: Record<string, Workout> = {
+      finished: workout({ id: 'finished', finished_at: ts }),
+      older: workout({ id: 'older', finished_at: null, started_at: '2026-10-14T08:00:00.000Z' }),
+      newer: workout({ id: 'newer', finished_at: null, started_at: '2026-10-14T09:00:00.000Z' }),
+      deleted: workout({
+        id: 'deleted',
+        finished_at: null,
+        started_at: '2026-10-14T10:00:00.000Z',
+        deleted: true,
+      }),
+    };
+    expect(activeWorkout(workouts)?.id).toBe('newer');
+  });
+});
+
+describe('hasFinishedWorkoutForDay', () => {
+  it('true only for a finished, non-deleted workout matching the program_day_id', () => {
+    const workouts: Record<string, Workout> = {
+      active: workout({ id: 'active', finished_at: null, program_day_id: 'day-1' }),
+      finishedOtherDay: workout({ id: 'finishedOtherDay', finished_at: ts, program_day_id: 'day-2' }),
+      finishedDeleted: workout({
+        id: 'finishedDeleted',
+        finished_at: ts,
+        program_day_id: 'day-1',
+        deleted: true,
+      }),
+      finishedThisDay: workout({ id: 'finishedThisDay', finished_at: ts, program_day_id: 'day-1' }),
+    };
+    expect(hasFinishedWorkoutForDay(workouts, 'day-1')).toBe(true);
+    expect(hasFinishedWorkoutForDay(workouts, 'day-3')).toBe(false);
+  });
+});
+
+describe('finishedWorkoutSummaries', () => {
+  it('pairs each finished workout (newest first) with its workoutSummary', () => {
+    const workouts: Record<string, Workout> = {
+      active: workout({ id: 'active', finished_at: null }),
+      older: workout({
+        id: 'older',
+        title: 'Older session',
+        started_at: '2026-10-07T10:00:00.000Z',
+        finished_at: '2026-10-07T10:30:00.000Z',
+      }),
+      newer: workout({
+        id: 'newer',
+        title: 'Newer session',
+        started_at: '2026-10-14T10:00:00.000Z',
+        finished_at: '2026-10-14T10:20:00.000Z',
+      }),
+    };
+    const workoutExercises: Record<string, WorkoutExercise> = {
+      we_older: exercise({ id: 'we_older', workout_id: 'older', exercise_name: 'Squat' }),
+      we_newer: exercise({ id: 'we_newer', workout_id: 'newer', exercise_name: 'Bench' }),
+    };
+    const sets: Record<string, WorkoutSet> = {
+      s_older: set({ id: 's_older', workout_exercise_id: 'we_older', weight_kg: 50, reps: 5, completed_at: ts }),
+      s_newer: set({ id: 's_newer', workout_exercise_id: 'we_newer', weight_kg: 40, reps: 8, completed_at: ts }),
+    };
+
+    const result = finishedWorkoutSummaries(workouts, workoutExercises, sets);
+
+    expect(result.map((r) => r.workout.id)).toEqual(['newer', 'older']);
+    expect(result[0].summary.volumeKg).toBe(40 * 8);
+    expect(result[0].summary.durationSeconds).toBe(20 * 60);
+    expect(result[1].summary.volumeKg).toBe(50 * 5);
+  });
+});
+
+describe('formatWorkoutDuration', () => {
+  it('formats under an hour as mm:ss', () => {
+    expect(formatWorkoutDuration(65)).toBe('1:05');
+    expect(formatWorkoutDuration(0)).toBe('0:00');
+  });
+
+  it('formats an hour or more as h:mm (no seconds)', () => {
+    expect(formatWorkoutDuration(3660)).toBe('1:01');
+    expect(formatWorkoutDuration(7325)).toBe('2:02');
+  });
+});
+
+describe('activityDateLabel', () => {
+  it('reads day-of-month and a short month label off the local calendar', () => {
+    expect(activityDateLabel('2026-10-14T10:00:00.000Z')).toEqual({ day: 14, month: 'OCT' });
+    expect(activityDateLabel('2026-01-02T10:00:00.000Z')).toEqual({ day: 2, month: 'JAN' });
+  });
+});
+
+describe('activityMetaLabel', () => {
+  it('composes duration · volume · set count, singular/plural', () => {
+    expect(activityMetaLabel(65, 1234.6, 1)).toBe('1:05 · 1235 kg · 1 set');
+    expect(activityMetaLabel(3660, 500, 12)).toBe('1:01 · 500 kg · 12 sets');
   });
 });

@@ -4,6 +4,7 @@ import { Screen } from '@/components/ui/screen';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { ExerciseCard } from '@/features/workouts/components/exercise-card';
+import { RestTimerBar } from '@/features/workouts/components/rest-timer-bar';
 import { WorkoutHeader } from '@/features/workouts/components/workout-header';
 import { discardWorkout, finishWorkout, useWorkout } from '@/features/workouts/hooks';
 import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selectors';
@@ -30,9 +31,13 @@ export default function WorkoutScreen() {
     router.replace('/(tabs)');
   }
 
+  function goToSummary() {
+    router.replace(`/workout/${id}/summary`);
+  }
+
   function handleFinish() {
     if (completedCount === 0) {
-      Alert.alert('No sets completed', 'Finish anyway, or discard this workout?', [
+      Alert.alert('No sets completed', 'Discard this workout instead?', [
         { text: 'Keep logging', style: 'cancel' },
         {
           text: 'Discard',
@@ -46,14 +51,32 @@ export default function WorkoutScreen() {
           text: 'Finish anyway',
           onPress: () => {
             finishWorkout(id, new Date());
-            goHome();
+            goToSummary();
           },
         },
       ]);
       return;
     }
     finishWorkout(id, new Date());
-    goHome();
+    goToSummary();
+  }
+
+  function handleDiscard() {
+    Alert.alert(
+      'Discard workout?',
+      "This removes the workout and everything logged in it. This can't be undone.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: () => {
+            discardWorkout(id);
+            goHome();
+          },
+        },
+      ],
+    );
   }
 
   return (
@@ -69,6 +92,7 @@ export default function WorkoutScreen() {
           volumeKg={volumeKg}
           completedCount={completedCount}
           onFinish={handleFinish}
+          onDiscard={handleDiscard}
         />
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -78,10 +102,9 @@ export default function WorkoutScreen() {
           {exercises.map((exercise) => (
             <ExerciseCard key={exercise.id} exercise={exercise} workoutId={workout.id} />
           ))}
-          {/* Task 5 resume-banner / active-workout affordances land here on
-              the Today tab, not this screen — nothing to slot in locally. */}
         </ScrollView>
       </KeyboardAvoidingView>
+      <RestTimerBar />
     </Screen>
   );
 }

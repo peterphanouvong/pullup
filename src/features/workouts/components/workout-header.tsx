@@ -22,11 +22,13 @@ export function WorkoutHeader({
   volumeKg,
   completedCount,
   onFinish,
+  onDiscard,
 }: {
   workout: Workout;
   volumeKg: number;
   completedCount: number;
   onFinish: () => void;
+  onDiscard: () => void;
 }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -47,9 +49,14 @@ export function WorkoutHeader({
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <SymbolView name="chevron.down" size={20} tintColor={theme.colors.ink} />
         </Pressable>
-        <Text style={styles.title} numberOfLines={1}>
-          {workout.title}
-        </Text>
+        {/* Discard affordance: long-press the title. Simple and out of the
+            way of the everyday Finish flow — a proper overflow menu is a
+            later polish pass. */}
+        <Pressable style={styles.titleWrap} onLongPress={onDiscard} delayLongPress={500}>
+          <Text style={styles.title} numberOfLines={1}>
+            {workout.title}
+          </Text>
+        </Pressable>
         <Pressable style={styles.finishPill} onPress={onFinish}>
           <Text style={styles.finishLabel}>Finish</Text>
         </Pressable>
@@ -68,7 +75,8 @@ export function WorkoutHeader({
 const createStyles = (theme: Theme) => StyleSheet.create({
   container: { gap: theme.spacing.sm, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  title: { ...theme.type.heading, color: theme.colors.ink, flex: 1 },
+  titleWrap: { flex: 1 },
+  title: { ...theme.type.heading, color: theme.colors.ink },
   finishPill: {
     backgroundColor: theme.colors.accent,
     borderRadius: theme.radii.pill,

@@ -1,9 +1,32 @@
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
-import { addSet, updateExerciseNotes, type WorkoutExerciseWithSets } from '../hooks';
+import { addSet, updateExerciseNotes, updateExerciseRestSeconds, type WorkoutExerciseWithSets } from '../hooks';
 import { SET_TABLE_COLUMNS, SetRow } from './set-row';
+
+// Rest-timer preset chooser: an Alert with one button per preset is a
+// deliberately simple stand-in this task — sub-project C replaces it with a
+// proper sheet. `null` ("OFF") disables the auto-start-on-complete behavior
+// in `completeSet`.
+const REST_TIMER_PRESETS: { label: string; seconds: number | null }[] = [
+  { label: 'OFF', seconds: null },
+  { label: '1:00', seconds: 60 },
+  { label: '1:30', seconds: 90 },
+  { label: '2:00', seconds: 120 },
+  { label: '2:30', seconds: 150 },
+  { label: '3:00', seconds: 180 },
+];
+
+function openRestTimerPicker(workoutExerciseId: string): void {
+  Alert.alert('Rest Timer', undefined, [
+    ...REST_TIMER_PRESETS.map((preset) => ({
+      text: preset.label,
+      onPress: () => updateExerciseRestSeconds(workoutExerciseId, preset.seconds),
+    })),
+    { text: 'Cancel', style: 'cancel' as const },
+  ]);
+}
 
 // A fallback once a fresh exercise's sets are all still blank (no
 // weight/reps/duration logged yet): look for a time-shaped token ("20 s",
@@ -50,7 +73,9 @@ export function ExerciseCard({ exercise, workoutId }: { exercise: WorkoutExercis
         multiline
       />
 
-      <Text style={styles.restRow}>{`Rest Timer: ${formatRestTimer(exercise.rest_seconds)}`}</Text>
+      <Pressable onPress={() => openRestTimerPicker(exercise.id)} hitSlop={4}>
+        <Text style={styles.restRow}>{`Rest Timer: ${formatRestTimer(exercise.rest_seconds)}`}</Text>
+      </Pressable>
 
       <View style={styles.header}>
         <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.set, textAlign: 'center' }]}>SET</Text>

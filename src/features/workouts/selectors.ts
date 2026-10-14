@@ -136,3 +136,75 @@ export function finishedWorkoutsNewestFirst(workouts: Record<string, Workout>): 
     .filter((w) => !w.deleted && w.finished_at != null)
     .sort((a, b) => new Date(b.finished_at as string).getTime() - new Date(a.finished_at as string).getTime());
 }
+
+/** The unfinished (`finished_at == null`), non-deleted workout to offer
+ * resuming — most recent by `started_at` when more than one exists (e.g. an
+ * empty workout started, abandoned, then a day workout started after it). */
+export function activeWorkout(workouts: Record<string, Workout>): Workout | null {
+  const candidates = Object.values(workouts).filter(
+    (w): w is Workout => !!w && !w.deleted && w.finished_at == null,
+  );
+  if (candidates.length === 0) return null;
+  return candidates.reduce((latest, w) =>
+    new Date(w.started_at).getTime() > new Date(latest.started_at).getTime() ? w : latest,
+  );
+}
+
+/** Does a finished (non-deleted) workout exist for this programme day? Feeds
+ * the Today day-card's completed checkmark. */
+export function hasFinishedWorkoutForDay(workouts: Record<string, Workout>, programDayId: string): boolean {
+  return Object.values(workouts).some(
+    (w) => !w.deleted && w.finished_at != null && w.program_day_id === programDayId,
+  );
+}
+
+export interface FinishedWorkoutSummary {
+  workout: Workout;
+  summary: WorkoutSummary;
+}
+
+/** Finished workouts newest-first, each paired with its `workoutSummary` —
+ * the Activities tab's feed. */
+export function finishedWorkoutSummaries(
+  workouts: Record<string, Workout>,
+  workoutExercises: Record<string, WorkoutExercise>,
+  workoutSets: Record<string, WorkoutSet>,
+): FinishedWorkoutSummary[] {
+  return finishedWorkoutsNewestFirst(workouts).map((workout) => {
+    const exercises = Object.values(workoutExercises).filter(
+      (e): e is WorkoutExercise => !!e && e.workout_id === workout.id,
+    );
+    const exerciseIds = new Set(exercises.map((e) => e.id));
+    const sets = Object.values(workoutSets).filter(
+      (s): s is WorkoutSet => !!s && exerciseIds.has(s.workout_exercise_id),
+    );
+    return { workout, summary: workoutSummary(workout, exercises, sets) };
+  });
+}
+
+/** `mm:ss` under an hour, `h:mm` (no seconds) at an hour or more — the
+ * summary/Activities duration format. */
+export function formatWorkoutDuration(totalSeconds: number): string {
+  const clamped = Math.max(0, Math.round(totalSeconds));
+  const h = Math.floor(clamped / 3600);
+  const m = Math.floor((clamped % 3600) / 60);
+  const s = clamped % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+const MONTH_LABELS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+/** Day-of-month + short month label for an Activities `NumeralRow`, read off
+ * the local calendar (hand-rolled rather than `toLocaleDateString` — no ICU
+ * data dependency under Hermes). */
+export function activityDateLabel(isoTimestamp: string): { day: number; month: string } {
+  const d = new Date(isoTimestamp);
+  return { day: d.getDate(), month: MONTH_LABELS[d.getMonth()] };
+}
+
+/** "mm:ss · N kg · N sets" caption for an Activities row. */
+export function activityMetaLabel(durationSeconds: number, volumeKg: number, completedCount: number): string {
+  const sets = completedCount === 1 ? 'set' : 'sets';
+  return `${formatWorkoutDuration(durationSeconds)} · ${Math.round(volumeKg)} kg · ${completedCount} ${sets}`;
+}

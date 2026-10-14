@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
@@ -14,7 +14,14 @@ import { useActiveProgram, useProgram } from '@/features/programs/hooks';
 import { currentProgramPosition, nextCompDay } from '@/features/programs/schedule';
 import type { ProgramDay } from '@/features/programs/types';
 import { useSession } from '@/lib/auth';
-import { startEmptyWorkout, startWorkoutFromDay } from '@/features/workouts/hooks';
+import { ResumeBanner } from '@/features/workouts/components/resume-banner';
+import {
+  discardWorkout,
+  startEmptyWorkout,
+  startWorkoutFromDay,
+  useActiveWorkout,
+  useHasFinishedWorkoutForDay,
+} from '@/features/workouts/hooks';
 
 const WEEKDAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -54,10 +61,56 @@ export default function TodayScreen() {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const activeWorkout = useActiveWorkout();
+
+  // Mirrors the main render's day-selection logic (below, after the
+  // loading/error early returns) so the `useHasFinishedWorkoutForDay` hook
+  // call itself can sit here, unconditionally, ahead of those returns —
+  // Rules of Hooks forbids calling it only in the branch that has `day`
+  // available. Safe/null until the programme data has loaded.
+  const selectedProgramDayId = (() => {
+    const data = program.data;
+    const startDate = active.data?.startDate;
+    if (!data || !startDate) return null;
+    const today = new Date();
+    const position = currentProgramPosition(startDate, today, data.weeks.length);
+    const week = data.weeks.find((w) => w.position === position.week) ?? data.weeks[0];
+    const selectedDayPosition = selectedDay ?? position.day;
+    const day = week?.days.find((d) => d.position === selectedDayPosition) ?? week?.days[0] ?? null;
+    return day?.id ?? null;
+  })();
+  const hasFinishedForDay = useHasFinishedWorkoutForDay(selectedProgramDayId);
+
+  /** Starting a new workout while one is already in progress prompts to
+   * resume it or discard it first, instead of silently abandoning it. */
+  function startNewWorkoutOrPrompt(startFn: () => void) {
+    if (activeWorkout) {
+      Alert.alert(
+        'Workout in progress',
+        `You have an unfinished workout — "${activeWorkout.title}". Resume it, or discard it and start new?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Resume', onPress: () => router.push(`/workout/${activeWorkout.id}`) },
+          {
+            text: 'Discard & start new',
+            style: 'destructive',
+            onPress: () => {
+              discardWorkout(activeWorkout.id);
+              startFn();
+            },
+          },
+        ],
+      );
+      return;
+    }
+    startFn();
+  }
 
   function handleStartEmpty() {
-    const workoutId = startEmptyWorkout(session.user.id);
-    router.push(`/workout/${workoutId}`);
+    startNewWorkoutOrPrompt(() => {
+      const workoutId = startEmptyWorkout(session.user.id);
+      router.push(`/workout/${workoutId}`);
+    });
   }
 
   if (active.isPending) {
@@ -74,6 +127,7 @@ export default function TodayScreen() {
       <Screen>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ScreenTitle title="Today" />
+          {activeWorkout != null && <ResumeBanner workout={activeWorkout} />}
           <Card style={styles.messageCard}>
             <Text style={styles.messageTitle}>No active programme</Text>
             <Text style={styles.messageBody}>Pick a programme from Plan to see today&apos;s session.</Text>
@@ -125,8 +179,7 @@ export default function TodayScreen() {
     <Screen>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <ScreenTitle title="Today" />
-        {/* Task 5 slot: "Resume workout" banner for an unfinished workout
-            (finished_at is null) renders here, above the comp-day eyebrow. */}
+        {activeWorkout != null && <ResumeBanner workout={activeWorkout} />}
         {compDay != null && !position.finished && (
           <Text style={styles.eyebrow}>{`T–${compDay.daysAway} DAYS · ${compDay.dayName}`}</Text>
         )}
@@ -166,6 +219,7 @@ export default function TodayScreen() {
                   kind={day.kind}
                   title={day.name}
                   meta={metaFor(day)}
+                  completed={hasFinishedForDay}
                   onPress={
                     day.kind === 'lifting' ? () => router.push(`/program/${programId}/day/${day.id}`) : undefined
                   }
@@ -173,10 +227,12 @@ export default function TodayScreen() {
                 {day.kind === 'lifting' && (
                   <PrimaryButton
                     title="Start workout"
-                    onPress={() => {
-                      const workoutId = startWorkoutFromDay(day, day.id, session.user.id);
-                      router.push(`/workout/${workoutId}`);
-                    }}
+                    onPress={() =>
+                      startNewWorkoutOrPrompt(() => {
+                        const workoutId = startWorkoutFromDay(day, day.id, session.user.id);
+                        router.push(`/workout/${workoutId}`);
+                      })
+                    }
                   />
                 )}
               </>
