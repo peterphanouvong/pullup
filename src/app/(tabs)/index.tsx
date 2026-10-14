@@ -112,7 +112,7 @@ export default function TodayScreen() {
     <Screen>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <ScreenTitle title="Today" />
-        {compDay != null && (
+        {compDay != null && !position.finished && (
           <Text style={styles.eyebrow}>{`T–${compDay.daysAway} DAYS · ${compDay.dayName}`}</Text>
         )}
 
