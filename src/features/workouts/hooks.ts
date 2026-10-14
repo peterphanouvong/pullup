@@ -116,19 +116,24 @@ export function finishWorkout(id: string, now: Date): void {
   workouts$[id].assign({ finished_at: now.toISOString(), updated_at: now.toISOString() });
 }
 
-/** Soft-deletes the workout and every (live) exercise/set under it. */
+/** Soft-deletes the workout, every live exercise under it, and every live set
+ * under *all* of its exercises — including exercises already soft-deleted
+ * before this call (sub-project C's mid-workout exercise editor can leave
+ * one behind with still-live sets; scoping the sets cascade to only the
+ * currently-live exercises would silently skip those). */
 export function discardWorkout(id: string): void {
   const nowIso = new Date().toISOString();
   workouts$[id].assign({ deleted: true, updated_at: nowIso });
 
-  const exercises = Object.values(workoutExercises$.get() ?? {}).filter(
-    (e): e is WorkoutExercise => !!e && !e.deleted && e.workout_id === id,
+  const allExercises = Object.values(workoutExercises$.get() ?? {}).filter(
+    (e): e is WorkoutExercise => !!e && e.workout_id === id,
   );
-  for (const exercise of exercises) {
+  for (const exercise of allExercises) {
+    if (exercise.deleted) continue;
     workoutExercises$[exercise.id].assign({ deleted: true, updated_at: nowIso });
   }
 
-  const exerciseIds = new Set(exercises.map((e) => e.id));
+  const exerciseIds = new Set(allExercises.map((e) => e.id));
   const sets = Object.values(workoutSets$.get() ?? {}).filter(
     (s): s is WorkoutSet => !!s && !s.deleted && exerciseIds.has(s.workout_exercise_id),
   );

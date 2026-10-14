@@ -215,6 +215,54 @@ describe('discardWorkout', () => {
       expect(workoutSets$[setId].deleted.get()).toBe(true);
     }
   });
+
+  it('cascades sets under an exercise that was already soft-deleted before the workout was discarded', () => {
+    // Regression for fix-round-1 finding 5: sub-project C's mid-workout
+    // exercise editor can soft-delete a `workout_exercise` while the workout
+    // is still active, but leave its `workout_sets` rows live (the editor's
+    // own concern, not discardWorkout's). Scoping the sets cascade to only
+    // *currently-live* exercises would skip that exercise's still-live sets.
+    const userId = freshUser();
+    initWorkoutStore(userId);
+    const workoutId = startWorkoutFromDay(liftingDay, 'day-1', userId);
+    const nowIso = new Date().toISOString();
+
+    const preDeletedExerciseId = 'we-pre-deleted';
+    workoutExercises$[preDeletedExerciseId].set({
+      id: preDeletedExerciseId,
+      user_id: userId,
+      workout_id: workoutId,
+      exercise_id: null,
+      exercise_name: 'Removed mid-workout',
+      position: 99,
+      rest_seconds: null,
+      notes: null,
+      created_at: nowIso,
+      updated_at: nowIso,
+      deleted: true, // already soft-deleted before discardWorkout runs
+    });
+
+    const orphanSetId = 'set-under-pre-deleted-exercise';
+    workoutSets$[orphanSetId].set({
+      id: orphanSetId,
+      user_id: userId,
+      workout_exercise_id: preDeletedExerciseId,
+      position: 1,
+      set_type: 'working',
+      weight_kg: null,
+      reps: null,
+      duration_seconds: null,
+      target: null,
+      completed_at: null,
+      created_at: nowIso,
+      updated_at: nowIso,
+      deleted: false, // still live — this is the set that must get cascaded
+    });
+
+    discardWorkout(workoutId);
+
+    expect(workoutSets$[orphanSetId].deleted.get()).toBe(true);
+  });
 });
 
 describe('nextSetType', () => {

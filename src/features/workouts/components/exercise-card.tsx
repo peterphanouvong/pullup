@@ -53,18 +53,17 @@ export function ExerciseCard({ exercise, workoutId }: { exercise: WorkoutExercis
       <Text style={styles.restRow}>{`Rest Timer: ${formatRestTimer(exercise.rest_seconds)}`}</Text>
 
       <View style={styles.header}>
-        <Text style={[styles.headerLabel, { flex: SET_TABLE_COLUMNS.set }]}>SET</Text>
-        <Text style={[styles.headerLabel, { flex: SET_TABLE_COLUMNS.previous }]}>PREVIOUS</Text>
+        <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.set, textAlign: 'center' }]}>SET</Text>
+        <Text style={[styles.headerLabel, styles.headerPrevious]}>PREVIOUS</Text>
         {isDuration ? (
-          <Text style={[styles.headerLabel, { flex: SET_TABLE_COLUMNS.value * 2, textAlign: 'center' }]}>TIME</Text>
+          <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.cell * 2, textAlign: 'center' }]}>TIME</Text>
         ) : (
           <>
-            <Text style={[styles.headerLabel, { flex: SET_TABLE_COLUMNS.value, textAlign: 'center' }]}>KG</Text>
-            <Text style={[styles.headerLabel, { flex: SET_TABLE_COLUMNS.value, textAlign: 'center' }]}>REPS</Text>
+            <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.cell, textAlign: 'center' }]}>KG</Text>
+            <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.cell, textAlign: 'center' }]}>REPS</Text>
           </>
         )}
-        <Text style={[styles.headerLabel, { flex: SET_TABLE_COLUMNS.check, textAlign: 'center' }]}>✓</Text>
-        <View style={styles.headerDeleteSpacer} />
+        <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.check, textAlign: 'center' }]}>✓</Text>
       </View>
 
       {exercise.sets.map((set) => (
@@ -92,7 +91,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   restRow: { ...theme.type.caption, color: theme.colors.inkMuted },
   header: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, marginTop: theme.spacing.xs },
   headerLabel: { ...theme.type.label, color: theme.colors.inkMuted },
-  headerDeleteSpacer: { width: 24 },
+  headerPrevious: { flex: 1 },
   addSet: {
     ...theme.type.heading,
     color: theme.colors.inkMuted,

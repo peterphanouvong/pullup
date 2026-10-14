@@ -79,6 +79,9 @@ export default function TodayScreen() {
             <Text style={styles.messageBody}>Pick a programme from Plan to see today&apos;s session.</Text>
             <PrimaryButton title="Browse programmes" onPress={() => router.push('/plan')} />
           </Card>
+          <Pressable onPress={handleStartEmpty} hitSlop={8}>
+            <Text style={styles.quietAction}>Start empty workout</Text>
+          </Pressable>
         </ScrollView>
       </Screen>
     );
@@ -129,13 +132,18 @@ export default function TodayScreen() {
         )}
 
         {position.finished ? (
-          <Card style={styles.messageCard}>
-            <Text style={styles.messageTitle}>Programme finished</Text>
-            <Text style={styles.messageBody}>
-              {`You completed ${data.name}. Head to Plan to pick what's next.`}
-            </Text>
-            <PrimaryButton title="Browse programmes" onPress={() => router.push('/plan')} />
-          </Card>
+          <>
+            <Card style={styles.messageCard}>
+              <Text style={styles.messageTitle}>Programme finished</Text>
+              <Text style={styles.messageBody}>
+                {`You completed ${data.name}. Head to Plan to pick what's next.`}
+              </Text>
+              <PrimaryButton title="Browse programmes" onPress={() => router.push('/plan')} />
+            </Card>
+            <Pressable onPress={handleStartEmpty} hitSlop={8}>
+              <Text style={styles.quietAction}>Start empty workout</Text>
+            </Pressable>
+          </>
         ) : (
           <>
             <Pressable onPress={() => router.push(`/program/${programId}`)}>
