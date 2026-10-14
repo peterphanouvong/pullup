@@ -10,7 +10,7 @@
  * than trusting the caller to have done so.
  */
 
-import type { Workout, WorkoutExercise, WorkoutSet } from './types';
+import type { Exercise, Workout, WorkoutExercise, WorkoutSet } from './types';
 
 const isLiveSet = (s: WorkoutSet) => !s.deleted;
 const isCompleted = (s: WorkoutSet) => isLiveSet(s) && s.completed_at != null;
@@ -207,4 +207,65 @@ export function activityDateLabel(isoTimestamp: string): { day: number; month: s
 export function activityMetaLabel(durationSeconds: number, volumeKg: number, completedCount: number): string {
   const sets = completedCount === 1 ? 'set' : 'sets';
   return `${formatWorkoutDuration(durationSeconds)} · ${Math.round(volumeKg)} kg · ${completedCount} ${sets}`;
+}
+
+/** Strip diacritics and lowercase, for accent-insensitive contains matching
+ * (e.g. query "romana" matches "Românian deadlift"). NFD splits each
+ * accented letter into base + combining mark; stripping the Unicode
+ * Combining Diacritical Marks block (U+0300-U+036F) then drops just the
+ * accents. */
+function normalizeForSearch(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+}
+
+/**
+ * Exercise-picker search: name contains `query` (case/diacritic-insensitive),
+ * optionally narrowed to an exact `muscle_group` when `group` is non-null,
+ * excluding deleted library rows, alphabetical by name.
+ */
+export function searchExercises(
+  exercises: Record<string, Exercise>,
+  query: string,
+  group: string | null,
+): Exercise[] {
+  const needle = normalizeForSearch(query);
+  return Object.values(exercises)
+    .filter((e) => !e.deleted)
+    .filter((e) => group == null || e.muscle_group === group)
+    .filter((e) => normalizeForSearch(e.name).includes(needle))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Distinct `exercise_id`s (non-null) from the user's FINISHED, non-deleted
+ * workouts' non-deleted exercises, newest-finished-first, capped at `cap` —
+ * the exercise-picker "Recent" section. An id's position is driven by its
+ * most recent occurrence; an exercise logged in an older workout too doesn't
+ * get re-ordered older by that earlier appearance.
+ */
+export function recentExerciseIds(
+  workouts: Record<string, Workout>,
+  workoutExercises: Record<string, WorkoutExercise>,
+  cap: number,
+): string[] {
+  const finishedWorkouts = finishedWorkoutsNewestFirst(workouts);
+  const finishedOrder = new Map(finishedWorkouts.map((w, i) => [w.id, i]));
+
+  const liveExercises = Object.values(workoutExercises)
+    .filter((we) => !we.deleted && we.exercise_id != null && finishedOrder.has(we.workout_id))
+    .sort((a, b) => (finishedOrder.get(a.workout_id) as number) - (finishedOrder.get(b.workout_id) as number));
+
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const we of liveExercises) {
+    const exerciseId = we.exercise_id as string;
+    if (seen.has(exerciseId)) continue;
+    seen.add(exerciseId);
+    result.push(exerciseId);
+    if (result.length >= cap) break;
+  }
+  return result;
 }

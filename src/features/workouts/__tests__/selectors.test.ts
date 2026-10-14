@@ -18,8 +18,10 @@ import {
   formatWorkoutDuration,
   activityDateLabel,
   activityMetaLabel,
+  searchExercises,
+  recentExerciseIds,
 } from '../selectors';
-import type { Workout, WorkoutExercise, WorkoutSet } from '../types';
+import type { Exercise, Workout, WorkoutExercise, WorkoutSet } from '../types';
 
 const ts = '2026-10-14T10:00:00.000Z';
 
@@ -48,6 +50,18 @@ function workout(overrides: Partial<Workout> & Pick<Workout, 'id'>): Workout {
     started_at: ts,
     finished_at: null,
     notes: null,
+    created_at: ts,
+    updated_at: ts,
+    deleted: false,
+    ...overrides,
+  };
+}
+
+function libraryExercise(overrides: Partial<Exercise> & Pick<Exercise, 'id' | 'name'>): Exercise {
+  return {
+    muscle_group: 'Legs',
+    equipment: 'Barbell',
+    owner_id: null,
     created_at: ts,
     updated_at: ts,
     deleted: false,
@@ -479,5 +493,144 @@ describe('activityMetaLabel', () => {
   it('composes duration · volume · set count, singular/plural', () => {
     expect(activityMetaLabel(65, 1234.6, 1)).toBe('1:05 · 1235 kg · 1 set');
     expect(activityMetaLabel(3660, 500, 12)).toBe('1:01 · 500 kg · 12 sets');
+  });
+});
+
+describe('searchExercises', () => {
+  const exercises: Record<string, Exercise> = {
+    romanian: libraryExercise({ id: 'romanian', name: 'Română deadlift', muscle_group: 'Legs' }),
+    squat: libraryExercise({ id: 'squat', name: 'Back squat', muscle_group: 'Legs' }),
+    bench: libraryExercise({ id: 'bench', name: 'Bench press', muscle_group: 'Chest' }),
+    row: libraryExercise({ id: 'row', name: 'Barbell row', muscle_group: 'Back' }),
+    goneDeadlift: libraryExercise({ id: 'gone', name: 'Deadlift (old)', muscle_group: 'Legs', deleted: true }),
+  };
+
+  it('matches case/diacritic-insensitively: "romana" (ASCII) finds "Română" (diacritics)', () => {
+    const result = searchExercises(exercises, 'romana', null);
+    expect(result.map((e) => e.id)).toEqual(['romanian']);
+  });
+
+  it('matches case-insensitively on a plain substring', () => {
+    const result = searchExercises(exercises, 'BENCH', null);
+    expect(result.map((e) => e.id)).toEqual(['bench']);
+  });
+
+  it('excludes deleted exercises even when the name matches', () => {
+    const result = searchExercises(exercises, 'deadlift', null);
+    expect(result.map((e) => e.id)).toEqual(['romanian']);
+  });
+
+  it('applies an exact muscle_group filter when group is non-null', () => {
+    const result = searchExercises(exercises, '', 'Legs');
+    expect(result.map((e) => e.id).sort()).toEqual(['romanian', 'squat']);
+  });
+
+  it('ignores the group filter when group is null (all groups)', () => {
+    const result = searchExercises(exercises, 'press', null);
+    expect(result.map((e) => e.id)).toEqual(['bench']);
+  });
+
+  it('returns results alphabetical by name', () => {
+    const result = searchExercises(exercises, '', null);
+    expect(result.map((e) => e.name)).toEqual(['Back squat', 'Barbell row', 'Bench press', 'Română deadlift']);
+  });
+
+  it('empty query matches everything (non-deleted, optionally group-filtered)', () => {
+    const result = searchExercises(exercises, '', null);
+    expect(result).toHaveLength(4);
+  });
+});
+
+describe('recentExerciseIds', () => {
+  function workoutRow(overrides: Partial<Workout> & Pick<Workout, 'id'>): Workout {
+    return {
+      user_id: 'user-1',
+      title: 'Workout',
+      program_day_id: null,
+      started_at: ts,
+      finished_at: null,
+      notes: null,
+      created_at: ts,
+      updated_at: ts,
+      deleted: false,
+      ...overrides,
+    };
+  }
+
+  it('returns distinct exercise_ids from finished workouts, most-recently-finished first', () => {
+    const workouts: Record<string, Workout> = {
+      w1: workoutRow({ id: 'w1', finished_at: '2026-10-10T10:00:00.000Z' }),
+      w2: workoutRow({ id: 'w2', finished_at: '2026-10-12T10:00:00.000Z' }),
+    };
+    const workoutExercises: Record<string, WorkoutExercise> = {
+      we1: exercise({ id: 'we1', workout_id: 'w1', exercise_id: 'ex-squat' }),
+      we2: exercise({ id: 'we2', workout_id: 'w2', exercise_id: 'ex-bench' }),
+    };
+
+    expect(recentExerciseIds(workouts, workoutExercises, 8)).toEqual(['ex-bench', 'ex-squat']);
+  });
+
+  it('dedupes repeated exercise_ids, keeping the most recent occurrence only', () => {
+    const workouts: Record<string, Workout> = {
+      w1: workoutRow({ id: 'w1', finished_at: '2026-10-10T10:00:00.000Z' }),
+      w2: workoutRow({ id: 'w2', finished_at: '2026-10-12T10:00:00.000Z' }),
+    };
+    const workoutExercises: Record<string, WorkoutExercise> = {
+      we1: exercise({ id: 'we1', workout_id: 'w1', exercise_id: 'ex-squat' }),
+      we2: exercise({ id: 'we2', workout_id: 'w2', exercise_id: 'ex-squat' }),
+    };
+
+    expect(recentExerciseIds(workouts, workoutExercises, 8)).toEqual(['ex-squat']);
+  });
+
+  it('excludes unfinished workouts', () => {
+    const workouts: Record<string, Workout> = {
+      active: workoutRow({ id: 'active', finished_at: null }),
+    };
+    const workoutExercises: Record<string, WorkoutExercise> = {
+      we1: exercise({ id: 'we1', workout_id: 'active', exercise_id: 'ex-squat' }),
+    };
+
+    expect(recentExerciseIds(workouts, workoutExercises, 8)).toEqual([]);
+  });
+
+  it('excludes deleted workouts and deleted workout_exercises', () => {
+    const workouts: Record<string, Workout> = {
+      w1: workoutRow({ id: 'w1', finished_at: '2026-10-10T10:00:00.000Z', deleted: true }),
+      w2: workoutRow({ id: 'w2', finished_at: '2026-10-12T10:00:00.000Z' }),
+    };
+    const workoutExercises: Record<string, WorkoutExercise> = {
+      we1: exercise({ id: 'we1', workout_id: 'w1', exercise_id: 'ex-squat' }),
+      we2: exercise({ id: 'we2', workout_id: 'w2', exercise_id: 'ex-bench', deleted: true }),
+    };
+
+    expect(recentExerciseIds(workouts, workoutExercises, 8)).toEqual([]);
+  });
+
+  it('excludes null exercise_ids (unmatched programme rows)', () => {
+    const workouts: Record<string, Workout> = {
+      w1: workoutRow({ id: 'w1', finished_at: '2026-10-10T10:00:00.000Z' }),
+    };
+    const workoutExercises: Record<string, WorkoutExercise> = {
+      we1: exercise({ id: 'we1', workout_id: 'w1', exercise_id: null }),
+    };
+
+    expect(recentExerciseIds(workouts, workoutExercises, 8)).toEqual([]);
+  });
+
+  it('caps the result length', () => {
+    const workouts: Record<string, Workout> = {
+      w1: workoutRow({ id: 'w1', finished_at: '2026-10-01T10:00:00.000Z' }),
+      w2: workoutRow({ id: 'w2', finished_at: '2026-10-02T10:00:00.000Z' }),
+      w3: workoutRow({ id: 'w3', finished_at: '2026-10-03T10:00:00.000Z' }),
+    };
+    const workoutExercises: Record<string, WorkoutExercise> = {
+      we1: exercise({ id: 'we1', workout_id: 'w1', exercise_id: 'ex-1' }),
+      we2: exercise({ id: 'we2', workout_id: 'w2', exercise_id: 'ex-2' }),
+      we3: exercise({ id: 'we3', workout_id: 'w3', exercise_id: 'ex-3' }),
+    };
+
+    const result = recentExerciseIds(workouts, workoutExercises, 2);
+    expect(result).toEqual(['ex-3', 'ex-2']);
   });
 });
