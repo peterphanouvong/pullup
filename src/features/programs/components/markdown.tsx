@@ -1,12 +1,15 @@
+import { StyleSheet } from 'react-native';
 import MarkdownDisplay, { type MarkdownProps } from 'react-native-markdown-display';
-import { StyleSheet } from 'react-native-unistyles';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 export function Markdown({ children }: { children: string }) {
-  // Unistyles' create() return type isn't structurally RN's NamedStyles; runtime shape matches what the renderer merges.
+  const styles = useThemedStyles(createStyles);
+  // RN's create() return type isn't structurally NamedStyles for this component's purposes; runtime shape matches what the renderer merges.
   return <MarkdownDisplay style={styles as unknown as MarkdownProps['style']}>{children}</MarkdownDisplay>;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   body: { ...theme.type.body, color: theme.colors.ink },
   heading1: { ...theme.type.title, color: theme.colors.ink },
   heading2: { ...theme.type.heading, color: theme.colors.ink },
@@ -46,4 +49,4 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.ink,
     borderColor: theme.colors.border,
   },
-}));
+});

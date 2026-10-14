@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
-import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
 import { DayStrip, type DayStripItem } from '@/components/ui/day-strip';
 import { PrimaryButton } from '@/components/ui/primary-button';
@@ -47,7 +48,8 @@ function metaFor(day: ProgramDay): string {
 export default function TodayScreen() {
   const active = useActiveProgram();
   const program = useProgram(active.data?.programId ?? '');
-  const { theme } = useUnistyles();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   if (active.isPending) {
@@ -165,11 +167,11 @@ export default function TodayScreen() {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: 140 },
   eyebrow: { ...theme.type.label, color: theme.colors.comp },
   weekLine: { ...theme.type.caption, color: theme.colors.inkMuted },
   messageCard: { gap: theme.spacing.sm },
   messageTitle: { ...theme.type.heading, color: theme.colors.ink },
   messageBody: { ...theme.type.body, color: theme.colors.inkMuted },
-}));
+});

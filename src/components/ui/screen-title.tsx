@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { StyleSheet, Text, View } from 'react-native';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 /** Display-type screen title row with an optional trailing actions slot
  * (typically one or two `IconCircle`s). */
 export function ScreenTitle({ title, children }: { title: string; children?: ReactNode }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.row}>
       <Text style={styles.title}>{title}</Text>
@@ -13,7 +15,7 @@ export function ScreenTitle({ title, children }: { title: string; children?: Rea
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -21,4 +23,4 @@ const styles = StyleSheet.create((theme) => ({
   },
   title: { ...theme.type.display, color: theme.colors.ink },
   actions: { flexDirection: 'row', gap: theme.spacing.sm },
-}));
+});

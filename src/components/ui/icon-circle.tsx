@@ -1,6 +1,7 @@
-import { Pressable, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 /** A small circular icon button — used in `ScreenTitle`'s trailing slot and
  * anywhere else a quiet, card-colored tap target is needed. */
@@ -15,7 +16,8 @@ export function IconCircle({
   onPress?: () => void;
   size?: number;
 }) {
-  const { theme } = useUnistyles();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
   return (
     <Pressable
       onPress={onPress}
@@ -36,7 +38,7 @@ export function IconCircle({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   circle: {
     backgroundColor: theme.colors.card,
     alignItems: 'center',
@@ -44,4 +46,4 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.shadow.card,
   },
   pressed: { opacity: 0.7 },
-}));
+});

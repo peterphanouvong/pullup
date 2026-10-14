@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet as RNStyleSheet, Text, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 // Always a Pressable (even with no onPress) so the style-callback signature
 // stays uniform; `pressed` is only honored visually when onPress is set.
@@ -24,6 +25,7 @@ export function NumeralRow({
   numeralColor?: string;
   onPress?: () => void;
 }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <Pressable
       onPress={onPress}
@@ -43,13 +45,13 @@ export function NumeralRow({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.md,
     paddingVertical: theme.spacing.md,
-    borderBottomWidth: RNStyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.border,
   },
   pressed: { opacity: 0.7 },
@@ -59,4 +61,4 @@ const styles = StyleSheet.create((theme) => ({
   content: { flex: 1, gap: 2 },
   title: { ...theme.type.heading, color: theme.colors.ink },
   subtitle: { ...theme.type.caption, color: theme.colors.inkMuted },
-}));
+});

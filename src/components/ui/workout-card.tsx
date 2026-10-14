@@ -1,6 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 import type { DayKind } from '@/features/programs/types';
 
 /** Runna-style day card: 4pt kind-colored left edge, title, meta line, and a
@@ -19,7 +20,8 @@ export function WorkoutCard({
   completed?: boolean;
   onPress?: () => void;
 }) {
-  const { theme } = useUnistyles();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
   const edgeColor =
     kind === 'lifting' ? theme.colors.accent : kind === 'rest' ? theme.colors.inkMuted : theme.colors.comp;
 
@@ -54,7 +56,7 @@ export function WorkoutCard({
   return <View style={styles.card}>{body}</View>;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   card: {
     backgroundColor: theme.colors.card,
     borderRadius: theme.radii.xl,
@@ -76,4 +78,4 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-}));
+});

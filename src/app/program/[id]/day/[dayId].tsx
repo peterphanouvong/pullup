@@ -1,6 +1,7 @@
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { StyleSheet } from 'react-native-unistyles';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 import { Screen } from '@/components/ui/screen';
 import { ExerciseTable } from '@/features/programs/components/exercise-table';
 import { Markdown } from '@/features/programs/components/markdown';
@@ -10,6 +11,7 @@ import { useProgram } from '@/features/programs/hooks';
 export default function DayScreen() {
   const { id, dayId } = useLocalSearchParams<{ id: string; dayId: string }>();
   const program = useProgram(id);
+  const styles = useThemedStyles(createStyles);
 
   if (program.isPending || program.isError) {
     return (
@@ -43,8 +45,8 @@ export default function DayScreen() {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { ...theme.type.body, color: theme.colors.ink },
-}));
+});

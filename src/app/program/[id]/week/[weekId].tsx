@@ -1,6 +1,7 @@
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 import { NumeralRow } from '@/components/ui/numeral-row';
 import { Screen } from '@/components/ui/screen';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -27,7 +28,8 @@ function subtitleFor(day: ProgramDay): string {
 export default function WeekScreen() {
   const { id, weekId } = useLocalSearchParams<{ id: string; weekId: string }>();
   const program = useProgram(id);
-  const { theme } = useUnistyles();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   if (program.isPending || program.isError) {
     return (
@@ -77,8 +79,8 @@ export default function WeekScreen() {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { ...theme.type.body, color: theme.colors.ink },
-}));
+});

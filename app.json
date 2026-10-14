@@ -44,7 +44,6 @@
         }
       ],
       "expo-sqlite",
-      "react-native-edge-to-edge",
       "expo-build-properties"
     ],
     "experiments": {

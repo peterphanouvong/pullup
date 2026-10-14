@@ -1,9 +1,10 @@
 import type { ComponentProps } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 // Derived from Tabs' own `tabBar` prop rather than reaching into
 // expo-router's internal react-navigation re-export path.
@@ -18,7 +19,8 @@ const ICON_BY_ROUTE: Record<string, SFSymbol> = {
 /** Floating rounded-pill tab bar: card bg + shadow.float, SF Symbol + 11pt
  * label per tab, accent active tint, inkMuted inactive. */
 export function PillTabBar({ state, descriptors, navigation }: TabBarProps) {
-  const { theme } = useUnistyles();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
 
   return (
@@ -50,7 +52,7 @@ export function PillTabBar({ state, descriptors, navigation }: TabBarProps) {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   wrap: {
     position: 'absolute',
     left: 0,
@@ -68,4 +70,4 @@ const styles = StyleSheet.create((theme) => ({
   },
   tab: { alignItems: 'center', gap: 2, minWidth: 56 },
   label: { fontSize: 11, fontWeight: '600' },
-}));
+});

@@ -1,5 +1,3 @@
-import { StyleSheet } from 'react-native-unistyles';
-
 const shared = {
   spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
   radii: { sm: 6, md: 10, lg: 14, xl: 20, pill: 999 },
@@ -86,31 +84,30 @@ const darkColors = {
   onGradient: '#FFFFFF',
 } as const;
 
-const lightTheme = {
+// Widen each theme's color literals (e.g. '#0B0D12') to `string` so
+// `darkTheme` structurally satisfies the same `Theme` type as `lightTheme` —
+// without this, TS would infer each theme's own literal-string types and
+// reject assigning one theme where the other is expected.
+type ThemeColors = { [K in keyof typeof lightColors]: (typeof lightColors)[K] extends readonly [string, string]
+  ? readonly [string, string]
+  : string };
+
+export interface Theme {
+  spacing: typeof shared.spacing;
+  radii: typeof shared.radii;
+  type: typeof shared.type;
+  colors: ThemeColors;
+  shadow: ReturnType<typeof shadowsFor>;
+}
+
+export const lightTheme: Theme = {
   ...shared,
   colors: lightColors,
   shadow: shadowsFor(lightColors.ink),
-} as const;
+};
 
-const darkTheme = {
+export const darkTheme: Theme = {
   ...shared,
   colors: darkColors,
   shadow: shadowsFor(darkColors.ink),
-} as const;
-
-const appThemes = { light: lightTheme, dark: darkTheme };
-const breakpoints = { xs: 0 } as const;
-
-type AppThemes = typeof appThemes;
-type AppBreakpoints = typeof breakpoints;
-
-declare module 'react-native-unistyles' {
-  export interface UnistylesThemes extends AppThemes {}
-  export interface UnistylesBreakpoints extends AppBreakpoints {}
-}
-
-StyleSheet.configure({
-  themes: appThemes,
-  breakpoints,
-  settings: { adaptiveThemes: true },
-});
+};

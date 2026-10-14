@@ -1,6 +1,7 @@
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 import { Screen } from '@/components/ui/screen';
 import { ScreenTitle } from '@/components/ui/screen-title';
 
@@ -8,7 +9,8 @@ import { ScreenTitle } from '@/components/ui/screen-title';
 // B's workout store. Until that store lands this tab only ever shows the
 // empty state.
 export default function ActivitiesScreen() {
-  const { theme } = useUnistyles();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   return (
     <Screen>
@@ -28,7 +30,7 @@ export default function ActivitiesScreen() {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: 140, flexGrow: 1 },
   empty: {
     flex: 1,
@@ -44,4 +46,4 @@ const styles = StyleSheet.create((theme) => ({
     textAlign: 'center',
     maxWidth: 260,
   },
-}));
+});

@@ -151,3 +151,13 @@ Custom font assets; animations beyond standard navigation/press feedback
 (a later polish pass); Android visual QA; crew/social tabs; week-picker
 sheet (the "Week 1/8" line is informational this slice — tapping routes to
 the Plan tab's overview).
+
+## Revision (2026-10-14)
+
+Unistyles v3 removed in favor of plain RN `StyleSheet` + `useTheme()` /
+`useThemedStyles()` to restore Expo Go compatibility (Unistyles' native
+module, via `react-native-nitro-modules`, required a development build).
+Token values and visual design are unchanged — the theme module moved
+verbatim to `src/styles/theme.ts` (light/dark theme objects + `Theme`
+type), with live light/dark switching now driven by RN's `useColorScheme()`
+instead of Unistyles' adaptive-themes setting.

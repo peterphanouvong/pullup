@@ -1,5 +1,6 @@
-import { ActivityIndicator, Button, Text, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 export function QueryFallback({
   isError,
@@ -10,6 +11,7 @@ export function QueryFallback({
   message: string;
   onRetry: () => void;
 }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.container}>
       {isError ? (
@@ -24,7 +26,7 @@ export function QueryFallback({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -34,4 +36,4 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.canvas,
   },
   message: { ...theme.type.body, color: theme.colors.ink },
-}));
+});

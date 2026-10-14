@@ -1,6 +1,7 @@
-import { ScrollView, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet } from 'react-native-unistyles';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { Screen } from '@/components/ui/screen';
@@ -15,6 +16,7 @@ export default function ProgramOverviewScreen() {
   const program = useProgram(id);
   const active = useActiveProgram();
   const select = useSelectProgram();
+  const styles = useThemedStyles(createStyles);
 
   if (program.isPending || program.isError) {
     return (
@@ -71,7 +73,7 @@ export default function ProgramOverviewScreen() {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   summary: { ...theme.type.body, color: theme.colors.ink },
   error: { ...theme.type.body, color: theme.colors.danger },
@@ -79,4 +81,4 @@ const styles = StyleSheet.create((theme) => ({
   timelineCard: { gap: theme.spacing.xs },
   weekCard: { gap: theme.spacing.xs },
   weekName: { ...theme.type.heading, color: theme.colors.ink },
-}));
+});

@@ -1,6 +1,7 @@
-import { ScrollView, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
-import { StyleSheet } from 'react-native-unistyles';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
 import { ScreenTitle } from '@/components/ui/screen-title';
@@ -12,6 +13,7 @@ import type { ProgramSummary } from '@/features/programs/types';
 export default function PlanScreen() {
   const programs = usePrograms();
   const active = useActiveProgram();
+  const styles = useThemedStyles(createStyles);
 
   if (programs.isPending || active.isPending || programs.isError || active.isError) {
     return (
@@ -60,9 +62,9 @@ export default function PlanScreen() {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   content: { padding: theme.spacing.lg, gap: theme.spacing.sm, paddingBottom: 140 },
   card: { gap: theme.spacing.xs },
   name: { ...theme.type.heading, color: theme.colors.ink },
   summary: { ...theme.type.caption, color: theme.colors.inkMuted },
-}));
+});

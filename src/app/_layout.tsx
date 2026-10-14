@@ -1,4 +1,3 @@
-import '@/styles/unistyles'; // <-- must run before any StyleSheet.create() in this module graph
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';

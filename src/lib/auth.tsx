@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Button, Text, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 import { supabase } from './supabase';
 
 const SessionContext = createContext<Session | null>(null);
@@ -16,6 +17,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const styles = useThemedStyles(createStyles);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,7 +55,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
@@ -69,4 +71,4 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.canvas,
   },
   message: { ...theme.type.body, color: theme.colors.ink },
-}));
+});

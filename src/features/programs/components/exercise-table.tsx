@@ -1,5 +1,6 @@
-import { View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { StyleSheet, View } from 'react-native';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
 import { NumeralRow } from '@/components/ui/numeral-row';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -12,6 +13,7 @@ function prescription(exercise: DayExercise): string | undefined {
 }
 
 export function ExerciseTable({ exercises }: { exercises: DayExercise[] }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.wrap}>
       <SectionLabel>Session</SectionLabel>
@@ -30,7 +32,7 @@ export function ExerciseTable({ exercises }: { exercises: DayExercise[] }) {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   wrap: { gap: theme.spacing.sm },
   card: { paddingVertical: theme.spacing.xs },
-}));
+});

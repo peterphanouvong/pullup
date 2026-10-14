@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react';
-import { Text, type StyleProp, type TextStyle } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 /** `label`-type eyebrow, inkMuted — section headers, table headers. */
 export function SectionLabel({ children, style }: { children: ReactNode; style?: StyleProp<TextStyle> }) {
+  const styles = useThemedStyles(createStyles);
   return <Text style={[styles.label, style]}>{children}</Text>;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   label: { ...theme.type.label, color: theme.colors.inkMuted },
-}));
+});

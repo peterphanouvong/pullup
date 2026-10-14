@@ -4,17 +4,11 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## Running the app
 
-This project uses [Unistyles](https://unistyl.es) for styling, which relies on native code (Nitro Modules) and is **not compatible with Expo Go**. You need a [development build](https://docs.expo.dev/develop/development-builds/introduction/):
-
-```bash
-npx expo run:ios
-```
-
-Run this the first time (and whenever native dependencies change) to generate the `ios`/`android` folders, install pods, and build + install the dev client. After that, start Metro as usual and reuse the installed dev client:
-
 ```bash
 npx expo start
 ```
+
+Press `i` to open in the iOS simulator, or scan the QR code with the [Expo Go](https://expo.dev/go) app on a physical device. A [development build](https://docs.expo.dev/develop/development-builds/introduction/) (`npx expo run:ios`) also works if you need native modules Expo Go doesn't include.
 
 ## Get started
 

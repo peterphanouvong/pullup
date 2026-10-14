@@ -1,5 +1,6 @@
-import { Pressable, Text, View } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 export interface DayStripItem {
   key: string;
@@ -15,6 +16,7 @@ export interface DayStripItem {
  * kind-colored dot under session days, a filled ring on today, and an
  * ink-filled circle (canvas-colored numeral) on the selected day. */
 export function DayStrip({ items, onSelect }: { items: DayStripItem[]; onSelect: (key: string) => void }) {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.row}>
       {items.map((item) => (
@@ -32,7 +34,7 @@ export function DayStrip({ items, onSelect }: { items: DayStripItem[]; onSelect:
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   column: { flex: 1, alignItems: 'center', gap: theme.spacing.xs },
   weekday: { ...theme.type.label, color: theme.colors.inkMuted },
@@ -59,4 +61,4 @@ const styles = StyleSheet.create((theme) => ({
   selectedNumber: { color: theme.colors.canvas },
   dotSlot: { height: 6, justifyContent: 'center' },
   dot: { width: 6, height: 6, borderRadius: 3 },
-}));
+});

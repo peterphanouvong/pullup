@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StyleSheet } from 'react-native-unistyles';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 /** Canvas-bg wrapper with top-safe-area padding. Screens own their own
  * horizontal/bottom padding (via a ScrollView contentContainerStyle) so this
@@ -14,12 +15,13 @@ export function Screen({
   style?: StyleProp<ViewStyle>;
 }) {
   const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(createStyles);
   return <View style={[styles.container, { paddingTop: insets.top }, style]}>{children}</View>;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.canvas,
   },
-}));
+});

@@ -1,5 +1,6 @@
-import { ActivityIndicator, Pressable, Text } from 'react-native';
-import { StyleSheet, useUnistyles } from 'react-native-unistyles';
+import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 /** Full-width pill CTA (accent bg, onAccent text) — "Start workout" /
  * "Finish" / "Make this my programme" actions. */
@@ -14,7 +15,8 @@ export function PrimaryButton({
   disabled?: boolean;
   loading?: boolean;
 }) {
-  const { theme } = useUnistyles();
+  const theme = useTheme();
+  const styles = useThemedStyles(createStyles);
   const inactive = disabled || loading;
   return (
     <Pressable
@@ -27,7 +29,7 @@ export function PrimaryButton({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   button: {
     backgroundColor: theme.colors.accent,
     borderRadius: theme.radii.pill,
@@ -38,4 +40,4 @@ const styles = StyleSheet.create((theme) => ({
   pressed: { opacity: 0.85 },
   inactive: { opacity: 0.5 },
   label: { ...theme.type.heading, color: theme.colors.onAccent },
-}));
+});

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
-import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native';
-import { StyleSheet } from 'react-native-unistyles';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 
 /** Card bg, radius xl, shadow.card, padding lg. Becomes a `Pressable` when
  * `onPress` is given, otherwise a plain `View`. */
@@ -13,6 +14,7 @@ export function Card({
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
 }) {
+  const styles = useThemedStyles(createStyles);
   if (onPress) {
     return (
       <Pressable onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.pressed, style]}>
@@ -23,7 +25,7 @@ export function Card({
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const createStyles = (theme: Theme) => StyleSheet.create({
   card: {
     backgroundColor: theme.colors.card,
     borderRadius: theme.radii.xl,
@@ -31,4 +33,4 @@ const styles = StyleSheet.create((theme) => ({
     ...theme.shadow.card,
   },
   pressed: { opacity: 0.85 },
-}));
+});
