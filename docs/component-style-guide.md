@@ -88,11 +88,14 @@ makes it harder to read for no gain.
   | --- | --- | --- |
   | `primary` | `glassProminent` in `accent` | Commitments: Start workout, Done |
   | `secondary` (default) | `glass` | Optional but real: Add Exercise, Share |
-  | `tonal` | `bordered`, `ink` wash, `md` radius | Actions inside a card: Add Set |
+  | `tonal` | `glassProminent` tinted `tonalFill` | Actions inside a card: Add Set |
   | `ghost` | `borderless` | Tertiary actions, links |
 
-  Tonal exists because glass on a glass card muddies; inside a card the
-  button should read as one of the card's controls, like the set-row chips.
+  Tonal is still a real Liquid Glass capsule. The prominent style fills
+  with its tint, so a soft translucent tint gives a soft glass fill, with
+  more presence than clear glass on a glass card. (SwiftUI's `bordered`
+  style was tried first: it's a flat rounded rectangle and stopped looking
+  like our other buttons.)
   There's no `outline` (SwiftUI has no native outline style) and no `cta`
   (that's `primary`). Destructive is a colour, not a variant: pass
   `tint={theme.colors.danger}`.
@@ -141,7 +144,7 @@ mid-swipe.
   liquid-glass backgrounds) rather than custom views.
   The exception is the workout screen: native bar items have a fixed size
   with no option to shrink them in the left/right placements, so its header
-  hosts small SwiftUI glass buttons (`header-buttons.tsx`) in
+  hosts SwiftUI glass buttons at the `regular` control size (`small` was too small) (`header-buttons.tsx`) in
   `Stack.Toolbar.View` with `hidesSharedBackground`. Discard lives in the
   Finish menu rather than as its own bin button.
 

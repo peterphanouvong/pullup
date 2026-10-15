@@ -73,6 +73,10 @@ const lightColors = {
   // buttons): a faint translucent chip, so they stay part of the glass
   // instead of punching opaque holes in it.
   glassControl: 'rgba(17, 17, 17, 0.06)',
+  // Fill for the tonal NativeButton (Add Set): fed to the glass prominent
+  // style as its tint, so it stays a real Liquid Glass capsule but reads a
+  // step lighter than the card instead of the near-white accent.
+  tonalFill: 'rgba(17, 17, 17, 0.08)',
   // `glass` flattened over `canvas`. Rows that must be opaque (a swipeable
   // row has to hide the delete action sitting behind it) use this so they
   // disappear into the card instead of reading as a lighter patch.
@@ -114,6 +118,7 @@ const darkColors = {
   glass: 'rgba(40, 40, 43, 0.72)',
   glassBorder: 'rgba(255, 255, 255, 0.10)',
   glassControl: 'rgba(255, 255, 255, 0.10)',
+  tonalFill: 'rgba(255, 255, 255, 0.14)',
   glassSolid: '#202022',
   doneRow: 'rgba(226, 123, 182, 0.14)',
   doneChip: 'rgba(226, 123, 182, 0.28)',

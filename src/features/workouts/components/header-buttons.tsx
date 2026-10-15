@@ -13,7 +13,8 @@ import { useTheme } from '@/styles/use-theme';
 /** Compact header controls for the workout screen.
  *
  * Native bar button items have a fixed system size and no size option in the
- * left/right placements, which made the workout header feel heavy. These are
+ * left/right placements, which made the workout header feel heavy. These sit
+ * at SwiftUI's `regular` control size — `small` went too far the other way. These are
  * small SwiftUI glass buttons hosted in `Stack.Toolbar.View` (with
  * `hidesSharedBackground`, so the bar doesn't draw a second capsule around
  * them). Each host sizes itself to its button. */
@@ -36,11 +37,11 @@ export function HeaderIconButton({
         modifiers={[
           buttonStyle('glass'),
           buttonBorderShape('circle'),
-          controlSize('small'),
+          controlSize('regular'),
           a11yLabel(accessibilityLabel),
         ]}
       >
-        <Image systemName={icon} size={14} color={theme.colors.ink} />
+        <Image systemName={icon} size={17} color={theme.colors.ink} />
       </Button>
     </Host>
   );
@@ -56,7 +57,7 @@ export function FinishMenu({ onFinish, onDiscard }: { onFinish: () => void; onDi
     <Host matchContents seedColor={theme.colors.accent}>
       <Menu
         label={<Text modifiers={[foregroundColor(theme.colors.onAccent)]}>Finish</Text>}
-        modifiers={[buttonStyle('glassProminent'), controlSize('small'), tint(theme.colors.accent)]}
+        modifiers={[buttonStyle('glassProminent'), controlSize('regular'), tint(theme.colors.accent)]}
       >
         <Button label="Finish workout" systemImage="checkmark" onPress={onFinish} />
         <Divider />

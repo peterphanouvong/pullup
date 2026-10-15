@@ -1,7 +1,7 @@
 import type { StyleProp, ViewStyle } from 'react-native';
 import type { SFSymbol } from 'expo-symbols';
 import { Button, Host, HStack, Image, Text } from '@expo/ui/swift-ui';
-import { buttonBorderShape, buttonStyle, controlSize, foregroundColor, frame, tint } from '@expo/ui/swift-ui/modifiers';
+import { buttonStyle, controlSize, foregroundColor, frame, tint } from '@expo/ui/swift-ui/modifiers';
 import { useTheme } from '@/styles/use-theme';
 
 export type NativeButtonSize = 'small' | 'regular' | 'large';
@@ -9,16 +9,19 @@ export type NativeButtonSize = 'small' | 'regular' | 'large';
 /** How much weight the button carries, from most to least:
  * - `primary`: filled glass in `accent`. A commitment — Start workout, Done.
  * - `secondary`: clear Liquid Glass. Real but optional — Add Exercise, Share.
- * - `tonal`: a soft solid-ish fill in a rounded rectangle, for actions that
- *   live *inside* a card — Add Set. Glass on glass muddies; this reads as a
- *   control of the card, matching the set-row chips.
+ * - `tonal`: the same Liquid Glass capsule, tinted with a soft translucent
+ *   fill (`tonalFill`) instead of the accent. For actions inside a card —
+ *   Add Set — that need more presence than clear glass but aren't a
+ *   commitment.
  * - `ghost`: label only, no container. Tertiary actions and links. */
 export type NativeButtonVariant = 'primary' | 'secondary' | 'tonal' | 'ghost';
 
 const BUTTON_STYLES = {
   primary: 'glassProminent',
   secondary: 'glass',
-  tonal: 'bordered',
+  // Tonal is glassProminent with a translucent tint: the prominent style
+  // fills with its tint, so a soft tint gives a soft glass fill.
+  tonal: 'glassProminent',
   ghost: 'borderless',
 } as const;
 
@@ -47,7 +50,7 @@ const FILL = 100_000;
  *   `false` to hug the label. `style` goes on the host, e.g. `{ flex: 1 }`
  *   to share a row.
  * - `tint` overrides the fill: the primary fill (default `accent`), the
- *   tonal wash (default `ink`, which SwiftUI draws at low alpha), or a
+ *   tonal fill (default `tonalFill`), or a
  *   tint on secondary glass (untinted by default). `labelColor` colours the
  *   label and symbol, defaulting to whatever contrasts with the fill.
  *
@@ -82,7 +85,7 @@ export function NativeButton({
   const theme = useTheme();
   const { height, control, icon } = SIZES[size];
   const isPrimary = variant === 'primary';
-  const fill = tintColor ?? (variant === 'tonal' ? theme.colors.ink : theme.colors.accent);
+  const fill = tintColor ?? (variant === 'tonal' ? theme.colors.tonalFill : theme.colors.accent);
   // Explicit, never SwiftUI's default: the primary fill takes our
   // near-white accent, which would otherwise swallow a white label.
   const labelColor = labelColorProp ?? (isPrimary ? theme.colors.onAccent : theme.colors.ink);
@@ -104,9 +107,6 @@ export function NativeButton({
         modifiers={[
           buttonStyle(BUTTON_STYLES[variant]),
           controlSize(control),
-          // Tonal sits inside cards, so it takes the card's rounded-rect
-          // language (the set-row chips' radius) instead of a capsule.
-          ...(variant === 'tonal' ? [buttonBorderShape('roundedRectangle', theme.radii.md)] : []),
           ...(applyTint ? [tint(fill)] : []),
         ]}
       >
