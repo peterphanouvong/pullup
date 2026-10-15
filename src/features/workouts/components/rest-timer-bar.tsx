@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { use$ } from '@legendapp/state/react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '@/lib/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
@@ -45,6 +45,8 @@ export function RestTimerBar() {
   // Tracks which timer's zero-crossing already fired a haptic (by its
   // endsAt), so re-rendering on every 1s tick never re-fires it.
   const firedForRef = useRef<string | null>(null);
+  // The last countdown second already knocked, so each of 3-2-1 fires once.
+  const lastKnockRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!timer) return;
@@ -58,9 +60,15 @@ export function RestTimerBar() {
   // `remaining` against the latest tick without stashing time in state.
   useEffect(() => {
     if (!timer) return;
+    // A soft knock on each of the last three seconds, so you can feel the
+    // rest running out with the phone face-down on the bench.
+    if (remaining > 0 && remaining <= 3 && lastKnockRef.current !== remaining) {
+      lastKnockRef.current = remaining;
+      haptics.countdown();
+    }
     if (remaining <= 0 && firedForRef.current !== timer.endsAt) {
       firedForRef.current = timer.endsAt;
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      haptics.success();
     }
     if (remaining <= -AUTO_DISMISS_SECONDS) {
       skipRestTimer();
@@ -80,17 +88,29 @@ export function RestTimerBar() {
         <View style={[styles.trackFill, { width: `${remainingFraction(timer, now) * 100}%` }]} />
       </View>
 
-      <Pressable style={styles.adjustButton} onPress={() => adjustRestTimer(-15)} hitSlop={8}>
+      <Pressable style={styles.adjustButton} onPress={() => {
+          haptics.tap();
+          adjustRestTimer(-15);
+        }} hitSlop={8}>
         <Text style={styles.adjustLabel}>-15s</Text>
       </Pressable>
 
       <Text style={styles.remaining}>{formatRemaining(remaining)}</Text>
 
-      <Pressable style={styles.adjustButton} onPress={() => adjustRestTimer(15)} hitSlop={8}>
+      <Pressable style={styles.adjustButton} onPress={() => {
+          haptics.tap();
+          adjustRestTimer(15);
+        }} hitSlop={8}>
         <Text style={styles.adjustLabel}>+15s</Text>
       </Pressable>
 
-      <Pressable onPress={skipRestTimer} hitSlop={8}>
+      <Pressable
+        onPress={() => {
+          haptics.tap();
+          skipRestTimer();
+        }}
+        hitSlop={8}
+      >
         <Text style={styles.skipLabel}>Skip</Text>
       </Pressable>
     </View>

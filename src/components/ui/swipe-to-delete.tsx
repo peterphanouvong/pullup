@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
+import { haptics } from '@/lib/haptics';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 
@@ -40,6 +41,9 @@ export function SwipeToDelete({
       overshootLeft={false}
       overshootRight={false}
       childrenContainerStyle={childStyle ?? styles.children}
+      // A tick as the swipe crosses its threshold and the action latches
+      // open, the way system swipe actions feel.
+      onSwipeableWillOpen={() => haptics.select()}
       renderLeftActions={
         leadingAction != null
           ? () => (

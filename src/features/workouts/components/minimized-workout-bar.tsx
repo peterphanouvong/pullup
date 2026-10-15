@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { GlassSurface } from '@/components/ui/glass-surface';
+import { haptics } from '@/lib/haptics';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { discardWorkout, useCurrentExerciseName } from '../hooks';
@@ -48,10 +49,12 @@ export function MinimizedWorkoutBar({ workout }: { workout: Workout }) {
   }, []);
 
   function openWorkout() {
+    haptics.tap();
     router.push(`/workout/${workout.id}`);
   }
 
   function confirmDiscard() {
+    haptics.warning();
     Alert.alert(
       'Discard workout?',
       "This removes the workout and everything logged in it. This can't be undone.",

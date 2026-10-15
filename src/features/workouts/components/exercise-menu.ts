@@ -6,6 +6,7 @@
  */
 
 import { ActionSheetIOS, Alert, Platform } from 'react-native';
+import { haptics } from '@/lib/haptics';
 import { router } from 'expo-router';
 import { removeExercise, moveExerciseInWorkout, updateExerciseRestSeconds } from '../hooks';
 import { startRestTimer } from '../rest-timer';
@@ -45,7 +46,10 @@ export function openStartRestSheet(): void {
       { title: 'Start rest timer', options: [...labels, 'Cancel'], cancelButtonIndex: labels.length },
       (index) => {
         const seconds = presets[index]?.seconds;
-        if (seconds != null) startRestTimer(seconds);
+        if (seconds != null) {
+          haptics.tap();
+          startRestTimer(seconds);
+        }
       },
     );
     return;
@@ -55,7 +59,9 @@ export function openStartRestSheet(): void {
     ...presets.map((preset) => ({
       text: preset.label,
       onPress: () => {
-        if (preset.seconds != null) startRestTimer(preset.seconds);
+        if (preset.seconds == null) return;
+        haptics.tap();
+        startRestTimer(preset.seconds);
       },
     })),
     { text: 'Cancel', style: 'cancel' as const },
@@ -87,6 +93,7 @@ export function openRestTimerSheet(workoutExerciseId: string): void {
 }
 
 function confirmRemoveExercise(workoutExerciseId: string): void {
+  haptics.warning();
   Alert.alert('Remove exercise?', "This removes it and all its logged sets. This can't be undone.", [
     { text: 'Cancel', style: 'cancel' },
     { text: 'Remove', style: 'destructive', onPress: () => removeExercise(workoutExerciseId) },

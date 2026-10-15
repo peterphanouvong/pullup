@@ -22,6 +22,7 @@ import {
 import { WorkoutHeaderTitle } from '@/features/workouts/components/workout-header';
 import { WorkoutSkeleton } from '@/features/workouts/components/workout-skeleton';
 import { NativeButton } from '@/components/ui/native-button';
+import { haptics } from '@/lib/haptics';
 import { discardWorkout, useWorkout } from '@/features/workouts/hooks';
 import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selectors';
 
@@ -88,6 +89,7 @@ export default function WorkoutScreen() {
    * case you logged the numbers and forgot the ticks. */
   function handleFinish() {
     if (completedCount === 0) {
+      haptics.warning();
       Alert.alert('No sets completed', 'Nothing has been ticked off yet. Discard this workout?', [
         { text: 'Keep logging', style: 'cancel' },
         { text: 'Save anyway', onPress: goToSave },
@@ -102,6 +104,7 @@ export default function WorkoutScreen() {
       ]);
       return;
     }
+    haptics.commit();
     goToSave();
   }
 
@@ -128,7 +131,10 @@ export default function WorkoutScreen() {
               iconSize={HEADER_CHEVRON_SIZE}
               size="large"
               accessibilityLabel="Minimize workout"
-              onPress={() => router.back()}
+              onPress={() => {
+                haptics.tap();
+                router.back();
+              }}
             />
             <WorkoutHeaderTitle
               workout={workout}
@@ -145,7 +151,11 @@ export default function WorkoutScreen() {
             item — that's how Finish disappeared once the title moved left. */}
         <Stack.Toolbar.View hidesSharedBackground>
           <View style={styles.trailing}>
-            <HeaderIconButton icon="timer" accessibilityLabel="Start rest timer" onPress={openStartRestSheet} />
+            <HeaderIconButton icon="timer" accessibilityLabel="Start rest timer" onPress={() => {
+                haptics.tap();
+                openStartRestSheet();
+              }}
+            />
             <HeaderPrimaryButton label="Finish" onPress={handleFinish} />
           </View>
         </Stack.Toolbar.View>

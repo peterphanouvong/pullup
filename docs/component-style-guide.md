@@ -230,9 +230,23 @@ scrolling content — the one place glass refracts something worth seeing.
 
 ## Motion, haptics and perceived speed
 
-- Haptics mark achievement, not interaction: light on completing a set and on
-  fill-down, medium on starting a session, success on finishing. Nothing on
-  undoing. Fire them **after** any guard, so feedback never marks a no-op.
+- **Haptics go through `src/lib/haptics.ts`**, never `expo-haptics`
+  directly, and are named by meaning so a kind of moment always feels the
+  same. Weight follows consequence:
+
+  | Call | Feel | Used for |
+  | --- | --- | --- |
+  | `select` | selection tick | Week pill, set type, date, picker chip, popover, swipe latching open, reordering, un-ticking a set |
+  | `tap` | light | Add set/exercise, copy last time, ±15s, skip, open timer, minimise, share |
+  | `complete` | rigid | Ticking a set; the summary numeral landing |
+  | `commit` | medium | Start a session, Finish, delete a set or exercise, start a hold |
+  | `success` | success | Workout saved, rest over |
+  | `warning` | warning | Any discard/remove prompt appearing |
+  | `countdown` | soft | Each of the last 3 seconds of a rest |
+
+  Fire **after** any guard, so feedback never marks a no-op (a move at the
+  end of the list, re-selecting the week you're on). Programmatic changes
+  (auto-dismissing the timer, discarding on finish) stay silent.
 - Heavy screens render a **skeleton** first and mount real content once the
   transition has had its frames. Modal open animations and first render of a
   long card list compete for the same frames otherwise.

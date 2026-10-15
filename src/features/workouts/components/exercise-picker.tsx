@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { SectionLabel } from '@/components/ui/section-label';
+import { haptics } from '@/lib/haptics';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { useExerciseSearch, useRecentExercises } from '../hooks';
@@ -64,9 +65,15 @@ export function ExercisePicker({ onPick }: { onPick: (exercise: Exercise) => voi
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chipRow}
       >
-        <GroupChip label="All" active={group == null} onPress={() => setGroup(null)} />
+        <GroupChip label="All" active={group == null} onPress={() => {
+            if (group != null) haptics.select();
+            setGroup(null);
+          }} />
         {groups.map((g) => (
-          <GroupChip key={g} label={g} active={group === g} onPress={() => setGroup(group === g ? null : g)} />
+          <GroupChip key={g} label={g} active={group === g} onPress={() => {
+              haptics.select();
+              setGroup(group === g ? null : g);
+            }} />
         ))}
       </ScrollView>
 

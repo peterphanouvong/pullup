@@ -11,7 +11,7 @@
  * re-render any screen reading `useWorkout` live.
  */
 
-import * as Haptics from 'expo-haptics';
+import { haptics } from '@/lib/haptics';
 import { use$ } from '@legendapp/state/react';
 import type { ProgramDay } from '@/features/programs/types';
 import { buildAddedExercise, buildReplacement, moveExercise } from './edit';
@@ -39,7 +39,7 @@ import type { Exercise, SetType, Workout, WorkoutExercise, WorkoutSet } from './
  * (via `buildWorkoutFromDay`) and writes all of them into the store. Returns
  * the new workout's id so the caller can navigate to `/workout/[id]`. */
 export function startWorkoutFromDay(day: ProgramDay, programDayId: string, userId: string): string {
-  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  haptics.commit();
   const { workout, exercises, sets } = buildWorkoutFromDay(day, {
     userId,
     programDayId,
@@ -58,6 +58,7 @@ export function startWorkoutFromDay(day: ProgramDay, programDayId: string, userI
  * action) and returns its id. Adding exercises to it is sub-project C's
  * mid-workout exercise editor — out of scope here. */
 export function startEmptyWorkout(userId: string): string {
+  haptics.commit();
   const nowIso = new Date().toISOString();
   const workout: Workout = {
     id: generateId(),
@@ -130,11 +131,13 @@ export function addSet(workoutExerciseId: string): void {
     deleted: false,
   };
   workoutSets$[newSet.id].set(newSet);
+  haptics.tap();
 }
 
 export function softDeleteSet(setId: string): void {
   if (workoutSets$[setId].peek() == null) return;
   workoutSets$[setId].assign({ deleted: true, updated_at: new Date().toISOString() });
+  haptics.commit();
 }
 
 export function updateExerciseNotes(workoutExerciseId: string, notes: string): void {
@@ -147,6 +150,7 @@ export function updateExerciseNotes(workoutExerciseId: string, notes: string): v
 export function updateExerciseRestSeconds(workoutExerciseId: string, restSeconds: number | null): void {
   if (workoutExercises$[workoutExerciseId].peek() == null) return;
   workoutExercises$[workoutExerciseId].assign({ rest_seconds: restSeconds, updated_at: new Date().toISOString() });
+  haptics.select();
 }
 
 export function finishWorkout(id: string, now: Date): void {
@@ -156,7 +160,7 @@ export function finishWorkout(id: string, now: Date): void {
   if (workouts$[id].peek() == null) return;
   // After the guard: the success tap should mark a workout that actually
   // finished, not a no-op.
-  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  haptics.success();
   workouts$[id].assign({ finished_at: now.toISOString(), updated_at: now.toISOString() });
   // A rest timer from the just-finished workout's last set must not keep
   // counting down (or reappear) once the workout is over.
@@ -175,7 +179,7 @@ export function saveWorkout(
   const workout = workouts$[id].peek();
   if (workout == null) return;
   const times = savedTimes(workout.started_at, details.startedAt, now);
-  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  haptics.success();
   workouts$[id].assign({
     title: details.title.trim() || workout.title,
     notes: details.notes.trim() || null,
@@ -237,6 +241,7 @@ export function addExerciseToWorkout(workoutId: string, userId: string, exercise
 
   workoutExercises$[newExercise.id].set(newExercise);
   workoutSets$[set.id].set(set);
+  haptics.tap();
 }
 
 /** "Replace exercise": swaps the SAME `workout_exercise` row's identity
@@ -249,6 +254,7 @@ export function replaceExercise(workoutExerciseId: string, exercise: Exercise): 
     ...buildReplacement(exercise),
     updated_at: new Date().toISOString(),
   });
+  haptics.tap();
 }
 
 /** "Remove exercise": soft-deletes the `workout_exercise` row and every live
@@ -257,6 +263,7 @@ export function replaceExercise(workoutExerciseId: string, exercise: Exercise): 
  * site's concern (the ⋮ menu's destructive Alert). */
 export function removeExercise(workoutExerciseId: string): void {
   if (workoutExercises$[workoutExerciseId].peek() == null) return;
+  haptics.commit();
   const nowIso = new Date().toISOString();
   workoutExercises$[workoutExerciseId].assign({ deleted: true, updated_at: nowIso });
 
@@ -278,6 +285,8 @@ export function moveExerciseInWorkout(workoutId: string, workoutExerciseId: stri
     .sort((a, b) => a.position - b.position);
 
   const writes = moveExercise(visibleSorted, workoutExerciseId, dir);
+  // Empty at either end of the list: nothing moved, so nothing to feel.
+  if (writes.length > 0) haptics.select();
   const nowIso = new Date().toISOString();
   for (const write of writes) {
     workoutExercises$[write.id].assign({ position: write.position, updated_at: nowIso });

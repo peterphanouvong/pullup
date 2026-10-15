@@ -12,6 +12,7 @@ import {
   padding,
 } from '@expo/ui/swift-ui/modifiers';
 import { useTheme } from '@/styles/use-theme';
+import { haptics } from '@/lib/haptics';
 import { elapsedSeconds } from '../selectors';
 import type { Workout } from '../types';
 
@@ -88,7 +89,11 @@ export function WorkoutHeaderTitle({
     <Host matchContents seedColor={theme.colors.accent}>
       <Popover isPresented={isOpen} onIsPresentedChange={setIsOpen} arrowEdge="top">
         <Popover.Trigger>
-          <Button onPress={() => setIsOpen(true)} modifiers={[buttonStyle('plain'), a11yLabel(`${workout.title}, show stats`)]}>
+          <Button
+            onPress={() => {
+              haptics.select();
+              setIsOpen(true);
+            }} modifiers={[buttonStyle('plain'), a11yLabel(`${workout.title}, show stats`)]}>
             <VStack
               alignment="leading"
               spacing={1}

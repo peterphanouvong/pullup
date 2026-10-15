@@ -4,6 +4,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { DatePicker, Host } from '@expo/ui/swift-ui';
 import { NativeButton } from '@/components/ui/native-button';
+import { haptics } from '@/lib/haptics';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import {
@@ -61,6 +62,7 @@ export default function SaveWorkoutScreen() {
   }
 
   function handleDiscard() {
+    haptics.warning();
     Alert.alert(
       'Discard workout?',
       "This removes the workout and everything logged in it. This can't be undone.",
@@ -92,7 +94,10 @@ export default function SaveWorkoutScreen() {
             iconSize={HEADER_CHEVRON_SIZE}
             size="large"
             accessibilityLabel="Back to workout"
-            onPress={() => router.back()}
+            onPress={() => {
+            haptics.tap();
+            router.back();
+          }}
           />
         </Stack.Toolbar.View>
       </Stack.Toolbar>
@@ -153,7 +158,10 @@ export default function SaveWorkoutScreen() {
               selection={startedAt}
               range={{ end: now }}
               displayedComponents={['date', 'hourAndMinute']}
-              onDateChange={setStartedAt}
+              onDateChange={(date) => {
+                haptics.select();
+                setStartedAt(date);
+              }}
             />
           </Host>
         </View>

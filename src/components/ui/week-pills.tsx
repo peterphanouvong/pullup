@@ -5,6 +5,7 @@ import { buttonStyle, foregroundColor, tint } from '@expo/ui/swift-ui/modifiers'
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import type { ProgramWeek } from '@/features/programs/types';
+import { haptics } from '@/lib/haptics';
 
 /** Approximate pill pitch used to pre-scroll the selected week into view. */
 const PILL_PITCH = 96;
@@ -62,7 +63,10 @@ export function WeekPills({
             return (
               <Button
                 key={week.id}
-                onPress={() => onSelect(week.position)}
+                onPress={() => {
+                  if (week.position !== viewedPosition) haptics.select();
+                  onSelect(week.position);
+                }}
                 modifiers={[
                   buttonStyle(isViewed ? 'glassProminent' : 'glass'),
                   ...(isViewed ? [tint(theme.colors.ink)] : []),

@@ -19,7 +19,7 @@ import { useNumericField } from '../numeric-input';
 import { previousSet } from '../selectors';
 import { workoutExercises$, workouts$, workoutSets$ } from '../store';
 import type { WorkoutSet } from '../types';
-import * as Haptics from 'expo-haptics';
+import { haptics } from '@/lib/haptics';
 import { fillDownTargets, fillFromPrevious } from '../edit';
 import { startRestTimer } from '../rest-timer';
 import { completeSet, nextSetType, softDeleteSet, updateSet } from '../hooks';
@@ -150,7 +150,7 @@ export function SetRow({
         : field === 'reps'
           ? { reps: set.reps }
           : { weight_kg: set.weight_kg };
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    haptics.tap();
     for (const id of targets) updateSet(id, patch);
   }
 
@@ -192,7 +192,7 @@ export function SetRow({
   function startHold() {
     const seconds = set.duration_seconds;
     if (seconds == null || seconds <= 0) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    haptics.commit();
     startRestTimer(seconds);
   }
 
@@ -201,15 +201,18 @@ export function SetRow({
       // Empty inputs log what their placeholders showed: last time's lift.
       const borrowed = fillFromPrevious(set, previous);
       if (Object.keys(borrowed).length > 0) updateSet(set.id, borrowed);
-      // Light tap on the way in, nothing on un-completing: the feedback
-      // marks the achievement, not the toggle.
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // A crisp knock on the way in: the beat of the session.
+      haptics.complete();
+    } else {
+      // Undoing gets the lightest touch, so it's felt but not celebrated.
+      haptics.select();
     }
     completeSet(set.id, new Date());
   }
 
   function copyGhost() {
     if (!previous) return;
+    haptics.tap();
     if (isDuration) {
       updateSet(set.id, { duration_seconds: previous.duration_seconds });
     } else {
@@ -234,7 +237,10 @@ export function SetRow({
     <View style={[styles.row, isCompleted && styles.rowCompleted, isEditing && styles.rowEditing]}>
       <Pressable
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
-        onPress={() => updateSet(set.id, { set_type: nextSetType(set.set_type) })}
+        onPress={() => {
+          haptics.select();
+          updateSet(set.id, { set_type: nextSetType(set.set_type) });
+        }}
       >
         <View style={[styles.chip, isCompleted && styles.chipDone]}>
           <Text style={[styles.setNumber, { color: typeColor }]}>{setNumberLabel(siblingSets, set)}</Text>

@@ -4,6 +4,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { NativeButton } from '@/components/ui/native-button';
+import { haptics } from '@/lib/haptics';
 import { Screen } from '@/components/ui/screen';
 import { SectionLabel } from '@/components/ui/section-label';
 import { useThemedStyles } from '@/styles/use-theme';
@@ -64,20 +65,22 @@ export default function WorkoutSummaryScreen() {
   const [heroAnim] = useState(() => new Animated.Value(0));
   const [restAnim] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    Animated.sequence([
-      Animated.timing(heroAnim, {
-        toValue: 1,
-        duration: 420,
-        easing: Easing.out(Easing.back(1.6)),
-        useNativeDriver: true,
-      }),
+    Animated.timing(heroAnim, {
+      toValue: 1,
+      duration: 420,
+      easing: Easing.out(Easing.back(1.6)),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      // The numeral lands with a knock you can feel: the save already
+      // played success, this is the number arriving.
+      if (finished) haptics.complete();
       Animated.timing(restAnim, {
         toValue: 1,
         duration: 260,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
-      }),
-    ]).start();
+      }).start();
+    });
   }, [heroAnim, restAnim]);
 
   // Week context for the copy: how far this session got us, and how close
@@ -116,6 +119,7 @@ export default function WorkoutSummaryScreen() {
 
   async function handleShare() {
     if (isSharing) return;
+    haptics.tap();
     setIsSharing(true);
     try {
       const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
