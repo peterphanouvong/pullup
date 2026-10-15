@@ -92,6 +92,12 @@ makes it harder to read for no gain.
     mode, so a default white label vanishes into the prominent fill.
 - `Host`'s `seedColor` themes the SwiftUI accent. Without it, prominent
   buttons paint themselves system blue.
+- Size and colour are props: `size` (`small` / `regular` / `large`, default
+  large), `fullWidth` (default true; false hugs the label), `tint` for the
+  prominent fill or a glass tint, `labelColor`, and `style` for host layout
+  such as `flex: 1`. Colours come from `theme.colors`. Plain glass is left
+  untinted unless `tint` is passed, so secondary buttons don't pick up the
+  near-white accent.
 
 ### Where SwiftUI can't go
 
