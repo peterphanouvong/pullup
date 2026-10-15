@@ -13,13 +13,20 @@ import { frame, glassEffect } from '@expo/ui/swift-ui/modifiers';
  * quiet translucent sheet, and it comes alive where content scrolls under
  * it. On iOS versions without Liquid Glass the modifier is a no-op, so
  * callers should keep a solid background underneath as the fallback. */
-export function GlassSurface({ cornerRadius }: { cornerRadius: number }) {
+export function GlassSurface({
+  cornerRadius = 0,
+  shape = 'roundedRectangle',
+}: {
+  cornerRadius?: number;
+  /** `capsule` for pill-shaped surfaces; the radius is then ignored. */
+  shape?: 'roundedRectangle' | 'capsule';
+}) {
   return (
     <Host style={StyleSheet.absoluteFill} pointerEvents="none">
       <VStack
         modifiers={[
           frame({ maxWidth: Number.MAX_SAFE_INTEGER, maxHeight: Number.MAX_SAFE_INTEGER }),
-          glassEffect({ glass: { variant: 'regular' }, shape: 'roundedRectangle', cornerRadius }),
+          glassEffect({ glass: { variant: 'regular' }, shape, cornerRadius }),
         ]}
       >
         <Spacer />

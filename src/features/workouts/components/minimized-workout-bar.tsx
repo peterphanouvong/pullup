@@ -3,6 +3,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { GlassSurface } from '@/components/ui/glass-surface';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { discardWorkout, useCurrentExerciseName } from '../hooks';
@@ -27,7 +28,11 @@ function formatElapsedCompact(totalSeconds: number): string {
 /** Hevy-style minimized bar for a live workout, floating above the tab bar:
  * chevron.up to expand, green live dot + title + ticking elapsed time, the
  * exercise the lifter is on, and a trash button to discard. Tapping anywhere
- * else on the bar also reopens the workout. */
+ * else on the bar also reopens the workout.
+ *
+ * The bar is a Liquid Glass capsule: it floats over scrolling content, which
+ * is exactly where glass earns its keep. The translucent fill underneath is
+ * the pre-iOS-26 fallback. */
 export function MinimizedWorkoutBar({ workout }: { workout: Workout }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -66,6 +71,7 @@ export function MinimizedWorkoutBar({ workout }: { workout: Workout }) {
         pressed && styles.barPressed,
       ]}
     >
+      <GlassSurface shape="capsule" />
       <Pressable
         onPress={openWorkout}
         style={({ pressed }) => [styles.circle, pressed && styles.circlePressed]}
@@ -106,17 +112,20 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.glass,
     borderRadius: theme.radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.glassBorder,
     padding: theme.spacing.sm,
-    ...theme.shadow.float,
+    // Clips the glass layer to the capsule.
+    overflow: 'hidden',
   },
   barPressed: { opacity: 0.95 },
   circle: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: theme.colors.canvas,
+    backgroundColor: theme.colors.glassControl,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -23,7 +23,8 @@ const KIND_LABELS: Record<DayKind, string> = {
  *
  * Days you didn't do carry no penalty treatment: a skipped session is a
  * fact, not a scolding, and fading it only makes the week harder to read.
- * The only state the card marks is done — a tick, and a gentle mute. */
+ * Done is marked the same way a completed set row is — a filled tick and a
+ * soft `doneRow` wash — never by dimming, which reads as disabled. */
 export function WeekDayCard({
   day,
   state,
@@ -52,7 +53,7 @@ export function WeekDayCard({
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  const muted = state === 'done';
+  const done = state === 'done';
 
   const body = (
     <View style={styles.row}>
@@ -64,7 +65,7 @@ export function WeekDayCard({
       <View style={styles.divider} />
 
       <View style={styles.body}>
-        <Text style={[styles.title, muted && styles.mutedText]} numberOfLines={2}>
+        <Text style={styles.title} numberOfLines={2}>
           {stripWeekdayPrefix(day.name)}
         </Text>
         {metrics != null ? (
@@ -86,7 +87,7 @@ export function WeekDayCard({
       </View>
 
       <View style={styles.trailing}>
-        {state === 'done' ? (
+        {done ? (
           <View style={styles.checkCircle}>
             <SymbolView name="checkmark" size={13} tintColor={theme.colors.onGradient} />
           </View>
@@ -97,13 +98,14 @@ export function WeekDayCard({
     </View>
   );
 
-  const cardStyle = [styles.card, isToday && styles.cardToday, state === 'done' && styles.cardDone];
+  const cardStyle = [styles.card, done && styles.cardDone, isToday && styles.cardToday];
 
   const content = (
     <>
       {/* Real SwiftUI Liquid Glass behind the row; the card's own
           translucent fill stays as the pre-iOS-26 fallback. */}
       <GlassSurface cornerRadius={theme.radii.xl} />
+      {done && <View style={styles.doneWash} pointerEvents="none" />}
       {body}
       {onStart != null && <NativeButton label={startLabel} systemImage="play.fill" onPress={onStart} prominent />}
     </>
@@ -132,7 +134,11 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     ...theme.shadow.card,
   },
   cardToday: { borderWidth: 1.5, borderColor: theme.colors.done },
-  cardDone: { opacity: 0.75 },
+  // Done edge: the wash's colour carried to the hairline, so the card reads
+  // as complete at full strength rather than greyed out. Today's thicker
+  // `done` edge, applied after, wins when both hold.
+  cardDone: { borderColor: theme.colors.doneRow },
+  doneWash: { ...StyleSheet.absoluteFill, backgroundColor: theme.colors.doneRow },
   cardPressed: { opacity: 0.85 },
   row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
   dayBlock: { width: 48, gap: 2 },
@@ -142,7 +148,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   divider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: theme.colors.border },
   body: { flex: 1, gap: 4 },
   title: { ...theme.type.heading, color: theme.colors.ink },
-  mutedText: { color: theme.colors.inkMuted },
   metrics: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   metric: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
   metricText: { ...theme.type.caption, color: theme.colors.inkMuted, fontVariant: ['tabular-nums'] },

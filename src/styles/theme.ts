@@ -69,6 +69,10 @@ const lightColors = {
   // a lifted sheet over the canvas rather than a flat opaque panel.
   glass: 'rgba(255, 255, 255, 0.72)',
   glassBorder: 'rgba(17, 17, 17, 0.08)',
+  // Round controls sitting on a glass surface (the minimized workout bar's
+  // buttons): a faint translucent chip, so they stay part of the glass
+  // instead of punching opaque holes in it.
+  glassControl: 'rgba(17, 17, 17, 0.06)',
   // `glass` flattened over `canvas`. Rows that must be opaque (a swipeable
   // row has to hide the delete action sitting behind it) use this so they
   // disappear into the card instead of reading as a lighter patch.
@@ -106,6 +110,7 @@ const darkColors = {
   doneSoft: '#322633',
   glass: 'rgba(40, 40, 43, 0.72)',
   glassBorder: 'rgba(255, 255, 255, 0.10)',
+  glassControl: 'rgba(255, 255, 255, 0.10)',
   glassSolid: '#202022',
   doneRow: 'rgba(226, 123, 182, 0.14)',
   activeRow: 'rgba(255, 255, 255, 0.10)',

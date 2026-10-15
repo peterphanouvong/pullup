@@ -36,6 +36,7 @@ them through `useTheme()` / `useThemedStyles(createStyles)`.
 | --- | --- |
 | `canvas` / `card` | Screen background / opaque card |
 | `glass` / `glassBorder` | Translucent card fill + hairline edge |
+| `glassControl` | Round buttons sitting on a glass surface |
 | `glassSolid` | `glass` flattened over `canvas`, for rows that must be opaque |
 | `accent` / `onAccent` | Primary action fill and its label |
 | `done` / `doneRow` | Completion colour and the completed-row wash |
@@ -71,8 +72,10 @@ hairline divider, title with at-a-glance metrics, then a trailing done-check
 or chevron. The active row carries its own primary button — **the card is the
 preview, the button is the commitment.**
 
-The only state the card marks is **done** — a tick and a gentle mute — plus
-a `done`-coloured edge on today. Days you skipped are left exactly as they
+The only state the card marks is **done**, the same way a completed set row
+is: a filled tick and a soft `doneRow` wash, at full strength. Never dim a
+finished card with opacity or muted text — on a dark canvas that reads as
+disabled, not complete. Today adds a `done`-coloured edge on top. Days you skipped are left exactly as they
 were: a missed session is a fact, not a scolding, and fading half the week
 makes it harder to read for no gain.
 
@@ -175,7 +178,9 @@ Rare actions live in the header menu (`Stack.Toolbar.Menu`), not in
 persistent chrome. Starting an unplanned workout is a good example: it had a
 full-width floating button over the week list, which gave a rare action more
 weight than the plan itself. The floating slot is reserved for state that is
-genuinely live — currently just the minimized workout bar.
+genuinely live — currently just the minimized workout bar. That bar is a
+Liquid Glass capsule (`GlassSurface shape="capsule"`), since it floats over
+scrolling content — the one place glass refracts something worth seeing.
 
 ## Motion, haptics and perceived speed
 
