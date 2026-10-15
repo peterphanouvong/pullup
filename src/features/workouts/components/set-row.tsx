@@ -1,5 +1,15 @@
 import { use$ } from '@legendapp/state/react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  InputAccessoryView,
+  Keyboard,
+  // RN's own Pressable for the keyboard accessory: it is hosted outside the
+  // app's GestureHandlerRootView, so gesture-handler's would never fire.
+  Pressable as RNPressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 // Gesture-handler's Pressable: cancels its press when the row's delete
 // swipe activates instead of firing on release.
 import { Pressable } from 'react-native-gesture-handler';
@@ -103,6 +113,9 @@ export function SetRow({
   );
 
   const isCompleted = set.completed_at != null;
+  // One accessory bar per row, attached to that row's numeric inputs.
+  const accessoryId = `set-accessory-${set.id}`;
+  const fillTargetCount = fillDownTargets(siblingSets, set.id).length;
   const typeColor =
     set.set_type === 'warmup' ? theme.colors.comp : set.set_type === 'drop' || set.set_type === 'failure'
       ? theme.colors.danger
@@ -141,15 +154,8 @@ export function SetRow({
   }
 
   return (
-    <SwipeToDelete
-      onDelete={() => softDeleteSet(set.id)}
-      leadingAction={
-        fillDownTargets(siblingSets, set.id).length > 0
-          ? { label: 'Fill', icon: 'arrow.down.to.line', onPress: fillDown }
-          : undefined
-      }
-      childStyle={styles.swipeChild}
-    >
+    <>
+    <SwipeToDelete onDelete={() => softDeleteSet(set.id)} childStyle={styles.swipeChild}>
     <View style={[styles.row, isCompleted && styles.rowCompleted]}>
       <Pressable
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
@@ -167,6 +173,7 @@ export function SetRow({
       {isDuration ? (
         <TextInput
           style={[styles.input, { width: SET_TABLE_COLUMNS.cell * 2 }]}
+          inputAccessoryViewID={accessoryId}
           keyboardType="number-pad"
           placeholder="sec"
           placeholderTextColor={theme.colors.inkMuted}
@@ -177,6 +184,7 @@ export function SetRow({
         <>
           <TextInput
             style={[styles.input, { width: SET_TABLE_COLUMNS.cell }]}
+            inputAccessoryViewID={accessoryId}
             keyboardType="decimal-pad"
             placeholder="kg"
             placeholderTextColor={theme.colors.inkMuted}
@@ -185,6 +193,7 @@ export function SetRow({
           />
           <TextInput
             style={[styles.input, { width: SET_TABLE_COLUMNS.cell }]}
+            inputAccessoryViewID={accessoryId}
             keyboardType="number-pad"
             placeholder="reps"
             placeholderTextColor={theme.colors.inkMuted}
@@ -212,6 +221,27 @@ export function SetRow({
       </Pressable>
     </View>
     </SwipeToDelete>
+    {/* Keyboard toolbar for this row: "Fill down" lands exactly where the
+        lifter already is — typing a weight — instead of hiding behind a
+        swipe. Only offered when there are sets below to fill. */}
+    <InputAccessoryView nativeID={accessoryId}>
+      <View style={styles.accessory}>
+        {fillTargetCount > 0 ? (
+          <RNPressable style={styles.accessoryAction} onPress={fillDown}>
+            <SymbolView name="arrow.down.to.line" size={15} tintColor={theme.colors.accent} />
+            <Text style={styles.accessoryLabel}>
+              {`Fill down to ${fillTargetCount} set${fillTargetCount === 1 ? '' : 's'}`}
+            </Text>
+          </RNPressable>
+        ) : (
+          <View />
+        )}
+        <RNPressable style={styles.accessoryAction} onPress={() => Keyboard.dismiss()}>
+          <Text style={styles.accessoryDone}>Done</Text>
+        </RNPressable>
+      </View>
+    </InputAccessoryView>
+    </>
   );
 }
 
@@ -240,6 +270,25 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  accessory: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: theme.colors.cardElevated,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border,
+  },
+  accessoryAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.xs,
+  },
+  accessoryLabel: { ...theme.type.heading, color: theme.colors.accent },
+  accessoryDone: { ...theme.type.heading, color: theme.colors.inkMuted },
   setNumber: { ...theme.type.heading },
   ghost: { ...theme.type.body, color: theme.colors.inkMuted },
   input: {

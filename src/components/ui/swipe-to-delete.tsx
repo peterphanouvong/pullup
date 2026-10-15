@@ -82,10 +82,12 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   // The slot fills the row's height; the chip inside is inset from it, which
   // is what gives the action rounded corners instead of a full-bleed edge.
   actionSlot: { justifyContent: 'center', paddingHorizontal: theme.spacing.xs },
+  // A fixed, generous chip rather than one stretched to the row's height:
+  // short rows were squashing it into a sliver.
   action: {
     width: 76,
-    alignSelf: 'stretch',
-    marginVertical: theme.spacing.xs,
+    minHeight: 60,
+    paddingVertical: theme.spacing.md,
     borderRadius: theme.radii.md,
     alignItems: 'center',
     justifyContent: 'center',
