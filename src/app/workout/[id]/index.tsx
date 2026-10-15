@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, InteractionManager, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
@@ -23,7 +23,6 @@ import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selector
 const HEADER_HEIGHT = 44;
 
 const MODAL_OPTIONS = { presentation: 'fullScreenModal' } as const;
-const MODAL_NO_HEADER_OPTIONS = { presentation: 'fullScreenModal', headerShown: false } as const;
 
 export default function WorkoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,15 +36,22 @@ export default function WorkoutScreen() {
   // (SwiftUI-hosting) cards once the transition has finished.
   const [contentReady, setContentReady] = useState(false);
   useEffect(() => {
-    const handle = InteractionManager.runAfterInteractions(() => setContentReady(true));
-    return () => handle.cancel();
+    // A short timer rather than InteractionManager (deprecated): long enough
+    // for the modal's open animation to get its frames, short enough that
+    // the skeleton never reads as a wait.
+    const handle = setTimeout(() => setContentReady(true), 180);
+    return () => clearTimeout(handle);
   }, []);
 
   if (!workout) {
     return (
-      <Screen>
-        <Stack.Screen options={MODAL_NO_HEADER_OPTIONS} />
-        <Text style={styles.notFound}>Workout not found.</Text>
+      <Screen topInset={false}>
+        {/* Same options as the loaded state: toggling headerShown inside a
+            modal remounts the screen and loses local state. */}
+        <Stack.Screen options={MODAL_OPTIONS} />
+        <Text style={[styles.notFound, { paddingTop: insets.top + HEADER_HEIGHT }]}>
+          Workout not found.
+        </Text>
       </Screen>
     );
   }

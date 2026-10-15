@@ -1,9 +1,15 @@
 import { use$ } from '@legendapp/state/react';
-import { InputAccessoryView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  InputAccessoryView,
+  Pressable as RNPressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 // Gesture-handler's Pressable: cancels its press when the row's delete
 // swipe activates instead of firing on release.
 import { Pressable } from 'react-native-gesture-handler';
-import { NativeButton } from '@/components/ui/native-button';
 import { SwipeToDelete } from '@/components/ui/swipe-to-delete';
 import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
@@ -135,18 +141,28 @@ export function SetRow({
   }
 
   /** The floating "fill this column down" button shown above the keyboard
-   * while that column's input has focus — a button, not a toolbar. */
+   * while that column's input has focus — a button, not a toolbar.
+   *
+   * Deliberately a plain RN pill, not our SwiftUI NativeButton: an
+   * `InputAccessoryView` is hosted by the keyboard, outside the app's view
+   * hierarchy, and mounting a SwiftUI host there crashes. For the same
+   * reason the press handler is RN's Pressable, not gesture-handler's. */
   function renderFillAccessory(field: FillField) {
     return (
       <InputAccessoryView nativeID={accessoryId(field)} backgroundColor="transparent">
         {fillTargetCount > 0 ? (
           <View style={styles.accessory}>
-            <NativeButton
-              label={`Fill ${FIELD_LABELS[field]} down to ${fillTargetCount} set${
-                fillTargetCount === 1 ? '' : 's'
-              }`}
+            <RNPressable
+              style={({ pressed }) => [styles.fillButton, pressed && styles.fillButtonPressed]}
               onPress={() => fillDown(field)}
-            />
+            >
+              <SymbolView name="arrow.down.to.line" size={15} tintColor={theme.colors.onAccent} />
+              <Text style={styles.fillLabel}>
+                {`Fill ${FIELD_LABELS[field]} down to ${fillTargetCount} set${
+                  fillTargetCount === 1 ? '' : 's'
+                }`}
+              </Text>
+            </RNPressable>
           </View>
         ) : null}
       </InputAccessoryView>
@@ -276,6 +292,18 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   },
   // Just the button floating above the keyboard — no toolbar bar behind it.
   accessory: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm },
+  fillButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.accent,
+    borderRadius: theme.radii.pill,
+    paddingVertical: theme.spacing.md,
+    ...theme.shadow.float,
+  },
+  fillButtonPressed: { opacity: 0.8 },
+  fillLabel: { ...theme.type.heading, color: theme.colors.onAccent },
   setNumber: { ...theme.type.heading },
   ghost: { ...theme.type.body, color: theme.colors.inkMuted },
   input: {
