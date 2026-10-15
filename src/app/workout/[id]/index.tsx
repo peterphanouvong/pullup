@@ -21,7 +21,7 @@ import {
   HeaderIconButton,
   HeaderPrimaryButton,
 } from '@/features/workouts/components/header-buttons';
-import { WorkoutStatsRow } from '@/features/workouts/components/workout-header';
+import { WorkoutHeaderTitle, WorkoutStatsRow } from '@/features/workouts/components/workout-header';
 import { WorkoutSkeleton } from '@/features/workouts/components/workout-skeleton';
 import { NativeButton } from '@/components/ui/native-button';
 import { discardWorkout, useWorkout } from '@/features/workouts/hooks';
@@ -88,6 +88,7 @@ export default function WorkoutScreen() {
   const allSets = exercises.flatMap((e) => e.sets);
   const volumeKg = workoutVolumeKg(allSets);
   const completedCount = completedSetCount(allSets);
+  const liveSetCount = allSets.filter((s) => !s.deleted).length;
 
   function goHome() {
     router.replace('/');
@@ -127,7 +128,17 @@ export default function WorkoutScreen() {
           minimized bar picks it up on Today — the timer starts a rest, and
           Finish opens the Save step. */}
       <Stack.Screen options={MODAL_OPTIONS} />
-      <Stack.Title>{workout.title}</Stack.Title>
+      {/* Custom title: the name, plus a compact stats line that takes over
+          while the strip below is scrolled away (same animated value). */}
+      <Stack.Title asChild>
+        <WorkoutHeaderTitle
+          workout={workout}
+          volumeKg={volumeKg}
+          completedCount={completedCount}
+          totalCount={liveSetCount}
+          reveal={statsHidden}
+        />
+      </Stack.Title>
       {/* Transparent bar, same as the Programme tab: no material of its
           own, so iOS draws its soft scroll-edge effect as content passes
           under. That effect needs the ScrollView to be the screen's first
@@ -228,7 +239,7 @@ export default function WorkoutScreen() {
           workout={workout}
           volumeKg={volumeKg}
           completedCount={completedCount}
-          totalCount={allSets.filter((s) => !s.deleted).length}
+          totalCount={liveSetCount}
         />
       </Animated.View>
 
