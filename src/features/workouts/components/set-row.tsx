@@ -1,18 +1,9 @@
 import { use$ } from '@legendapp/state/react';
-import {
-  InputAccessoryView,
-  Keyboard,
-  // RN's own Pressable for the keyboard accessory: it is hosted outside the
-  // app's GestureHandlerRootView, so gesture-handler's would never fire.
-  Pressable as RNPressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { InputAccessoryView, StyleSheet, Text, TextInput, View } from 'react-native';
 // Gesture-handler's Pressable: cancels its press when the row's delete
 // swipe activates instead of firing on release.
 import { Pressable } from 'react-native-gesture-handler';
+import { NativeButton } from '@/components/ui/native-button';
 import { SwipeToDelete } from '@/components/ui/swipe-to-delete';
 import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
@@ -51,6 +42,11 @@ export const SET_TABLE_COLUMNS = {
   cell: 64,
   check: 44,
 } as const;
+
+type FillField = 'weight' | 'reps' | 'duration';
+
+/** Names the column in the keyboard button's "Fill <column> down to N sets". */
+const FIELD_LABELS: Record<FillField, string> = { weight: 'weight', reps: 'reps', duration: 'time' };
 
 /** Warm-ups show "W", drops "D", failures "F"; working sets are numbered 1..n
  * among the exercise's *other working sets*, in position order — matching
@@ -113,28 +109,48 @@ export function SetRow({
   );
 
   const isCompleted = set.completed_at != null;
-  // One accessory bar per row, attached to that row's numeric inputs.
-  const accessoryId = `set-accessory-${set.id}`;
+  // One accessory per FIELD, not per row: two inputs sharing a single
+  // nativeID left the second one (reps) with no accessory at all.
+  const accessoryId = (field: FillField) => `set-${set.id}-${field}`;
   const fillTargetCount = fillDownTargets(siblingSets, set.id).length;
   const typeColor =
     set.set_type === 'warmup' ? theme.colors.comp : set.set_type === 'drop' || set.set_type === 'failure'
       ? theme.colors.danger
       : theme.colors.ink;
 
-  /** Copies this row's logged values into every set below it — the common
-   * case of working through a straight-sets block at one weight. */
-  function fillDown() {
+  /** Copies the column being edited into every set below — a straight-sets
+   * block at one weight, or one rep count. Only that column is touched, so
+   * filling weight never overwrites reps already logged. */
+  function fillDown(field: FillField) {
     const targets = fillDownTargets(siblingSets, set.id);
     if (targets.length === 0) return;
+    const patch =
+      field === 'duration'
+        ? { duration_seconds: set.duration_seconds }
+        : field === 'reps'
+          ? { reps: set.reps }
+          : { weight_kg: set.weight_kg };
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    for (const id of targets) {
-      updateSet(
-        id,
-        isDuration
-          ? { duration_seconds: set.duration_seconds }
-          : { weight_kg: set.weight_kg, reps: set.reps },
-      );
-    }
+    for (const id of targets) updateSet(id, patch);
+  }
+
+  /** The floating "fill this column down" button shown above the keyboard
+   * while that column's input has focus — a button, not a toolbar. */
+  function renderFillAccessory(field: FillField) {
+    return (
+      <InputAccessoryView nativeID={accessoryId(field)} backgroundColor="transparent">
+        {fillTargetCount > 0 ? (
+          <View style={styles.accessory}>
+            <NativeButton
+              label={`Fill ${FIELD_LABELS[field]} down to ${fillTargetCount} set${
+                fillTargetCount === 1 ? '' : 's'
+              }`}
+              onPress={() => fillDown(field)}
+            />
+          </View>
+        ) : null}
+      </InputAccessoryView>
+    );
   }
 
   function handleComplete() {
@@ -173,7 +189,7 @@ export function SetRow({
       {isDuration ? (
         <TextInput
           style={[styles.input, { width: SET_TABLE_COLUMNS.cell * 2 }]}
-          inputAccessoryViewID={accessoryId}
+          inputAccessoryViewID={accessoryId('duration')}
           keyboardType="number-pad"
           placeholder="sec"
           placeholderTextColor={theme.colors.inkMuted}
@@ -184,7 +200,7 @@ export function SetRow({
         <>
           <TextInput
             style={[styles.input, { width: SET_TABLE_COLUMNS.cell }]}
-            inputAccessoryViewID={accessoryId}
+            inputAccessoryViewID={accessoryId('weight')}
             keyboardType="decimal-pad"
             placeholder="kg"
             placeholderTextColor={theme.colors.inkMuted}
@@ -193,7 +209,7 @@ export function SetRow({
           />
           <TextInput
             style={[styles.input, { width: SET_TABLE_COLUMNS.cell }]}
-            inputAccessoryViewID={accessoryId}
+            inputAccessoryViewID={accessoryId('reps')}
             keyboardType="number-pad"
             placeholder="reps"
             placeholderTextColor={theme.colors.inkMuted}
@@ -221,26 +237,14 @@ export function SetRow({
       </Pressable>
     </View>
     </SwipeToDelete>
-    {/* Keyboard toolbar for this row: "Fill down" lands exactly where the
-        lifter already is — typing a weight — instead of hiding behind a
-        swipe. Only offered when there are sets below to fill. */}
-    <InputAccessoryView nativeID={accessoryId}>
-      <View style={styles.accessory}>
-        {fillTargetCount > 0 ? (
-          <RNPressable style={styles.accessoryAction} onPress={fillDown}>
-            <SymbolView name="arrow.down.to.line" size={15} tintColor={theme.colors.accent} />
-            <Text style={styles.accessoryLabel}>
-              {`Fill down to ${fillTargetCount} set${fillTargetCount === 1 ? '' : 's'}`}
-            </Text>
-          </RNPressable>
-        ) : (
-          <View />
-        )}
-        <RNPressable style={styles.accessoryAction} onPress={() => Keyboard.dismiss()}>
-          <Text style={styles.accessoryDone}>Done</Text>
-        </RNPressable>
-      </View>
-    </InputAccessoryView>
+    {isDuration ? (
+      renderFillAccessory('duration')
+    ) : (
+      <>
+        {renderFillAccessory('weight')}
+        {renderFillAccessory('reps')}
+      </>
+    )}
     </>
   );
 }
@@ -270,25 +274,8 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  accessory: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.cardElevated,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.border,
-  },
-  accessoryAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.xs,
-  },
-  accessoryLabel: { ...theme.type.heading, color: theme.colors.accent },
-  accessoryDone: { ...theme.type.heading, color: theme.colors.inkMuted },
+  // Just the button floating above the keyboard — no toolbar bar behind it.
+  accessory: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm },
   setNumber: { ...theme.type.heading },
   ghost: { ...theme.type.body, color: theme.colors.inkMuted },
   input: {
