@@ -65,6 +65,10 @@ const lightColors = {
   // darkColors.doneSoft for why these are precomputed instead of using RN's
   // rgba()): the active-workout set row's "completed" fill.
   doneSoft: '#F8E6F0',
+  // Translucent card fill + hairline edge: the "liquid glass" card look —
+  // a lifted sheet over the canvas rather than a flat opaque panel.
+  glass: 'rgba(255, 255, 255, 0.72)',
+  glassBorder: 'rgba(17, 17, 17, 0.08)',
   gradientRecap: ['#0E2A5C', '#1D4ED8'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
   // Text drawn over gradientRecap/gradientEmber — both gradients stay dark
@@ -89,6 +93,8 @@ const darkColors = {
   // `done` @ ~14% alpha flattened over `card`, same rationale as the light
   // theme's doneSoft — precomputed solid color, no RN rgba() call needed.
   doneSoft: '#322633',
+  glass: 'rgba(40, 40, 43, 0.72)',
+  glassBorder: 'rgba(255, 255, 255, 0.10)',
   gradientRecap: ['#0A1F44', '#1E40AF'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
   onGradient: '#FFFFFF',

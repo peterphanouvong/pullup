@@ -55,3 +55,21 @@ export function floatingAction(args: {
   }
   return { kind: 'startEmpty' };
 }
+
+export interface DayMetrics {
+  exercises: number;
+  /** Prescribed working sets across the day (exercises with no prescribed
+   * count contribute nothing). */
+  sets: number;
+}
+
+/** The at-a-glance numbers on a week card — our equivalent of the "256 kcal ·
+ * 16 mins" line on a plan row. Only lifting days have them; court/rest/comp
+ * days carry their notes instead. */
+export function dayMetrics(day: ProgramDay): DayMetrics | null {
+  if (day.kind !== 'lifting') return null;
+  return {
+    exercises: day.exercises.length,
+    sets: day.exercises.reduce((total, e) => total + (e.sets ?? 0), 0),
+  };
+}

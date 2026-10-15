@@ -22,7 +22,7 @@ import {
 } from '@/features/workouts/hooks';
 import { MinimizedWorkoutBar } from '@/features/workouts/components/minimized-workout-bar';
 import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
-import { dayState, floatingAction } from '@/features/workouts/today-state';
+import { dayMetrics, dayState, floatingAction } from '@/features/workouts/today-state';
 
 const WEEKDAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -278,10 +278,22 @@ export default function TodayScreen() {
                     state={state}
                     isToday={isToday}
                     passed={d.position < effectiveTodayPosition}
-                    eyebrow={WEEKDAY_LABELS[d.position - 1] ?? ''}
+                    weekday={WEEKDAY_LABELS[d.position - 1] ?? ''}
+                    metrics={dayMetrics(d)}
                     meta={metaFor(d)}
                     onPress={
                       d.kind === 'lifting' ? () => router.push(`/program/${programId}/day/${d.id}`) : undefined
+                    }
+                    // Tapping the card previews the day; the in-card button
+                    // commits. Only the active, unfinished session gets one.
+                    onStart={
+                      isToday && state === 'upcoming'
+                        ? () =>
+                            guardedStart(() => {
+                              const workoutId = startWorkoutFromDay(d, d.id, session.user.id);
+                              router.push(`/workout/${workoutId}`);
+                            })
+                        : undefined
                     }
                   />
                 </Pressable>

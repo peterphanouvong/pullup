@@ -1,4 +1,4 @@
-import { dayState, floatingAction, weekCompletion } from '../today-state';
+import { dayMetrics, dayState, floatingAction, weekCompletion } from '../today-state';
 import type { ProgramDay } from '@/features/programs/types';
 import type { Workout } from '../types';
 
@@ -97,5 +97,36 @@ describe('floatingAction', () => {
     expect(floatingAction({ activeWorkout: null, todayDay: null, todayCompleted: false })).toEqual({
       kind: 'startEmpty',
     });
+  });
+});
+
+describe('dayMetrics', () => {
+  function ex(sets: number | null, position: number) {
+    return {
+      id: `e${position}`,
+      position,
+      exerciseName: 'Back squat',
+      exerciseId: null,
+      sets,
+      reps: null,
+      load: null,
+      notes: null,
+    };
+  }
+
+  it('counts exercises and sums prescribed sets on a lifting day', () => {
+    const d = day({ id: 'd1', position: 1, kind: 'lifting', exercises: [ex(5, 1), ex(4, 2), ex(3, 3)] });
+    expect(dayMetrics(d)).toEqual({ exercises: 3, sets: 12 });
+  });
+
+  it('treats an exercise with no prescribed sets as contributing none', () => {
+    const d = day({ id: 'd1', position: 1, kind: 'lifting', exercises: [ex(4, 1), ex(null, 2)] });
+    expect(dayMetrics(d)).toEqual({ exercises: 2, sets: 4 });
+  });
+
+  it('returns null for non-lifting days', () => {
+    for (const kind of ['court', 'rest', 'comp'] as const) {
+      expect(dayMetrics(day({ id: 'd', position: 1, kind }))).toBeNull();
+    }
   });
 });

@@ -1,89 +1,104 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SymbolView, type SFSymbol } from 'expo-symbols';
+import { SymbolView } from 'expo-symbols';
+import { GlassSurface } from '@/components/ui/glass-surface';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import type { DayKind, ProgramDay } from '@/features/programs/types';
-import type { TodayDayState } from '@/features/workouts/today-state';
+import type { DayMetrics, TodayDayState } from '@/features/workouts/today-state';
 
 /** Day names in the seed data lead with the weekday ("Mon — Lower power");
- * the card's eyebrow already says MON, so the title drops the prefix. */
+ * the card's day block already says MON, so the title drops the prefix. */
 function stripWeekdayPrefix(name: string): string {
   return name.replace(/^(mon|tue|wed|thu|fri|sat|sun)[a-z]*\s*[—–-]\s*/i, '');
 }
 
-const TILE_SYMBOLS: Record<DayKind, SFSymbol> = {
-  lifting: 'dumbbell.fill',
-  court: 'figure.basketball',
-  comp: 'trophy.fill',
-  rest: 'moon.zzz.fill',
+const KIND_LABELS: Record<DayKind, string> = {
+  lifting: 'LIFT',
+  court: 'COURT',
+  comp: 'COMP',
+  rest: 'REST',
 };
 
-/** One row of the Today week checklist, modelled on Nike's plan rows: a
- * kind-icon tile standing in for Nike's artwork square, a weekday eyebrow
- * ("Day 1" in Nike, "MON"/"TODAY" here), title + meta, and a rose "done"
- * check circle on the right. Three time states: today carries a rose border
- * indicator, passed days fade hard (lifting ones read "Missed"), done rows
- * mute gently behind their check. */
+/** One row of the Today week list. Reads left-to-right like a plan row: the
+ * weekday block, a hairline divider, the session name with its at-a-glance
+ * metrics, then a trailing done-check or disclosure chevron. The active day
+ * also carries its own full-width start button, so the card is the preview
+ * and the button is the commitment.
+ *
+ * Three time states: today gets a rose edge, passed days fade (undone
+ * lifting days read "Missed"), done rows mute behind their check. */
 export function WeekDayCard({
   day,
   state,
   isToday,
   passed,
-  eyebrow,
+  weekday,
+  metrics,
   meta,
   onPress,
+  onStart,
+  startLabel = 'Start workout',
 }: {
   day: ProgramDay;
   state: TodayDayState;
   isToday: boolean;
   /** Calendar-past day (relative to the viewed week) — fades the card. */
   passed: boolean;
-  /** Weekday label ("MON"…"SUN") — replaced by "TODAY" when `isToday`. */
-  eyebrow: string;
+  /** "MON"…"SUN" — the day's identity in the left block. */
+  weekday: string;
+  /** Exercise/set counts for lifting days; null renders `meta` instead. */
+  metrics: DayMetrics | null;
+  /** Fallback descriptor for non-lifting days (notes, "Rest day", …). */
   meta: string;
   onPress?: () => void;
+  /** When provided, the card shows its own primary start button. */
+  onStart?: () => void;
+  startLabel?: string;
 }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
 
   const muted = state === 'done' || passed;
 
-  // Tile palette per kind: lifting gets the bold ink tile (Nike's statement
-  // square), comp the rose accent, court/rest stay quiet neutrals.
-  const tileStyle =
-    day.kind === 'lifting'
-      ? styles.tileLifting
-      : day.kind === 'comp'
-        ? styles.tileComp
-        : styles.tileQuiet;
-  const tileTint =
-    day.kind === 'lifting'
-      ? theme.colors.canvas
-      : day.kind === 'comp'
-        ? theme.colors.onGradient
-        : theme.colors.inkMuted;
-
   const body = (
     <View style={styles.row}>
-      <View style={[styles.tile, tileStyle]}>
-        <SymbolView name={TILE_SYMBOLS[day.kind]} size={22} tintColor={tileTint} />
+      <View style={styles.dayBlock}>
+        <Text style={[styles.weekday, isToday && styles.weekdayToday]}>{weekday}</Text>
+        <Text style={styles.kindLabel}>{KIND_LABELS[day.kind]}</Text>
       </View>
+
+      <View style={styles.divider} />
+
       <View style={styles.body}>
-        <Text style={[styles.eyebrow, isToday && styles.eyebrowToday]}>
-          {isToday ? 'TODAY' : eyebrow}
+        <Text style={[styles.title, muted && styles.mutedText]} numberOfLines={2}>
+          {stripWeekdayPrefix(day.name)}
         </Text>
-        <Text style={[styles.title, muted && styles.mutedText]}>{stripWeekdayPrefix(day.name)}</Text>
-        <Text style={styles.meta}>
-          {state === 'missed' ? `Missed · ${meta}` : meta}
-        </Text>
+        {metrics != null ? (
+          <View style={styles.metrics}>
+            <View style={styles.metric}>
+              <SymbolView name="dumbbell.fill" size={12} tintColor={theme.colors.inkMuted} />
+              <Text style={styles.metricText}>{metrics.exercises}</Text>
+            </View>
+            <View style={styles.metric}>
+              <SymbolView name="square.stack.3d.up.fill" size={12} tintColor={theme.colors.inkMuted} />
+              <Text style={styles.metricText}>{`${metrics.sets} sets`}</Text>
+            </View>
+            {state === 'missed' && <Text style={styles.missed}>Missed</Text>}
+          </View>
+        ) : (
+          <Text style={styles.metricText} numberOfLines={2}>
+            {meta}
+          </Text>
+        )}
       </View>
+
       <View style={styles.trailing}>
         {state === 'done' ? (
           <View style={styles.checkCircle}>
-            <SymbolView name="checkmark" size={14} tintColor={theme.colors.onGradient} />
+            <SymbolView name="checkmark" size={13} tintColor={theme.colors.onGradient} />
           </View>
         ) : onPress != null ? (
-          <SymbolView name="chevron.right" size={16} tintColor={theme.colors.inkMuted} />
+          <SymbolView name="chevron.right" size={15} tintColor={theme.colors.inkMuted} />
         ) : null}
       </View>
     </View>
@@ -96,45 +111,64 @@ export function WeekDayCard({
     passed && state !== 'done' && styles.cardPassed,
   ];
 
+  const content = (
+    <>
+      {/* Real SwiftUI Liquid Glass behind the row; the card's own
+          translucent fill stays as the pre-iOS-26 fallback. */}
+      <GlassSurface cornerRadius={theme.radii.xl} />
+      {body}
+      {onStart != null && (
+        <Pressable
+          onPress={onStart}
+          style={({ pressed }) => [styles.startButton, pressed && styles.pressed]}
+        >
+          <Text style={styles.startLabel}>{startLabel}</Text>
+        </Pressable>
+      )}
+    </>
+  );
+
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [...cardStyle, pressed && styles.pressed]}>
-        {body}
+      <Pressable onPress={onPress} style={({ pressed }) => [...cardStyle, pressed && styles.cardPressed]}>
+        {content}
       </Pressable>
     );
   }
-  return <View style={cardStyle}>{body}</View>;
+  return <View style={cardStyle}>{content}</View>;
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
   card: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.glass,
     borderRadius: theme.radii.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.glassBorder,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+    // Clip the glass layer to the card's rounded corners.
     overflow: 'hidden',
     ...theme.shadow.card,
   },
   cardToday: { borderWidth: 1.5, borderColor: theme.colors.done },
   cardDone: { opacity: 0.75 },
   cardPassed: { opacity: 0.5 },
-  pressed: { opacity: 0.85 },
-  row: { flexDirection: 'row', alignItems: 'center', padding: theme.spacing.lg, gap: theme.spacing.lg },
-  tile: {
-    width: 52,
-    height: 52,
-    borderRadius: theme.radii.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tileLifting: { backgroundColor: theme.colors.ink },
-  tileComp: { backgroundColor: theme.colors.done },
-  tileQuiet: { backgroundColor: theme.colors.canvas },
-  body: { flex: 1, gap: 2 },
-  eyebrow: { ...theme.type.label, color: theme.colors.inkMuted },
-  eyebrowToday: { color: theme.colors.done },
+  cardPressed: { opacity: 0.85 },
+  pressed: { opacity: 0.8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
+  dayBlock: { width: 48, gap: 2 },
+  weekday: { ...theme.type.title, fontSize: 20, color: theme.colors.ink },
+  weekdayToday: { color: theme.colors.done },
+  kindLabel: { ...theme.type.label, fontSize: 9, color: theme.colors.inkMuted },
+  divider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: theme.colors.border },
+  body: { flex: 1, gap: 4 },
   title: { ...theme.type.heading, color: theme.colors.ink },
   mutedText: { color: theme.colors.inkMuted },
-  meta: { ...theme.type.caption, color: theme.colors.inkMuted },
-  trailing: { paddingLeft: theme.spacing.sm },
+  metrics: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  metric: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  metricText: { ...theme.type.caption, color: theme.colors.inkMuted, fontVariant: ['tabular-nums'] },
+  missed: { ...theme.type.caption, color: theme.colors.comp },
+  trailing: { minWidth: 24, alignItems: 'flex-end' },
   checkCircle: {
     width: 26,
     height: 26,
@@ -143,4 +177,11 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  startButton: {
+    backgroundColor: theme.colors.accent,
+    borderRadius: theme.radii.pill,
+    paddingVertical: theme.spacing.md,
+    alignItems: 'center',
+  },
+  startLabel: { ...theme.type.heading, color: theme.colors.onAccent },
 });
