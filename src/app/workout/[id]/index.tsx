@@ -3,11 +3,10 @@ import {
   Alert,
   Animated,
   Easing,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
@@ -121,7 +120,7 @@ export default function WorkoutScreen() {
   }
 
   return (
-    <Screen topInset={false}>
+    <>
       {/* Native navigation bar via expo-router's composition components
           (SF Symbols, liquid-glass backgrounds on iOS 26): chevron.down
           dismisses the modal downward — the workout keeps running and the
@@ -129,16 +128,11 @@ export default function WorkoutScreen() {
           Finish opens the Save step. */}
       <Stack.Screen options={MODAL_OPTIONS} />
       <Stack.Title>{workout.title}</Stack.Title>
-      {/* Translucent bar: the blur effect implies a transparent header, so
-          content blurs under it. Dark variant explicitly — the default
-          material renders light against our dark canvas. */}
-      <Stack.Header
-        blurEffect="systemChromeMaterialDark"
-        style={{ color: theme.colors.ink, shadowColor: 'transparent' }}
-      />
-      {/* Small SwiftUI glass buttons in custom toolbar views: native bar
-          items have a fixed size with no option to shrink them. Discard
-          lives on the Save step that Finish opens, not in a bin button. */}
+      {/* Transparent bar, same as the Programme tab: no material of its
+          own, so iOS draws its soft scroll-edge effect as content passes
+          under. That effect needs the ScrollView to be the screen's first
+          subview, which is why there's no wrapper below. */}
+      <Stack.Header transparent style={{ color: theme.colors.ink, shadowColor: 'transparent' }} />
       <Stack.Toolbar placement="left">
         <Stack.Toolbar.View hidesSharedBackground>
           <HeaderIconButton
@@ -158,94 +152,93 @@ export default function WorkoutScreen() {
           <HeaderPrimaryButton label="Finish" onPress={handleFinish} />
         </Stack.Toolbar.View>
       </Stack.Toolbar>
-      {/* The header is transparent, so the screen starts under it: pad the
-          column down by the bar's height or the stats row (and the top of
-          the list) sits beneath it, hidden. */}
-      <KeyboardAvoidingView
-        style={[styles.flex, { paddingTop: insets.top + HEADER_HEIGHT }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        // 0, not the header height: the column is already padded down by
-        // it, and double-counting opened a tall empty gap above the inputs
-        // whenever the keyboard appeared.
-        keyboardVerticalOffset={0}
-      >
-        <Animated.View
-          style={[
-            styles.statsStrip,
-            {
-              // Absolute children measure from the parent's OUTER edge in
-              // Yoga, ignoring its padding — without this the strip renders
-              // behind the translucent header and is never seen.
-              top: insets.top + HEADER_HEIGHT,
-              transform: [
-                {
-                  translateY: statsHidden.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0, -STATS_HEIGHT],
-                  }),
-                },
-              ],
-              opacity: statsHidden.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-            },
-          ]}
+      {/* First subview: see the header note above. */}
+      {contentReady ? (
+        <ScrollView
+          style={styles.scroll}
+          // Insets for the transparent header and the keyboard come from
+          // the native scroll view, replacing the old padded wrapper and
+          // KeyboardAvoidingView (which hid it from the header).
+          contentInsetAdjustmentBehavior="automatic"
+          automaticallyAdjustKeyboardInsets
+          contentContainerStyle={[styles.content, { paddingTop: STATS_HEIGHT + theme.spacing.lg }]}
+          keyboardShouldPersistTaps="handled"
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            // The native inset puts the resting offset at minus the header's
+            // height; measure from the top of the content instead.
+            const y = e.nativeEvent.contentOffset.y + insets.top + HEADER_HEIGHT;
+            const delta = y - lastScrollY.current;
+            if (Math.abs(delta) < SCROLL_NOISE) return;
+            lastScrollY.current = y;
+            // Only hide once there's something above to scroll back to.
+            const hide = delta > 0 && y > STATS_HEIGHT;
+            if (hide === statsHiddenRef.current) return;
+            statsHiddenRef.current = hide;
+            Animated.timing(statsHidden, {
+              toValue: hide ? 1 : 0,
+              duration: 180,
+              easing: Easing.out(Easing.quad),
+              useNativeDriver: true,
+            }).start();
+          }}
         >
-          <WorkoutStatsRow
-            workout={workout}
-            volumeKg={volumeKg}
-            completedCount={completedCount}
-            totalCount={allSets.filter((s) => !s.deleted).length}
-          />
-        </Animated.View>
-
-        {contentReady ? (
-          <ScrollView
-            contentContainerStyle={[styles.content, { paddingTop: STATS_HEIGHT + theme.spacing.lg }]}
-            keyboardShouldPersistTaps="handled"
-            scrollEventThrottle={16}
-            onScroll={(e) => {
-              const y = e.nativeEvent.contentOffset.y;
-              const delta = y - lastScrollY.current;
-              if (Math.abs(delta) < SCROLL_NOISE) return;
-              lastScrollY.current = y;
-              // Only hide once there's something above to scroll back to.
-              const hide = delta > 0 && y > STATS_HEIGHT;
-              if (hide === statsHiddenRef.current) return;
-              statsHiddenRef.current = hide;
-              Animated.timing(statsHidden, {
-                toValue: hide ? 1 : 0,
-                duration: 180,
-                easing: Easing.out(Easing.quad),
-                useNativeDriver: true,
-              }).start();
-            }}
-          >
-            {exercises.length === 0 && <Text style={styles.empty}>No exercises yet — add one to get started.</Text>}
-            {exercises.map((exercise, index) => (
-              <ExerciseCard
-                key={exercise.id}
-                exercise={exercise}
-                workoutId={workout.id}
-                canMoveUp={index > 0}
-                canMoveDown={index < exercises.length - 1}
-              />
-            ))}
-            <NativeButton
-              label="Add Exercise"
-              systemImage="plus"
-              onPress={() => openExercisePicker(workout.id, 'add')}
+          {exercises.length === 0 && <Text style={styles.empty}>No exercises yet — add one to get started.</Text>}
+          {exercises.map((exercise, index) => (
+            <ExerciseCard
+              key={exercise.id}
+              exercise={exercise}
+              workoutId={workout.id}
+              canMoveUp={index > 0}
+              canMoveDown={index < exercises.length - 1}
             />
-          </ScrollView>
-        ) : (
+          ))}
+          <NativeButton
+            label="Add Exercise"
+            systemImage="plus"
+            onPress={() => openExercisePicker(workout.id, 'add')}
+          />
+        </ScrollView>
+      ) : (
+        <View style={[styles.scroll, { paddingTop: insets.top + HEADER_HEIGHT }]}>
           <WorkoutSkeleton exerciseCount={exercises.length} />
-        )}
-      </KeyboardAvoidingView>
+        </View>
+      )}
+      <Animated.View
+        style={[
+          styles.statsStrip,
+          {
+            // Absolute children measure from the parent's OUTER edge in
+            // Yoga, ignoring its padding — without this the strip renders
+            // behind the translucent header and is never seen.
+            top: insets.top + HEADER_HEIGHT,
+            transform: [
+              {
+                translateY: statsHidden.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -STATS_HEIGHT],
+                }),
+              },
+            ],
+            opacity: statsHidden.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+          },
+        ]}
+      >
+        <WorkoutStatsRow
+          workout={workout}
+          volumeKg={volumeKg}
+          completedCount={completedCount}
+          totalCount={allSets.filter((s) => !s.deleted).length}
+        />
+      </Animated.View>
+
       <RestTimerBar />
-    </Screen>
+    </>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
-  flex: { flex: 1 },
+  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   // Floats over the list (absolute, so sliding it away reflows nothing) and
   // is opaque so rows pass cleanly underneath.
   statsStrip: {

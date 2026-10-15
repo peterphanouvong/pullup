@@ -82,10 +82,9 @@ export default function SaveWorkoutScreen() {
     <>
       <Stack.Screen options={SCREEN_OPTIONS} />
       <Stack.Title>Save Workout</Stack.Title>
-      <Stack.Header
-        blurEffect="systemChromeMaterialDark"
-        style={{ color: theme.colors.ink, shadowColor: 'transparent' }}
-      />
+      {/* Transparent like the Programme tab: iOS draws the scroll-edge
+          effect over the ScrollView below. */}
+      <Stack.Header transparent style={{ color: theme.colors.ink, shadowColor: 'transparent' }} />
       <Stack.Toolbar placement="left">
         <Stack.Toolbar.View hidesSharedBackground>
           <HeaderIconButton

@@ -138,9 +138,11 @@ mid-swipe.
   mid-scroll.
 - **Never toggle `headerShown` inside a modal.** It remounts the screen and
   drops local state.
-- Translucent bars need an explicit dark material
-  (`blurEffect: 'systemChromeMaterialDark'`). Simply removing the background
-  falls back to the *light* material — a white strip with an invisible title.
+- Headers are **transparent with no material**, like the Programme tab:
+  iOS 26 then draws its soft scroll-edge effect as content passes under. If
+  you ever do want a material, name the dark one explicitly
+  (`blurEffect: 'systemChromeMaterialDark'`); a bare blur falls back to the
+  *light* material, a white strip with an invisible title.
 - Header buttons use `Stack.Toolbar` items (SF Symbols, real UIKit menus,
   liquid-glass backgrounds) rather than custom views.
   The exception is the workout screen: native bar items have a fixed size
