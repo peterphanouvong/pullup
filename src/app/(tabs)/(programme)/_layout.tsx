@@ -1,8 +1,8 @@
 import { useTheme } from "@/styles/use-theme";
 import { Stack } from "expo-router";
 
-/** The Today tab is its own native stack for the Apple-native header: a
- * compact "Today" title sharing the bar row with the gear button. (Large
+/** The Programme tab is its own native stack for the Apple-native header: a
+ * compact title sharing the bar row with the gear button. (Large
  * title deliberately not used — its collapse behaviour wasn't worth the
  * trouble.)
  *
@@ -15,7 +15,7 @@ export default function TodayStackLayout() {
   return (
     <Stack
       screenOptions={{
-        title: "Today",
+        title: "Programme",
         headerShadowVisible: false,
         headerTransparent: true,
         headerTintColor: theme.colors.ink,

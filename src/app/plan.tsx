@@ -4,7 +4,7 @@ import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
 import { Screen } from '@/components/ui/screen';
-import { ScreenTitle } from '@/components/ui/screen-title';
+import { BackRow } from '@/components/ui/back-row';
 import { SectionLabel } from '@/components/ui/section-label';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, usePrograms } from '@/features/programs/hooks';
@@ -46,7 +46,7 @@ export default function PlanScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <ScreenTitle title="Plan" />
+        <BackRow title="Plan" />
 
         {activeProgram.length > 0 && (
           <>

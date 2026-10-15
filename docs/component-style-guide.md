@@ -71,8 +71,10 @@ hairline divider, title with at-a-glance metrics, then a trailing done-check
 or chevron. The active row carries its own primary button — **the card is the
 preview, the button is the commitment.**
 
-Time states are distinct and layered: today gets a `done`-coloured edge,
-passed days fade to 50%, completed rows mute to 75% behind their check.
+The only state the card marks is **done** — a tick and a gentle mute — plus
+a `done`-coloured edge on today. Days you skipped are left exactly as they
+were: a missed session is a fact, not a scolding, and fading half the week
+makes it harder to read for no gain.
 
 ## Buttons
 
@@ -159,6 +161,13 @@ Leave `backgroundColor` unset — the native content view is nil-backed
 (clear), whereas passing `"transparent"` through the colour conversion comes
 back opaque. And return `null` for the whole component when there's nothing
 to show: rendering `null` *inside* an accessory still mounts its backdrop.
+
+## Navigation shape
+
+Two tabs: **Programme** (the week you're running) and **Profile** (the hub
+for Plan and Activity). Things you *visit* don't earn permanent tab-bar
+space; things you *work in* do. Pushed screens reached from the hub carry a
+`BackRow` rather than a native header, matching the rest of the app.
 
 ## Progressive disclosure
 

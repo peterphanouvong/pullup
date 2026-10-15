@@ -4,7 +4,7 @@ import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { Screen } from '@/components/ui/screen';
-import { ScreenTitle } from '@/components/ui/screen-title';
+import { BackRow } from '@/components/ui/back-row';
 import { NumeralRow } from '@/components/ui/numeral-row';
 import { SwipeToDelete } from '@/components/ui/swipe-to-delete';
 import { discardWorkout, useFinishedWorkouts } from '@/features/workouts/hooks';
@@ -32,7 +32,7 @@ export default function ActivitiesScreen() {
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
-        <ScreenTitle title="Activities" />
+        <BackRow title="Activity" />
         {items.length === 0 ? (
           <View style={styles.empty}>
             <SymbolView

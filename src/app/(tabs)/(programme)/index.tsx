@@ -269,7 +269,6 @@ export default function TodayScreen() {
                     day={d}
                     state={state}
                     isToday={isToday}
-                    passed={d.position < effectiveTodayPosition}
                     weekday={WEEKDAY_LABELS[d.position - 1] ?? ""}
                     metrics={dayMetrics(d)}
                     meta={metaFor(d)}

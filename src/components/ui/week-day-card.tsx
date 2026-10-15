@@ -21,13 +21,13 @@ const KIND_LABELS: Record<DayKind, string> = {
  * also carries its own full-width start button, so the card is the preview
  * and the button is the commitment.
  *
- * Three time states: today gets a rose edge, passed days fade (undone
- * lifting days read "Missed"), done rows mute behind their check. */
+ * Days you didn't do carry no penalty treatment: a skipped session is a
+ * fact, not a scolding, and fading it only makes the week harder to read.
+ * The only state the card marks is done — a tick, and a gentle mute. */
 export function WeekDayCard({
   day,
   state,
   isToday,
-  passed,
   weekday,
   metrics,
   meta,
@@ -38,8 +38,6 @@ export function WeekDayCard({
   day: ProgramDay;
   state: TodayDayState;
   isToday: boolean;
-  /** Calendar-past day (relative to the viewed week) — fades the card. */
-  passed: boolean;
   /** "MON"…"SUN" — the day's identity in the left block. */
   weekday: string;
   /** Exercise/set counts for lifting days; null renders `meta` instead. */
@@ -54,7 +52,7 @@ export function WeekDayCard({
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  const muted = state === 'done' || passed;
+  const muted = state === 'done';
 
   const body = (
     <View style={styles.row}>
@@ -79,7 +77,6 @@ export function WeekDayCard({
               <SymbolView name="square.stack.3d.up.fill" size={12} tintColor={theme.colors.inkMuted} />
               <Text style={styles.metricText}>{`${metrics.sets} sets`}</Text>
             </View>
-            {state === 'missed' && <Text style={styles.missed}>Missed</Text>}
           </View>
         ) : (
           <Text style={styles.metricText} numberOfLines={2}>
@@ -100,12 +97,7 @@ export function WeekDayCard({
     </View>
   );
 
-  const cardStyle = [
-    styles.card,
-    isToday && styles.cardToday,
-    state === 'done' && styles.cardDone,
-    passed && state !== 'done' && styles.cardPassed,
-  ];
+  const cardStyle = [styles.card, isToday && styles.cardToday, state === 'done' && styles.cardDone];
 
   const content = (
     <>
@@ -141,7 +133,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   },
   cardToday: { borderWidth: 1.5, borderColor: theme.colors.done },
   cardDone: { opacity: 0.75 },
-  cardPassed: { opacity: 0.5 },
   cardPressed: { opacity: 0.85 },
   row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
   dayBlock: { width: 48, gap: 2 },
@@ -155,7 +146,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   metrics: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
   metric: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
   metricText: { ...theme.type.caption, color: theme.colors.inkMuted, fontVariant: ['tabular-nums'] },
-  missed: { ...theme.type.caption, color: theme.colors.comp },
   trailing: { minWidth: 24, alignItems: 'flex-end' },
   checkCircle: {
     width: 26,
