@@ -185,6 +185,31 @@ export function finishedWorkoutSummaries(
   });
 }
 
+/** The exercise the lifter is "on" for the minimized-workout bar: the first
+ * live exercise (by position) that still has an incomplete live set, falling
+ * back to the last live exercise, or null for an empty workout. */
+export function currentExerciseName(
+  workoutId: string,
+  workoutExercises: Record<string, WorkoutExercise>,
+  workoutSets: Record<string, WorkoutSet>,
+): string | null {
+  const live = Object.values(workoutExercises)
+    .filter((e): e is WorkoutExercise => !!e && !!e.id && !e.deleted && e.workout_id === workoutId)
+    .sort((a, b) => a.position - b.position);
+  if (live.length === 0) return null;
+
+  const liveIds = new Set(live.map((e) => e.id));
+  const withIncompleteSet = new Set(
+    Object.values(workoutSets)
+      .filter(
+        (s): s is WorkoutSet =>
+          !!s && !s.deleted && liveIds.has(s.workout_exercise_id) && s.completed_at == null,
+      )
+      .map((s) => s.workout_exercise_id),
+  );
+  return (live.find((e) => withIncompleteSet.has(e.id)) ?? live[live.length - 1]).exercise_name;
+}
+
 /** `mm:ss` under an hour, `h:mm` (no seconds) at an hour or more — the
  * summary/Activities duration format. */
 export function formatWorkoutDuration(totalSeconds: number): string {

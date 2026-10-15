@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
@@ -17,18 +16,17 @@ function formatElapsed(totalSeconds: number): string {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-export function WorkoutHeader({
+/** The live stat strip under the workout screen's native header: ticking
+ * elapsed time, total volume, completed sets. (Title/Finish/dismiss moved
+ * into the native navigation bar.) */
+export function WorkoutStatsRow({
   workout,
   volumeKg,
   completedCount,
-  onFinish,
-  onDiscard,
 }: {
   workout: Workout;
   volumeKg: number;
   completedCount: number;
-  onFinish: () => void;
-  onDiscard: () => void;
 }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -45,47 +43,23 @@ export function WorkoutHeader({
   const elapsed = elapsedSeconds(workout, now);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topRow}>
-        <Pressable onPress={() => router.back()} hitSlop={8}>
-          <SymbolView name="chevron.down" size={20} tintColor={theme.colors.ink} />
-        </Pressable>
-        {/* Discard affordance: long-press the title. Simple and out of the
-            way of the everyday Finish flow — a proper overflow menu is a
-            later polish pass. */}
-        <Pressable style={styles.titleWrap} onLongPress={onDiscard} delayLongPress={500}>
-          <Text style={styles.title} numberOfLines={1}>
-            {workout.title}
-          </Text>
-        </Pressable>
-        <Pressable style={styles.finishPill} onPress={onFinish}>
-          <Text style={styles.finishLabel}>Finish</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.statRow}>
-        <Text style={styles.elapsed}>{formatElapsed(elapsed)}</Text>
-        <Text style={styles.stat}>{`${Math.round(volumeKg)} kg`}</Text>
-        <Text style={styles.stat}>{`${completedCount} sets`}</Text>
-        <SymbolView name="timer" size={16} tintColor={theme.colors.inkMuted} />
-      </View>
+    <View style={styles.statRow}>
+      <Text style={styles.elapsed}>{formatElapsed(elapsed)}</Text>
+      <Text style={styles.stat}>{`${Math.round(volumeKg)} kg`}</Text>
+      <Text style={styles.stat}>{`${completedCount} sets`}</Text>
+      <SymbolView name="timer" size={16} tintColor={theme.colors.inkMuted} />
     </View>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
-  container: { gap: theme.spacing.sm, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  titleWrap: { flex: 1 },
-  title: { ...theme.type.heading, color: theme.colors.ink },
-  finishPill: {
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.radii.pill,
-    paddingVertical: theme.spacing.xs,
-    paddingHorizontal: theme.spacing.md,
+  statRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
   },
-  finishLabel: { ...theme.type.caption, color: theme.colors.onAccent, fontWeight: '700' },
-  statRow: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
-  elapsed: { ...theme.type.heading, color: theme.colors.accent, fontVariant: ['tabular-nums'] },
+  elapsed: { ...theme.type.heading, color: theme.colors.ink, fontVariant: ['tabular-nums'] },
   stat: { ...theme.type.caption, color: theme.colors.inkMuted },
 });

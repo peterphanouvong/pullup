@@ -24,6 +24,7 @@ import {
   useActiveWorkout,
   useWeekCompletion,
 } from '@/features/workouts/hooks';
+import { MinimizedWorkoutBar } from '@/features/workouts/components/minimized-workout-bar';
 import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
 import { dayState, floatingAction } from '@/features/workouts/today-state';
 
@@ -122,18 +123,16 @@ export default function TodayScreen() {
   /** The floating button follows the scroll: it targets the day card the
    * viewport is on (when that day is a startable lifting session), labelled
    * "Start today's session" / "Start THU session" accordingly. A live
-   * workout always wins; everything else falls back to an explicit
-   * "Start empty workout". */
+   * workout always wins — as the Hevy-style minimized bar; everything else
+   * falls back to an explicit "Start empty workout". */
   function renderFloating(
     targetDay: ProgramDay | null,
     targetCompleted: boolean,
     targetIsToday: boolean,
   ) {
     const action = floatingAction({ activeWorkout, todayDay: targetDay, todayCompleted: targetCompleted });
-    if (action.kind === 'resume') {
-      return (
-        <FloatingAction label="Resume workout" onPress={() => router.push(`/workout/${action.workoutId}`)} />
-      );
+    if (action.kind === 'resume' && activeWorkout != null) {
+      return <MinimizedWorkoutBar workout={activeWorkout} />;
     }
     if (action.kind === 'startToday' && targetDay != null) {
       const label = targetIsToday

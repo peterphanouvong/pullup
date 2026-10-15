@@ -17,6 +17,7 @@ import { buildAddedExercise, buildReplacement, moveExercise } from './edit';
 import { skipRestTimer, startRestTimer } from './rest-timer';
 import {
   activeWorkout,
+  currentExerciseName,
   finishedWorkoutSummaries,
   hasFinishedWorkoutForDay,
   recentExerciseIds,
@@ -342,6 +343,13 @@ export function useWeekCompletion(dayIds: string[]): Record<string, boolean> {
 export function useFinishedWorkouts(): FinishedWorkoutSummary[] {
   return use$(() =>
     finishedWorkoutSummaries(workouts$.get() ?? {}, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}),
+  );
+}
+
+/** The minimized-workout bar's subtitle: the exercise the lifter is on. */
+export function useCurrentExerciseName(workoutId: string): string | null {
+  return use$(() =>
+    currentExerciseName(workoutId, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}),
   );
 }
 

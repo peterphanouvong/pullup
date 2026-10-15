@@ -20,6 +20,7 @@ import {
   activityMetaLabel,
   searchExercises,
   recentExerciseIds,
+  currentExerciseName,
 } from '../selectors';
 import type { Exercise, Workout, WorkoutExercise, WorkoutSet } from '../types';
 
@@ -376,6 +377,39 @@ describe('workoutSummary', () => {
       { exerciseName: 'Power clean', bestSet: expect.objectContaining({ id: 's2' }) },
     ]);
     expect(summary.volumeKg).toBe(60 * 2); // s1 deleted, s3 belongs to a deleted exercise
+  });
+});
+
+describe('currentExerciseName', () => {
+  it('returns the first live exercise (by position) with an incomplete live set', () => {
+    const exercises: Record<string, WorkoutExercise> = {
+      we1: exercise({ id: 'we1', workout_id: 'w1', position: 1, exercise_name: 'Back squat' }),
+      we2: exercise({ id: 'we2', workout_id: 'w1', position: 2, exercise_name: 'Overhead press' }),
+      other: exercise({ id: 'other', workout_id: 'w2', position: 1, exercise_name: 'Deadlift' }),
+    };
+    const sets: Record<string, WorkoutSet> = {
+      s1: set({ id: 's1', workout_exercise_id: 'we1', completed_at: ts }),
+      s2: set({ id: 's2', workout_exercise_id: 'we2', completed_at: null }),
+    };
+    expect(currentExerciseName('w1', exercises, sets)).toBe('Overhead press');
+  });
+
+  it('falls back to the last live exercise when every set is done, ignoring deleted rows', () => {
+    const exercises: Record<string, WorkoutExercise> = {
+      we1: exercise({ id: 'we1', workout_id: 'w1', position: 1, exercise_name: 'Back squat' }),
+      we2: exercise({ id: 'we2', workout_id: 'w1', position: 2, exercise_name: 'Bench press' }),
+      we3: exercise({ id: 'we3', workout_id: 'w1', position: 3, exercise_name: 'Ghosted', deleted: true }),
+    };
+    const sets: Record<string, WorkoutSet> = {
+      s1: set({ id: 's1', workout_exercise_id: 'we2', completed_at: ts }),
+      // Incomplete but deleted — must not pull focus back to we1.
+      s2: set({ id: 's2', workout_exercise_id: 'we1', completed_at: null, deleted: true }),
+    };
+    expect(currentExerciseName('w1', exercises, sets)).toBe('Bench press');
+  });
+
+  it('returns null for a workout with no live exercises', () => {
+    expect(currentExerciseName('w1', {}, {})).toBeNull();
   });
 });
 

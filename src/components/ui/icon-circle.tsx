@@ -10,14 +10,18 @@ export function IconCircle({
   fallback,
   onPress,
   size = 36,
+  tint,
 }: {
   name: SFSymbol;
   fallback?: string;
   onPress?: () => void;
   size?: number;
+  /** Symbol color override (defaults to ink) — e.g. danger for a trash. */
+  tint?: string;
 }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
+  const tintColor = tint ?? theme.colors.ink;
   return (
     <Pressable
       onPress={onPress}
@@ -31,8 +35,8 @@ export function IconCircle({
       <SymbolView
         name={name}
         size={size * 0.5}
-        tintColor={theme.colors.ink}
-        fallback={<Text style={{ color: theme.colors.ink }}>{fallback ?? '•'}</Text>}
+        tintColor={tintColor}
+        fallback={<Text style={{ color: tintColor }}>{fallback ?? '•'}</Text>}
       />
     </Pressable>
   );
