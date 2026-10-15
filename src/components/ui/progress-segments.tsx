@@ -3,7 +3,7 @@ import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 
 /** Nike-style week progress: one segment per planned session, filled when
- * done, with a "Workouts completed: X of N" caption. Renders nothing when
+ * done (and glowing), with a "Workouts completed: X of N" caption. Renders nothing when
  * the week has no sessions to count. */
 export function ProgressSegments({ total, filled }: { total: number; filled: number }) {
   const styles = useThemedStyles(createStyles);
@@ -30,6 +30,13 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     borderRadius: theme.radii.sm,
     backgroundColor: theme.colors.border,
   },
-  segmentFilled: { backgroundColor: theme.colors.done },
+  // Completed sessions glow: the blue halo, tightened for a 4pt bar so it
+  // reads as light coming off the segment rather than a haze around it.
+  segmentFilled: {
+    backgroundColor: theme.colors.done,
+    ...theme.shadow.glow,
+    shadowRadius: 6,
+    shadowOpacity: 0.9,
+  },
   caption: { ...theme.type.caption, color: theme.colors.inkMuted },
 });

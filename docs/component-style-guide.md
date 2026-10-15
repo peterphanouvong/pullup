@@ -75,9 +75,10 @@ preview, the button is the commitment.**
 The card marks **done** the same way a completed set row
 is: a filled tick and a soft `doneRow` wash, at full strength. Never dim a
 finished card with opacity or muted text — on a dark canvas that reads as
-disabled, not complete. A finished day also glows: a soft blue
-halo (`theme.shadow.glow`) on an unclipped wrapper. Today is a thin 1pt blue
-edge, not a heavy border or recoloured text; the card clips to its corners, so a shadow on the card itself would
+disabled, not complete. Today is marked by a soft blue halo
+(`theme.shadow.glow`) on an unclipped wrapper plus a thin 1pt blue edge,
+not a heavy border or recoloured text. The week's progress bar glows too:
+its filled segments carry a tightened version of the same halo; the card clips to its corners, so a shadow on the card itself would
 be cut off. Days you skipped are left exactly as they
 were: a missed session is a fact, not a scolding, and fading half the week
 makes it harder to read for no gain.

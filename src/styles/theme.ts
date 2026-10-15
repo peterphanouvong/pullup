@@ -42,8 +42,8 @@ function shadowsFor(ink: string, glowColor: string) {
       shadowOpacity: 0.12,
       elevation: 6,
     },
-    // A soft halo in the primary blue, centred (no offset): the reward state
-    // on a finished day's card.
+    // A soft halo in the primary blue, centred (no offset): today's day card,
+    // and (tightened) the filled segments of the week's progress bar.
     glow: {
       shadowColor: glowColor,
       shadowOffset: { width: 0, height: 0 },
