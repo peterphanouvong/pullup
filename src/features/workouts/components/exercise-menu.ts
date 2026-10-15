@@ -8,6 +8,7 @@
 import { ActionSheetIOS, Alert, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { removeExercise, moveExerciseInWorkout, updateExerciseRestSeconds } from '../hooks';
+import { startRestTimer } from '../rest-timer';
 import type { WorkoutExercise } from '../types';
 
 const REST_TIMER_PRESETS: { label: string; seconds: number | null }[] = [
@@ -33,6 +34,34 @@ export function openExercisePicker(workoutId: string, mode: 'add' | 'replace', w
 /** The rest-timer preset sheet (OFF / 1:00 / 1:30 / 2:00 / 2:30 / 3:00),
  * writing `rest_seconds` via `updateExerciseRestSeconds`. Shared by the ⋮
  * menu's "Rest timer…" item and the exercise card's rest-timer row tap. */
+/** Starts a rest countdown straight from a preset — the header's timer
+ * button, for resting between things the app didn't prompt you about. */
+export function openStartRestSheet(): void {
+  const presets = REST_TIMER_PRESETS.filter((p) => p.seconds != null);
+  const labels = presets.map((p) => p.label);
+
+  if (Platform.OS === 'ios') {
+    ActionSheetIOS.showActionSheetWithOptions(
+      { title: 'Start rest timer', options: [...labels, 'Cancel'], cancelButtonIndex: labels.length },
+      (index) => {
+        const seconds = presets[index]?.seconds;
+        if (seconds != null) startRestTimer(seconds);
+      },
+    );
+    return;
+  }
+
+  Alert.alert('Start rest timer', undefined, [
+    ...presets.map((preset) => ({
+      text: preset.label,
+      onPress: () => {
+        if (preset.seconds != null) startRestTimer(preset.seconds);
+      },
+    })),
+    { text: 'Cancel', style: 'cancel' as const },
+  ]);
+}
+
 export function openRestTimerSheet(workoutExerciseId: string): void {
   const labels = REST_TIMER_PRESETS.map((p) => p.label);
 

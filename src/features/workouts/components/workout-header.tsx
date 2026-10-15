@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
-import { useThemedStyles, useTheme } from '@/styles/use-theme';
+import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { elapsedSeconds } from '../selectors';
 import type { Workout } from '../types';
@@ -16,19 +15,26 @@ function formatElapsed(totalSeconds: number): string {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-/** The live stat strip under the workout screen's native header: ticking
- * elapsed time, total volume, completed sets. (Title/Finish/dismiss moved
- * into the native navigation bar.) */
+/**
+ * The live strip under the workout screen's native header.
+ *
+ * A session has a finish line — every set is either done or not — so the
+ * strip opens with a progress line that fills as sets land. Underneath,
+ * each number carries its own label: mid-set and breathing hard, a bare run
+ * of values takes longer to read than three labelled columns.
+ */
 export function WorkoutStatsRow({
   workout,
   volumeKg,
   completedCount,
+  totalCount,
 }: {
   workout: Workout;
   volumeKg: number;
   completedCount: number;
+  /** Live sets in the workout — the denominator of the progress line. */
+  totalCount: number;
 }) {
-  const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   // The clock is real state (not a bare re-render tick): React Compiler
   // memoizes render expressions by their dependencies, so computing
@@ -41,28 +47,43 @@ export function WorkoutStatsRow({
   }, []);
 
   const elapsed = elapsedSeconds(workout, now);
+  const progress = totalCount > 0 ? Math.min(1, completedCount / totalCount) : 0;
 
   return (
-    <View style={styles.statRow}>
-      <Text style={styles.elapsed}>{formatElapsed(elapsed)}</Text>
-      <Text style={styles.stat}>{`${Math.round(volumeKg)} kg`}</Text>
-      <Text style={styles.stat}>{`${completedCount} sets`}</Text>
-      <SymbolView name="timer" size={16} tintColor={theme.colors.inkMuted} />
+    <View style={styles.container}>
+      <View style={styles.track}>
+        <View style={[styles.trackFill, { width: `${progress * 100}%` }]} />
+      </View>
+
+      <View style={styles.statRow}>
+        <Stat label="DURATION" value={formatElapsed(elapsed)} />
+        <Stat label="VOLUME" value={`${Math.round(volumeKg)} kg`} />
+        <Stat label="SETS" value={`${completedCount} of ${totalCount}`} />
+      </View>
+    </View>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  const styles = useThemedStyles(createStyles);
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue}>{value}</Text>
     </View>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  container: { gap: theme.spacing.md },
+  track: { height: 3, backgroundColor: theme.colors.border },
+  trackFill: { height: 3, backgroundColor: theme.colors.done },
   statRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
-    // Sits a little lower than the bar above it, and keeps less vertical
-    // bulk than horizontal so the strip reads as one line, not a band.
-    paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.md,
-    gap: theme.spacing.md,
   },
-  elapsed: { ...theme.type.heading, color: theme.colors.ink, fontVariant: ['tabular-nums'] },
-  stat: { ...theme.type.caption, color: theme.colors.inkMuted },
+  stat: { flex: 1, gap: 2 },
+  statLabel: { ...theme.type.label, fontSize: 9, color: theme.colors.inkMuted },
+  statValue: { ...theme.type.heading, color: theme.colors.ink, fontVariant: ['tabular-nums'] },
 });

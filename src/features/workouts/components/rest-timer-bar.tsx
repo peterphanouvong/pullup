@@ -6,7 +6,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassSurface } from '@/components/ui/glass-surface';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
-import { adjustRestTimer, remainingSeconds, restTimer$, skipRestTimer } from '../rest-timer';
+import {
+  adjustRestTimer,
+  remainingFraction,
+  remainingSeconds,
+  restTimer$,
+  skipRestTimer,
+} from '../rest-timer';
 
 /** Once the countdown has been visibly at (or past) zero for this long, the
  * bar auto-dismisses itself — long enough for the haptic + "0:00" to
@@ -68,6 +74,12 @@ export function RestTimerBar() {
       {/* Real Liquid Glass behind the bar — it floats over the set list, so
           there's content underneath for it to refract. */}
       <GlassSurface cornerRadius={theme.radii.pill} />
+      {/* Drains left to right, so the rest reads at a glance without
+          parsing digits. */}
+      <View style={styles.track}>
+        <View style={[styles.trackFill, { width: `${remainingFraction(timer, now) * 100}%` }]} />
+      </View>
+
       <Pressable style={styles.adjustButton} onPress={() => adjustRestTimer(-15)} hitSlop={8}>
         <Text style={styles.adjustLabel}>-15s</Text>
       </Pressable>
@@ -103,6 +115,15 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     overflow: 'hidden',
     ...theme.shadow.float,
   },
+  track: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: theme.colors.border,
+  },
+  trackFill: { height: 3, backgroundColor: theme.colors.done },
   adjustButton: { paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.sm },
   adjustLabel: { ...theme.type.heading, color: theme.colors.ink },
   // The countdown is the point of the bar: give it real size.

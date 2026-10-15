@@ -51,6 +51,9 @@ export const SET_TABLE_COLUMNS = {
   check: 44,
 } as const;
 
+/** One height for every control in a set row — set chip, inputs, checkbox. */
+const SET_CHIP_HEIGHT = 36;
+
 type FillField = 'weight' | 'reps' | 'duration';
 
 /** Names the column in the keyboard button's "Fill <column> down to N sets". */
@@ -223,7 +226,9 @@ export function SetRow({
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
         onPress={() => updateSet(set.id, { set_type: nextSetType(set.set_type) })}
       >
-        <Text style={[styles.setNumber, { color: typeColor }]}>{setNumberLabel(siblingSets, set)}</Text>
+        <View style={styles.chip}>
+          <Text style={[styles.setNumber, { color: typeColor }]}>{setNumberLabel(siblingSets, set)}</Text>
+        </View>
       </Pressable>
 
       <Pressable style={styles.previousCell} onPress={copyGhost}>
@@ -234,7 +239,11 @@ export function SetRow({
 
       {isDuration ? (
         <TextInput
-          style={[styles.input, { width: SET_TABLE_COLUMNS.cell * 2 }]}
+          style={[
+            styles.input,
+            isCompleted ? styles.inputDone : styles.inputPending,
+            { width: SET_TABLE_COLUMNS.cell * 2 },
+          ]}
           inputAccessoryViewID={accessoryId('duration')}
           onFocus={() => setIsEditing(true)}
           onBlur={() => setIsEditing(false)}
@@ -248,7 +257,11 @@ export function SetRow({
       ) : (
         <>
           <TextInput
-            style={[styles.input, { width: SET_TABLE_COLUMNS.cell }]}
+            style={[
+              styles.input,
+              isCompleted ? styles.inputDone : styles.inputPending,
+              { width: SET_TABLE_COLUMNS.cell },
+            ]}
             inputAccessoryViewID={accessoryId('weight')}
             onFocus={() => setIsEditing(true)}
             onBlur={() => setIsEditing(false)}
@@ -260,7 +273,11 @@ export function SetRow({
             onChangeText={weightField.onChangeText}
           />
           <TextInput
-            style={[styles.input, { width: SET_TABLE_COLUMNS.cell }]}
+            style={[
+              styles.input,
+              isCompleted ? styles.inputDone : styles.inputPending,
+              { width: SET_TABLE_COLUMNS.cell },
+            ]}
             inputAccessoryViewID={accessoryId('reps')}
             onFocus={() => setIsEditing(true)}
             onBlur={() => setIsEditing(false)}
@@ -305,9 +322,10 @@ export function SetRow({
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
-  // Matches the card it sits on (see theme.glassSolid) so the row has no
-  // visible background of its own, while still hiding the swipe action.
-  swipeChild: { backgroundColor: theme.colors.glassSolid, borderRadius: theme.radii.md },
+  // No backing of its own: the row sits straight on the card's glass. The
+  // swipe actions stay hidden at rest (the swipeable keeps them at opacity 0
+  // until a swipe starts), so the row doesn't need to be opaque to cover them.
+  swipeChild: { backgroundColor: 'transparent', borderRadius: theme.radii.md },
   rowCompleted: { backgroundColor: theme.colors.doneRow },
   // Active row: slightly lifted fill plus a hairline edge. The border is
   // drawn in place of the row's transparent default, so nothing shifts.
@@ -329,7 +347,17 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     borderColor: 'transparent',
     gap: theme.spacing.xs,
   },
-  setCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.xs },
+  setCell: { alignItems: 'center', justifyContent: 'center' },
+  // The filled chip the set number, inputs and checkbox all share, Hevy-style:
+  // one fill, one height, one radius, so the row reads as a line of controls.
+  chip: {
+    alignSelf: 'stretch',
+    height: SET_CHIP_HEIGHT,
+    borderRadius: theme.radii.md,
+    backgroundColor: theme.colors.glassSolid,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   previousCell: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.xs },
   // Stays centred so the checkbox lines up under the header's tick, and
   // stays 44pt wide so the tap target isn't shrunk (see the note at the
@@ -371,19 +399,25 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     color: theme.colors.ink,
     textAlign: 'center',
     fontVariant: ['tabular-nums'],
-    paddingVertical: theme.spacing.xs,
+    height: SET_CHIP_HEIGHT,
+    paddingVertical: 0,
+    borderRadius: theme.radii.md,
   },
-  // Always shows a checkmark: hollow and muted when pending, filled rose
+  // An empty cell has to look like something you can fill in: pending sets
+  // sit in the shared filled chip, logged ones drop to plain bold text on
+  // the row's done wash. Fill only, no border, so nothing reflows.
+  inputPending: { backgroundColor: theme.colors.glassSolid },
+  inputDone: { backgroundColor: 'transparent', fontWeight: '700' },
+  // Always shows a checkmark: muted on the chip when pending, filled rose
   // when done. A completed set used to be signalled by tinting the whole
   // row, which read as a stray coloured rectangle.
   checkbox: {
-    width: 32,
-    height: 32,
+    width: SET_CHIP_HEIGHT,
+    height: SET_CHIP_HEIGHT,
     borderRadius: theme.radii.md,
-    borderWidth: 1.5,
-    borderColor: theme.colors.inkMuted,
+    backgroundColor: theme.colors.glassSolid,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxDone: { backgroundColor: theme.colors.done, borderColor: theme.colors.done },
+  checkboxDone: { backgroundColor: theme.colors.done },
 });

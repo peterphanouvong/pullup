@@ -1,5 +1,6 @@
 import {
   adjustRestTimer,
+  remainingFraction,
   remainingSeconds,
   restTimer$,
   skipRestTimer,
@@ -44,5 +45,30 @@ describe('rest timer', () => {
     startRestTimer(30, now);
     const state = restTimer$.get()!;
     expect(remainingSeconds(state, new Date('2026-10-14T12:00:45.000Z'))).toBe(-15);
+  });
+});
+
+describe('remainingFraction', () => {
+  const now = new Date('2026-10-14T12:00:00.000Z');
+
+  it('runs from full to empty over the rest', () => {
+    startRestTimer(60, now);
+    const state = restTimer$.get()!;
+    expect(remainingFraction(state, now)).toBe(1);
+    expect(remainingFraction(state, new Date('2026-10-14T12:00:30.000Z'))).toBe(0.5);
+    expect(remainingFraction(state, new Date('2026-10-14T12:01:00.000Z'))).toBe(0);
+  });
+
+  it('clamps once the countdown has overrun', () => {
+    startRestTimer(60, now);
+    expect(remainingFraction(restTimer$.get()!, new Date('2026-10-14T12:02:00.000Z'))).toBe(0);
+  });
+
+  it('stays within the track when time is added mid-rest', () => {
+    startRestTimer(60, now);
+    adjustRestTimer(15);
+    const fraction = remainingFraction(restTimer$.get()!, now);
+    expect(fraction).toBeLessThanOrEqual(1);
+    expect(fraction).toBeGreaterThan(0.9);
   });
 });

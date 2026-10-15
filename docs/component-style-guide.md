@@ -37,15 +37,15 @@ them through `useTheme()` / `useThemedStyles(createStyles)`.
 | `canvas` / `card` | Screen background / opaque card |
 | `glass` / `glassBorder` | Translucent card fill + hairline edge |
 | `glassControl` | Round buttons sitting on a glass surface |
-| `glassSolid` | `glass` flattened over `canvas`, for rows that must be opaque |
+| `glassSolid` | `glass` flattened over `canvas`; the fill for set-row chips |
 | `accent` / `onAccent` | Primary action fill and its label |
 | `done` / `doneRow` | Completion colour and the completed-row wash |
 | `activeRow` / `activeRowBorder` | The set row currently being edited |
 | `comp` / `danger` | Competition days / destructive actions |
 
-`glassSolid` exists because a swipeable row has to hide the delete action
-sitting behind it, so it can't be translucent — but it still needs to
-disappear into the glass card above it.
+Set rows have no backing of their own. The swipeable keeps its actions at
+opacity 0 until a swipe starts, so the row doesn't need to be opaque to hide
+them. `glassSolid` instead fills the row's controls (see "Lists and rows").
 
 ## Cards
 
@@ -137,7 +137,11 @@ the background on the `ScrollView` itself.
   `activeRow` fill plus a 1pt edge drawn in place of a transparent default
   border, so nothing shifts when it appears. (A hairline at low alpha is
   invisible in practice — subtle still has to register.)
-- Checkboxes always render their checkmark — hollow and muted when pending,
+- Set rows are a line of matching filled chips, Hevy-style: the set number,
+  the inputs and the checkbox share one `glassSolid` fill, one height and one
+  radius. A logged set's inputs drop their chip and turn bold on the
+  `doneRow` wash.
+- Checkboxes always render their checkmark — muted on the chip when pending,
   filled when done. An empty box gives the eye nothing to aim at.
 - Numeric inputs that arrive prefilled use `selectTextOnFocus`, so typing
   replaces the value instead of appending to it.

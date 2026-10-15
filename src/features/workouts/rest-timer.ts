@@ -15,6 +15,10 @@ import { observable } from '@legendapp/state';
 export interface RestTimerState {
   /** ISO timestamp the countdown reaches zero at. */
   endsAt: string;
+  /** What the countdown started from, so a progress bar knows how much of
+   * the rest has run. Grows with the ±15s adjust, which is what keeps the
+   * bar honest instead of jumping backwards past full. */
+  totalSeconds: number;
 }
 
 export const restTimer$ = observable<RestTimerState | null>(null);
@@ -22,7 +26,10 @@ export const restTimer$ = observable<RestTimerState | null>(null);
 /** Starts (or restarts, e.g. completing another set mid-rest) the countdown:
  * `seconds` from `now`. */
 export function startRestTimer(seconds: number, now: Date = new Date()): void {
-  restTimer$.set({ endsAt: new Date(now.getTime() + seconds * 1000).toISOString() });
+  restTimer$.set({
+    endsAt: new Date(now.getTime() + seconds * 1000).toISOString(),
+    totalSeconds: seconds,
+  });
 }
 
 /** Moves the running countdown's end time by `deltaSeconds` (the ±15s
@@ -30,7 +37,12 @@ export function startRestTimer(seconds: number, now: Date = new Date()): void {
 export function adjustRestTimer(deltaSeconds: number): void {
   const current = restTimer$.get();
   if (!current) return;
-  restTimer$.set({ endsAt: new Date(new Date(current.endsAt).getTime() + deltaSeconds * 1000).toISOString() });
+  restTimer$.set({
+    endsAt: new Date(new Date(current.endsAt).getTime() + deltaSeconds * 1000).toISOString(),
+    // Adding time extends the whole rest, so the bar keeps reading
+    // "fraction remaining" rather than overflowing past full.
+    totalSeconds: Math.max(1, current.totalSeconds + deltaSeconds),
+  });
 }
 
 /** Clears the countdown: Skip, or the bar's own auto-dismiss once it's run
@@ -44,4 +56,13 @@ export function skipRestTimer(): void {
  * when to fire the haptic / auto-dismiss. */
 export function remainingSeconds(state: RestTimerState, now: Date): number {
   return Math.round((new Date(state.endsAt).getTime() - now.getTime()) / 1000);
+}
+
+/** Fraction of the rest still to run, 0–1 — the countdown bar's progress
+ * line. Clamped at both ends so an overrun or a stretched timer can't push
+ * the bar outside its track. */
+export function remainingFraction(state: RestTimerState, now: Date = new Date()): number {
+  const remaining = remainingSeconds(state, now);
+  if (state.totalSeconds <= 0) return 0;
+  return Math.min(1, Math.max(0, remaining / state.totalSeconds));
 }

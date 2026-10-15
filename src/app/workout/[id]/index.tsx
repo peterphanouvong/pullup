@@ -1,12 +1,21 @@
-import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Animated,
+  Easing,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { ExerciseCard } from '@/features/workouts/components/exercise-card';
-import { openExercisePicker } from '@/features/workouts/components/exercise-menu';
+import { openExercisePicker, openStartRestSheet } from '@/features/workouts/components/exercise-menu';
 import { RestTimerBar } from '@/features/workouts/components/rest-timer-bar';
 import { WorkoutStatsRow } from '@/features/workouts/components/workout-header';
 import { WorkoutSkeleton } from '@/features/workouts/components/workout-skeleton';
@@ -22,6 +31,15 @@ import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selector
 /** Standard iOS navigation bar height — the transparent header's footprint. */
 const HEADER_HEIGHT = 44;
 
+/** The stats strip's own height. It floats over the list rather than sitting
+ * in flow, so the list pads itself by this much and the strip can slide away
+ * without reflowing anything. */
+const STATS_HEIGHT = 64;
+
+/** Ignore scroll jitter below this many points, so the strip doesn't flicker
+ * while a finger rests on the screen. */
+const SCROLL_NOISE = 6;
+
 const MODAL_OPTIONS = { presentation: 'fullScreenModal' } as const;
 
 export default function WorkoutScreen() {
@@ -34,6 +52,13 @@ export default function WorkoutScreen() {
   // compete for the same frames, which read as a stall between tapping
   // Start and seeing the screen. Render a skeleton first and mount the real
   // (SwiftUI-hosting) cards once the transition has finished.
+  // The stats strip gets out of the way as you work down the list and comes
+  // back the moment you scroll up — the numbers matter between sets, not
+  // while you're reading the next exercise.
+  const [statsHidden] = useState(() => new Animated.Value(0));
+  const statsHiddenRef = useRef(false);
+  const lastScrollY = useRef(0);
+
   const [contentReady, setContentReady] = useState(false);
   useEffect(() => {
     // A short timer rather than InteractionManager (deprecated): long enough
@@ -137,6 +162,11 @@ export default function WorkoutScreen() {
       </Stack.Toolbar>
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Button
+          icon="timer"
+          accessibilityLabel="Start rest timer"
+          onPress={openStartRestSheet}
+        />
+        <Stack.Toolbar.Button
           icon="trash"
           accessibilityLabel="Discard workout"
           tintColor={theme.colors.danger}
@@ -157,10 +187,56 @@ export default function WorkoutScreen() {
         // whenever the keyboard appeared.
         keyboardVerticalOffset={0}
       >
-        <WorkoutStatsRow workout={workout} volumeKg={volumeKg} completedCount={completedCount} />
+        <Animated.View
+          style={[
+            styles.statsStrip,
+            {
+              // Absolute children measure from the parent's OUTER edge in
+              // Yoga, ignoring its padding — without this the strip renders
+              // behind the translucent header and is never seen.
+              top: insets.top + HEADER_HEIGHT,
+              transform: [
+                {
+                  translateY: statsHidden.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -STATS_HEIGHT],
+                  }),
+                },
+              ],
+              opacity: statsHidden.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+            },
+          ]}
+        >
+          <WorkoutStatsRow
+            workout={workout}
+            volumeKg={volumeKg}
+            completedCount={completedCount}
+            totalCount={allSets.filter((s) => !s.deleted).length}
+          />
+        </Animated.View>
 
         {contentReady ? (
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={[styles.content, { paddingTop: STATS_HEIGHT + theme.spacing.lg }]}
+            keyboardShouldPersistTaps="handled"
+            scrollEventThrottle={16}
+            onScroll={(e) => {
+              const y = e.nativeEvent.contentOffset.y;
+              const delta = y - lastScrollY.current;
+              if (Math.abs(delta) < SCROLL_NOISE) return;
+              lastScrollY.current = y;
+              // Only hide once there's something above to scroll back to.
+              const hide = delta > 0 && y > STATS_HEIGHT;
+              if (hide === statsHiddenRef.current) return;
+              statsHiddenRef.current = hide;
+              Animated.timing(statsHidden, {
+                toValue: hide ? 1 : 0,
+                duration: 180,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+              }).start();
+            }}
+          >
             {exercises.length === 0 && <Text style={styles.empty}>No exercises yet — add one to get started.</Text>}
             {exercises.map((exercise, index) => (
               <ExerciseCard
@@ -188,6 +264,15 @@ export default function WorkoutScreen() {
 
 const createStyles = (theme: Theme) => StyleSheet.create({
   flex: { flex: 1 },
+  // Floats over the list (absolute, so sliding it away reflows nothing) and
+  // is opaque so rows pass cleanly underneath.
+  statsStrip: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 1,
+    backgroundColor: theme.colors.canvas,
+  },
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   notFound: { ...theme.type.body, color: theme.colors.ink, padding: theme.spacing.lg },
   empty: { ...theme.type.body, color: theme.colors.inkMuted, textAlign: 'center', paddingTop: theme.spacing.xl },
