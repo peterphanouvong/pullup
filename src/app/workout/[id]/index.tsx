@@ -1,4 +1,5 @@
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, InteractionManager, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Screen } from '@/components/ui/screen';
@@ -8,6 +9,8 @@ import { ExerciseCard } from '@/features/workouts/components/exercise-card';
 import { openExercisePicker } from '@/features/workouts/components/exercise-menu';
 import { RestTimerBar } from '@/features/workouts/components/rest-timer-bar';
 import { WorkoutStatsRow } from '@/features/workouts/components/workout-header';
+import { WorkoutSkeleton } from '@/features/workouts/components/workout-skeleton';
+import { NativeButton } from '@/components/ui/native-button';
 import { discardWorkout, finishWorkout, useWorkout } from '@/features/workouts/hooks';
 import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selectors';
 
@@ -25,6 +28,15 @@ export default function WorkoutScreen() {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
+  // The modal's open animation and the first render of a full exercise list
+  // compete for the same frames, which read as a stall between tapping
+  // Start and seeing the screen. Render a skeleton first and mount the real
+  // (SwiftUI-hosting) cards once the transition has finished.
+  const [contentReady, setContentReady] = useState(false);
+  useEffect(() => {
+    const handle = InteractionManager.runAfterInteractions(() => setContentReady(true));
+    return () => handle.cancel();
+  }, []);
 
   if (!workout) {
     return (
@@ -100,12 +112,12 @@ export default function WorkoutScreen() {
           completes. */}
       <Stack.Screen options={MODAL_OPTIONS} />
       <Stack.Title>{workout.title}</Stack.Title>
+      {/* Translucent bar: the blur effect implies a transparent header, so
+          content blurs under it. Dark variant explicitly — the default
+          material renders light against our dark canvas. */}
       <Stack.Header
-        style={{
-          backgroundColor: theme.colors.canvas,
-          color: theme.colors.ink,
-          shadowColor: 'transparent',
-        }}
+        blurEffect="systemChromeMaterialDark"
+        style={{ color: theme.colors.ink, shadowColor: 'transparent' }}
       />
       <Stack.Toolbar placement="left">
         <Stack.Toolbar.Button
@@ -132,24 +144,23 @@ export default function WorkoutScreen() {
       >
         <WorkoutStatsRow workout={workout} volumeKg={volumeKg} completedCount={completedCount} />
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {exercises.length === 0 && <Text style={styles.empty}>No exercises yet — add one to get started.</Text>}
-          {exercises.map((exercise, index) => (
-            <ExerciseCard
-              key={exercise.id}
-              exercise={exercise}
-              workoutId={workout.id}
-              canMoveUp={index > 0}
-              canMoveDown={index < exercises.length - 1}
-            />
-          ))}
-          <Pressable
-            style={({ pressed }) => [styles.addExercise, pressed && styles.pressed]}
-            onPress={() => openExercisePicker(workout.id, 'add')}
-          >
-            <Text style={styles.addExerciseLabel}>+ Add Exercise</Text>
-          </Pressable>
-        </ScrollView>
+        {contentReady ? (
+          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+            {exercises.length === 0 && <Text style={styles.empty}>No exercises yet — add one to get started.</Text>}
+            {exercises.map((exercise, index) => (
+              <ExerciseCard
+                key={exercise.id}
+                exercise={exercise}
+                workoutId={workout.id}
+                canMoveUp={index > 0}
+                canMoveDown={index < exercises.length - 1}
+              />
+            ))}
+            <NativeButton label="Add Exercise" onPress={() => openExercisePicker(workout.id, 'add')} />
+          </ScrollView>
+        ) : (
+          <WorkoutSkeleton exerciseCount={exercises.length} />
+        )}
       </KeyboardAvoidingView>
       <RestTimerBar />
     </Screen>
@@ -161,16 +172,4 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   notFound: { ...theme.type.body, color: theme.colors.ink, padding: theme.spacing.lg },
   empty: { ...theme.type.body, color: theme.colors.inkMuted, textAlign: 'center', paddingTop: theme.spacing.xl },
-  pressed: { opacity: 0.7 },
-  // Quiet outlined CTA (not a filled PrimaryButton pill) — the editing
-  // surface's own affordance, kept visually subordinate to the native
-  // header's accent-filled "Finish" button, Hevy-style.
-  addExercise: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.accent,
-    borderRadius: theme.radii.md,
-    paddingVertical: theme.spacing.md,
-    alignItems: 'center',
-  },
-  addExerciseLabel: { ...theme.type.heading, color: theme.colors.accent },
 });

@@ -117,7 +117,7 @@ export function SetRow({
 
   return (
     <SwipeToDelete onDelete={() => softDeleteSet(set.id)} childStyle={styles.swipeChild}>
-    <View style={[styles.row, isCompleted && styles.rowCompleted]}>
+    <View style={styles.row}>
       <Pressable
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
         onPress={() => updateSet(set.id, { set_type: nextSetType(set.set_type) })}
@@ -170,7 +170,11 @@ export function SetRow({
         onPress={() => completeSet(set.id, new Date())}
       >
         <View style={[styles.checkbox, isCompleted && styles.checkboxDone]}>
-          {isCompleted && <SymbolView name="checkmark" size={14} tintColor={theme.colors.onAccent} />}
+          <SymbolView
+            name="checkmark"
+            size={17}
+            tintColor={isCompleted ? theme.colors.onGradient : theme.colors.inkMuted}
+          />
         </View>
       </Pressable>
     </View>
@@ -187,7 +191,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     borderRadius: theme.radii.sm,
     gap: theme.spacing.xs,
   },
-  rowCompleted: { backgroundColor: theme.colors.doneSoft },
   setCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.xs },
   previousCell: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.xs },
   checkCell: {
@@ -204,12 +207,15 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     fontVariant: ['tabular-nums'],
     paddingVertical: theme.spacing.xs,
   },
+  // Always shows a checkmark: hollow and muted when pending, filled rose
+  // when done. A completed set used to be signalled by tinting the whole
+  // row, which read as a stray coloured rectangle.
   checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: theme.radii.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border,
+    width: 32,
+    height: 32,
+    borderRadius: theme.radii.md,
+    borderWidth: 1.5,
+    borderColor: theme.colors.inkMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },

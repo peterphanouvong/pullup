@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { GlassSurface } from '@/components/ui/glass-surface';
+import { NativeButton } from '@/components/ui/native-button';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import type { DayKind, ProgramDay } from '@/features/programs/types';
@@ -117,14 +118,7 @@ export function WeekDayCard({
           translucent fill stays as the pre-iOS-26 fallback. */}
       <GlassSurface cornerRadius={theme.radii.xl} />
       {body}
-      {onStart != null && (
-        <Pressable
-          onPress={onStart}
-          style={({ pressed }) => [styles.startButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.startLabel}>{startLabel}</Text>
-        </Pressable>
-      )}
+      {onStart != null && <NativeButton label={startLabel} onPress={onStart} prominent />}
     </>
   );
 
@@ -154,7 +148,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   cardDone: { opacity: 0.75 },
   cardPassed: { opacity: 0.5 },
   cardPressed: { opacity: 0.85 },
-  pressed: { opacity: 0.8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
   dayBlock: { width: 48, gap: 2 },
   weekday: { ...theme.type.title, fontSize: 20, color: theme.colors.ink },
@@ -177,11 +170,4 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  startButton: {
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.radii.pill,
-    paddingVertical: theme.spacing.md,
-    alignItems: 'center',
-  },
-  startLabel: { ...theme.type.heading, color: theme.colors.onAccent },
 });

@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { Card } from '@/components/ui/card';
+import { NativeButton } from '@/components/ui/native-button';
 import { IconCircle } from '@/components/ui/icon-circle';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
@@ -123,12 +124,7 @@ export function ExerciseCard({
         />
       ))}
 
-      <Pressable
-        style={({ pressed }) => [styles.addSet, pressed && styles.addSetPressed]}
-        onPress={() => addSet(exercise.id)}
-      >
-        <Text style={styles.addSetLabel}>+ Add Set</Text>
-      </Pressable>
+      <NativeButton label="Add Set" onPress={() => addSet(exercise.id)} />
     </Card>
   );
 }
@@ -144,14 +140,4 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, marginTop: theme.spacing.xs },
   headerLabel: { ...theme.type.label, color: theme.colors.inkMuted },
   headerPrevious: { flex: 1 },
-  addSet: {
-    alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-    marginTop: theme.spacing.xs,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radii.pill,
-  },
-  addSetPressed: { opacity: 0.7 },
-  addSetLabel: { ...theme.type.heading, color: theme.colors.inkMuted },
 });
