@@ -52,7 +52,7 @@ export const SET_TABLE_COLUMNS = {
 type FillField = 'weight' | 'reps' | 'duration';
 
 /** Names the column in the keyboard button's "Fill <column> down to N sets". */
-const FIELD_LABELS: Record<FillField, string> = { weight: 'weight', reps: 'reps', duration: 'time' };
+const FIELD_LABELS: Record<FillField, string> = { weight: 'kg', reps: 'reps', duration: 'time' };
 
 /** Warm-ups show "W", drops "D", failures "F"; working sets are numbered 1..n
  * among the exercise's *other working sets*, in position order — matching
@@ -140,29 +140,30 @@ export function SetRow({
     for (const id of targets) updateSet(id, patch);
   }
 
-  /** The floating "fill this column down" button shown above the keyboard
-   * while that column's input has focus — a button, not a toolbar.
+  /** Buttons floating above the keyboard while a numeric input has focus:
+   * one per fillable column, so you can fill either without first tapping
+   * into that column.
    *
-   * Deliberately a plain RN pill, not our SwiftUI NativeButton: an
+   * Deliberately plain RN pills, not our SwiftUI NativeButton: an
    * `InputAccessoryView` is hosted by the keyboard, outside the app's view
    * hierarchy, and mounting a SwiftUI host there crashes. For the same
    * reason the press handler is RN's Pressable, not gesture-handler's. */
   function renderFillAccessory(field: FillField) {
+    const fields: FillField[] = isDuration ? ['duration'] : ['weight', 'reps'];
     return (
       <InputAccessoryView nativeID={accessoryId(field)} backgroundColor="transparent">
         {fillTargetCount > 0 ? (
           <View style={styles.accessory}>
-            <RNPressable
-              style={({ pressed }) => [styles.fillButton, pressed && styles.fillButtonPressed]}
-              onPress={() => fillDown(field)}
-            >
-              <SymbolView name="arrow.down.to.line" size={15} tintColor={theme.colors.onAccent} />
-              <Text style={styles.fillLabel}>
-                {`Fill ${FIELD_LABELS[field]} down to ${fillTargetCount} set${
-                  fillTargetCount === 1 ? '' : 's'
-                }`}
-              </Text>
-            </RNPressable>
+            {fields.map((target) => (
+              <RNPressable
+                key={target}
+                style={({ pressed }) => [styles.fillButton, pressed && styles.fillButtonPressed]}
+                onPress={() => fillDown(target)}
+              >
+                <SymbolView name="arrow.down.to.line" size={14} tintColor={theme.colors.onAccent} />
+                <Text style={styles.fillLabel}>{`Fill ${FIELD_LABELS[target]}`}</Text>
+              </RNPressable>
+            ))}
           </View>
         ) : null}
       </InputAccessoryView>
@@ -290,20 +291,26 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Just the button floating above the keyboard — no toolbar bar behind it.
-  accessory: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.sm },
+  // Buttons floating above the keyboard — no toolbar bar behind them, and
+  // sized to their labels rather than stretched across the screen.
+  accessory: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.sm,
+  },
   fillButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
     backgroundColor: theme.colors.accent,
     borderRadius: theme.radii.pill,
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
     ...theme.shadow.float,
   },
   fillButtonPressed: { opacity: 0.8 },
-  fillLabel: { ...theme.type.heading, color: theme.colors.onAccent },
+  fillLabel: { ...theme.type.caption, fontWeight: '700', color: theme.colors.onAccent },
   setNumber: { ...theme.type.heading },
   ghost: { ...theme.type.body, color: theme.colors.inkMuted },
   input: {
