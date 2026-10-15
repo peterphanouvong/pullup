@@ -1,0 +1,190 @@
+# Pull Up — component style guide
+
+The patterns this app has settled on, and the reasons behind the ones that
+look arbitrary. Written after a long design pass, so most entries exist
+because something broke or looked wrong first.
+
+## Platform ground rules
+
+- **Expo Go must keep working.** No custom native modules, ever. This is why
+  Unistyles/nitro/MMKV were ripped out. `@expo/ui` and `expo-symbols` are
+  fine — they ship inside Expo Go.
+- **Dark by default.** `userInterfaceStyle: "dark"` in `app.json` covers real
+  builds; `Appearance.setColorScheme('dark')` in `src/app/_layout.tsx` covers
+  Expo Go, which ignores the manifest. The runtime call is what makes *native*
+  chrome (nav bars, tab bar, keyboards) go dark, not just our own views.
+- **Prefer the native thing.** Native tab bar, native navigation bars, native
+  header items, SwiftUI buttons. Reach for a styled `Pressable` only where a
+  native control can't go (see "Where SwiftUI can't go").
+
+## Theming
+
+All colour, spacing, type and shadow live in `src/styles/theme.ts`. Consume
+them through `useTheme()` / `useThemedStyles(createStyles)`.
+
+- **No hex outside `theme.ts`.** If you need a new shade, add a token with a
+  comment explaining what it's for.
+- `createStyles` is always a **module-level** function. An inline factory
+  defeats the memoisation in `useThemedStyles` and rebuilds styles every
+  render.
+- Numerals that update (timers, weights, set counts) get
+  `fontVariant: ['tabular-nums']` so they don't jitter.
+
+### Tokens worth knowing
+
+| Token | Use |
+| --- | --- |
+| `canvas` / `card` | Screen background / opaque card |
+| `glass` / `glassBorder` | Translucent card fill + hairline edge |
+| `glassSolid` | `glass` flattened over `canvas`, for rows that must be opaque |
+| `accent` / `onAccent` | Primary action fill and its label |
+| `done` / `doneRow` | Completion colour and the completed-row wash |
+| `activeRow` / `activeRowBorder` | The set row currently being edited |
+| `comp` / `danger` | Competition days / destructive actions |
+
+`glassSolid` exists because a swipeable row has to hide the delete action
+sitting behind it, so it can't be translucent — but it still needs to
+disappear into the glass card above it.
+
+## Cards
+
+`Card` (`src/components/ui/card.tsx`) is the surface: translucent `glass`
+fill, hairline `glassBorder`, radius `xl`, padding `lg`, plus real Liquid
+Glass behind it.
+
+- **`GlassSurface`** (`src/components/ui/glass-surface.tsx`) is SwiftUI's
+  `.glassEffect` pinned behind ordinary RN content, `pointerEvents="none"`.
+  SwiftUI hosts can only contain SwiftUI children, so this is a background
+  layer rather than a wrapper. The translucent fill underneath is the
+  pre-iOS-26 fallback.
+- Glass refracts what's *behind* it. Over a flat canvas it reads as a quiet
+  tint; it earns its keep where content scrolls under it.
+- Pass `glass={false}` for cards inside dense lists or stacked on other
+  cards — each glass layer is a hosting view, and they aren't free.
+- Any card hosting a glass layer needs `overflow: 'hidden'` to clip it to the
+  corners.
+
+### Row cards (`WeekDayCard`)
+
+Plan-row anatomy, left to right: identity block (weekday + kind label),
+hairline divider, title with at-a-glance metrics, then a trailing done-check
+or chevron. The active row carries its own primary button — **the card is the
+preview, the button is the commitment.**
+
+Time states are distinct and layered: today gets a `done`-coloured edge,
+passed days fade to 50%, completed rows mute to 75% behind their check.
+
+## Buttons
+
+- **`NativeButton`** (`src/components/ui/native-button.tsx`) is the default:
+  a real SwiftUI button, `glassProminent` for commitments and `glass` for
+  secondary actions.
+- Two things it took iterations to learn:
+  - The fill `frame` goes on the **label**, not the button. Glass button
+    styles hug their content, so framing the button only widens its hit area
+    and leaves a label-sized capsule.
+  - The label colour must be **explicit**. Our `accent` is near-white in dark
+    mode, so a default white label vanishes into the prominent fill.
+- `Host`'s `seedColor` themes the SwiftUI accent. Without it, prominent
+  buttons paint themselves system blue.
+
+### Where SwiftUI can't go
+
+`InputAccessoryView` is hosted by the keyboard, **outside the app's view
+hierarchy**. Mounting a SwiftUI host there crashes the app, and
+gesture-handler presses never fire. Inside an accessory use plain RN views
+and **React Native's** `Pressable`.
+
+The same hierarchy rule explains the gesture-handler `Pressable` everywhere
+else: inside a swipeable row it yields to the pan, where RN's fires a press
+mid-swipe.
+
+## Navigation and headers
+
+- Screens draw their own chrome; the root stack sets `headerShown: false`.
+  Screens that want a native bar opt in (the Today tab has its own stack
+  purely for this).
+- **Header options belong in the layout's `screenOptions`, or in expo-router's
+  composition components** (`Stack.Title`, `Stack.Header`, `Stack.Toolbar`),
+  which memoise. An inline `options={{…}}` object on a page changes identity
+  every render, re-running `setOptions` and resetting native animations
+  mid-scroll.
+- **Never toggle `headerShown` inside a modal.** It remounts the screen and
+  drops local state.
+- Translucent bars need an explicit dark material
+  (`blurEffect: 'systemChromeMaterialDark'`). Simply removing the background
+  falls back to the *light* material — a white strip with an invisible title.
+- Header buttons use `Stack.Toolbar` items (SF Symbols, real UIKit menus,
+  liquid-glass backgrounds) rather than custom views.
+
+### The scroll view must be the first child
+
+react-native-screens finds a screen's content scroll view by walking
+`subviews[0]` from the screen down (`RNSScrollViewFinder`). **Any wrapper
+`View` between the screen and the `ScrollView` breaks that chain**, and with
+it large-title collapse and scroll-edge effects. Return a fragment and put
+the background on the `ScrollView` itself.
+
+## Lists and rows
+
+- Row state is shown by the row's own treatment, never by a coloured block:
+  completion is a filled checkbox plus a soft `doneRow` wash; editing is the
+  `activeRow` fill plus a hairline edge drawn in place of a transparent
+  default border, so nothing shifts when it appears.
+- Checkboxes always render their checkmark — hollow and muted when pending,
+  filled when done. An empty box gives the eye nothing to aim at.
+- Keep tap targets at 44pt. Don't use `hitSlop` to reach that when a
+  neighbouring control is close; it creates two targets fighting over one tap.
+
+## Swipe actions
+
+`SwipeToDelete` wraps `ReanimatedSwipeable`: Delete trailing, optional
+leading action. Actions are **inset rounded chips** in our palette, not
+full-bleed slabs, with a fixed height — stretching them to short rows
+squashes them into slivers.
+
+SwiftUI's native `.swipeActions` is **not** usable here: it applies to
+SwiftUI rows inside a SwiftUI `List`, and our set rows are React Native
+(text inputs included). Adopting it means rebuilding the row in SwiftUI.
+
+## Keyboard accessories
+
+Attach **one accessory per input**. Two inputs sharing a `nativeID` leaves
+the second one with no accessory at all.
+
+Leave `backgroundColor` unset — the native content view is nil-backed
+(clear), whereas passing `"transparent"` through the colour conversion comes
+back opaque. And return `null` for the whole component when there's nothing
+to show: rendering `null` *inside* an accessory still mounts its backdrop.
+
+## Motion, haptics and perceived speed
+
+- Haptics mark achievement, not interaction: light on completing a set and on
+  fill-down, medium on starting a session, success on finishing. Nothing on
+  undoing. Fire them **after** any guard, so feedback never marks a no-op.
+- Heavy screens render a **skeleton** first and mount real content once the
+  transition has had its frames. Modal open animations and first render of a
+  long card list compete for the same frames otherwise.
+- Don't `setState` on every scroll event. Compare against a ref and write only
+  on change, or the whole screen re-renders ~10×/second mid-scroll and the
+  scroll feels hijacked.
+
+## React Compiler
+
+The compiler memoises render expressions by their dependencies. **A ticking
+clock must be real state** — `const [now, setNow] = useState(() => new Date())`
+with an interval — because deriving elapsed time from a bare re-render tick
+gets memoised and freezes. Keep the value timestamp-derived (`endsAt - now`)
+so backgrounding can't drift it.
+
+## Dates
+
+All day maths is local-calendar maths: parse `YYYY-MM-DD` into a local
+`Date`, add days with `setDate`. Never `toISOString()` for day arithmetic —
+it silently shifts the day across timezones.
+
+## Testing
+
+Logic lives in pure functions with tests (`today-state.ts`, `edit.ts`,
+`start.ts`, `selectors.ts`); components stay thin enough to eyeball. Peter
+owns device QA — no simulator automation.
