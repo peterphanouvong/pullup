@@ -4,7 +4,6 @@ import { router, Stack } from 'expo-router';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
-import { FLOATING_ACTION_CLEARANCE, FloatingAction } from '@/components/ui/floating-action';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { ProgressSegments } from '@/components/ui/progress-segments';
 import { WeekDayCard } from '@/components/ui/week-day-card';
@@ -20,7 +19,10 @@ import {
   useActiveWorkout,
   useWeekCompletion,
 } from '@/features/workouts/hooks';
-import { MinimizedWorkoutBar } from '@/features/workouts/components/minimized-workout-bar';
+import {
+  MINIMIZED_BAR_CLEARANCE,
+  MinimizedWorkoutBar,
+} from '@/features/workouts/components/minimized-workout-bar';
 import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
 import { dayMetrics, dayState } from '@/features/workouts/today-state';
 
@@ -38,10 +40,21 @@ function metaFor(day: ProgramDay): string {
 
 /** Native header gear: a UIKit menu (not an action sheet) so it gets the
  * system's liquid-glass bar background and overflow handling for free. */
-function SettingsToolbar({ programId }: { programId: string | null }) {
+function SettingsToolbar({
+  programId,
+  onStartEmpty,
+}: {
+  programId: string | null;
+  onStartEmpty: () => void;
+}) {
   return (
     <Stack.Toolbar placement="right">
       <Stack.Toolbar.Menu icon="gearshape" accessibilityLabel="Settings">
+        {/* Starting an unplanned session is the rare case — it lives in the
+            menu rather than occupying a full-width button over the week. */}
+        <Stack.Toolbar.MenuAction icon="plus" onPress={onStartEmpty}>
+          Start empty workout
+        </Stack.Toolbar.MenuAction>
         {programId != null && (
           <Stack.Toolbar.MenuAction
             icon="list.bullet.rectangle"
@@ -91,12 +104,12 @@ export default function TodayScreen() {
     });
   }
 
-  /** The floating slot has exactly two jobs now that each day card carries
-   * its own start button: resume a live workout (as the Hevy-style
-   * minimized bar), or start an unplanned one. */
+  /** The floating slot is only ever the live-workout bar now: day cards
+   * carry their own start buttons, and the unplanned session lives in the
+   * header menu. */
   function renderFloating() {
-    if (activeWorkout != null) return <MinimizedWorkoutBar workout={activeWorkout} />;
-    return <FloatingAction label="Start empty workout" onPress={handleStartEmpty} />;
+    if (activeWorkout == null) return null;
+    return <MinimizedWorkoutBar workout={activeWorkout} />;
   }
 
   if (active.isPending) {
@@ -111,7 +124,7 @@ export default function TodayScreen() {
   if (!active.data || !active.data.startDate) {
     return (
       <>
-        <SettingsToolbar programId={null} />
+        <SettingsToolbar programId={null} onStartEmpty={handleStartEmpty} />
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
@@ -170,10 +183,10 @@ export default function TodayScreen() {
     // content ScrollView by walking subviews[0] from the screen, so any View
     // between the screen and the ScrollView breaks the large-title collapse.
     <>
-      <SettingsToolbar programId={programId} />
+      <SettingsToolbar programId={programId} onStartEmpty={handleStartEmpty} />
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.content, styles.contentWithFloating]}
+        contentContainerStyle={[styles.content, activeWorkout != null && styles.contentWithFloating]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
       >
@@ -244,7 +257,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   // Canvas lives on the ScrollView itself — there's no wrapper View to paint.
   scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, paddingTop: theme.spacing.sm, gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
-  contentWithFloating: { paddingBottom: FLOATING_ACTION_CLEARANCE + 96 },
+  contentWithFloating: { paddingBottom: MINIMIZED_BAR_CLEARANCE + 96 },
   phaseLabel: { ...theme.type.label, color: theme.colors.inkMuted },
   messageCard: { gap: theme.spacing.sm },
   messageTitle: { ...theme.type.heading, color: theme.colors.ink },

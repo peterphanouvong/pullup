@@ -160,6 +160,14 @@ Leave `backgroundColor` unset — the native content view is nil-backed
 back opaque. And return `null` for the whole component when there's nothing
 to show: rendering `null` *inside* an accessory still mounts its backdrop.
 
+## Progressive disclosure
+
+Rare actions live in the header menu (`Stack.Toolbar.Menu`), not in
+persistent chrome. Starting an unplanned workout is a good example: it had a
+full-width floating button over the week list, which gave a rare action more
+weight than the plan itself. The floating slot is reserved for state that is
+genuinely live — currently just the minimized workout bar.
+
 ## Motion, haptics and perceived speed
 
 - Haptics mark achievement, not interaction: light on completing a set and on

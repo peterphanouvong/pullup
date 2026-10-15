@@ -3,12 +3,16 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { FLOATING_ACTION_CLEARANCE } from '@/components/ui/floating-action';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { discardWorkout, useCurrentExerciseName } from '../hooks';
 import { elapsedSeconds } from '../selectors';
 import type { Workout } from '../types';
+
+/** Vertical room the bar needs above the screen bottom: the translucent
+ * native tab bar plus a small gap. Scroll content on screens hosting the bar
+ * should pad its bottom by this plus the bar's height (~72). */
+export const MINIMIZED_BAR_CLEARANCE = 54;
 
 /** Hevy-compact elapsed: "23s" under a minute, then "4:05" / "1:02:11". */
 function formatElapsedCompact(totalSeconds: number): string {
@@ -58,7 +62,7 @@ export function MinimizedWorkoutBar({ workout }: { workout: Workout }) {
       onPress={openWorkout}
       style={({ pressed }) => [
         styles.bar,
-        { bottom: insets.bottom + FLOATING_ACTION_CLEARANCE },
+        { bottom: insets.bottom + MINIMIZED_BAR_CLEARANCE },
         pressed && styles.barPressed,
       ]}
     >
