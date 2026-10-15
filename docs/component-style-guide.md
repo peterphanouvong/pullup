@@ -39,7 +39,7 @@ them through `useTheme()` / `useThemedStyles(createStyles)`.
 | `glassControl` | Round buttons sitting on a glass surface |
 | `glassSolid` | `glass` flattened over `canvas`; the fill for set-row chips |
 | `accent` / `onAccent` | Primary action fill and its label |
-| `done` / `doneRow` | Completion colour and the completed-row wash |
+| `done` / `doneRow` / `doneChip` | Completion colour, the completed-row wash, and a completed set's number chip |
 | `activeRow` / `activeRowBorder` | The set row currently being edited |
 | `comp` / `danger` | Competition days / destructive actions |
 
@@ -163,7 +163,7 @@ the background on the `ScrollView` itself.
 - Set rows are a line of matching filled chips, Hevy-style: the set number,
   the inputs and the checkbox share one `glassSolid` fill, one height and one
   radius. A logged set's inputs drop their chip and turn bold on the
-  `doneRow` wash.
+  `doneRow` wash, and its set-number chip switches to `doneChip`.
 - Checkboxes always render their checkmark — muted on the chip when pending,
   filled when done. An empty box gives the eye nothing to aim at.
 - Numeric inputs that arrive prefilled use `selectTextOnFocus`, so typing

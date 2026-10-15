@@ -226,7 +226,7 @@ export function SetRow({
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
         onPress={() => updateSet(set.id, { set_type: nextSetType(set.set_type) })}
       >
-        <View style={styles.chip}>
+        <View style={[styles.chip, isCompleted && styles.chipDone]}>
           <Text style={[styles.setNumber, { color: typeColor }]}>{setNumberLabel(siblingSets, set)}</Text>
         </View>
       </Pressable>
@@ -358,6 +358,9 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Logged set: the number chip turns `done` too, a step stronger than the
+  // row's wash so it stays visible as a chip.
+  chipDone: { backgroundColor: theme.colors.doneChip },
   previousCell: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.xs },
   // Stays centred so the checkbox lines up under the header's tick, and
   // stays 44pt wide so the tap target isn't shrunk (see the note at the

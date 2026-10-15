@@ -80,6 +80,9 @@ const lightColors = {
   // Completed-set row wash: `done` at low alpha so the row lifts without
   // becoming a slab of colour.
   doneRow: 'rgba(206, 79, 146, 0.10)',
+  // A completed set's number chip: `done` stronger than the row wash it sits
+  // on, so the chip still reads as a chip instead of vanishing into it.
+  doneChip: 'rgba(206, 79, 146, 0.22)',
   // The set row being edited: a touch lighter than its neighbours, with a
   // hairline edge, so the active row is obvious without shouting.
   activeRow: 'rgba(17, 17, 17, 0.07)',
@@ -113,6 +116,7 @@ const darkColors = {
   glassControl: 'rgba(255, 255, 255, 0.10)',
   glassSolid: '#202022',
   doneRow: 'rgba(226, 123, 182, 0.14)',
+  doneChip: 'rgba(226, 123, 182, 0.28)',
   activeRow: 'rgba(255, 255, 255, 0.10)',
   activeRowBorder: 'rgba(255, 255, 255, 0.55)',
   gradientRecap: ['#0A1F44', '#1E40AF'],
