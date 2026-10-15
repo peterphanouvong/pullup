@@ -98,7 +98,7 @@ export function WeekDayCard({
     </View>
   );
 
-  const cardStyle = [styles.card, done && styles.cardDone];
+  const cardStyle = [styles.card, done && styles.cardDone, isToday && styles.cardToday];
 
   const content = (
     <>
@@ -120,7 +120,7 @@ export function WeekDayCard({
       <View style={cardStyle}>{content}</View>
     );
 
-  // Today glows. The halo lives on an unclipped wrapper: the card itself has
+  // Today glows and gets a thin edge. The halo lives on an unclipped wrapper: the card itself has
   // `overflow: 'hidden'` (to clip its glass layer), which clips any shadow
   // drawn on it too.
   return isToday ? <View style={styles.todayGlow}>{card}</View> : card;
@@ -139,6 +139,10 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     ...theme.shadow.card,
   },
   todayGlow: { borderRadius: theme.radii.xl, ...theme.shadow.glow },
+  // A thin edge to go with the glow, so today still reads where the halo is
+  // faint (light mode, bright surroundings). Applied after `cardDone`, so it
+  // wins when today is also done.
+  cardToday: { borderWidth: 1, borderColor: theme.colors.done },
   // Done edge: the wash's colour carried to the hairline, so the card reads
   // as complete at full strength rather than greyed out.
   cardDone: { borderColor: theme.colors.doneRow },
