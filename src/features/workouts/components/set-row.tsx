@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { use$ } from '@legendapp/state/react';
 import {
   InputAccessoryView,
@@ -114,6 +115,10 @@ export function SetRow({
     updateSet(set.id, { duration_seconds: value }),
   );
 
+  // Which of this row's inputs has the keyboard, so the row can show an
+  // active state while it's being edited.
+  const [isEditing, setIsEditing] = useState(false);
+
   const isCompleted = set.completed_at != null;
   // One accessory per FIELD, not per row: two inputs sharing a single
   // nativeID left the second one (reps) with no accessory at all.
@@ -153,12 +158,11 @@ export function SetRow({
     // mounts the accessory's own backdrop, which shows as a dark slab.
     if (fillTargetCount === 0) return null;
     const fields: FillField[] = isDuration ? ['duration'] : ['weight', 'reps'];
+    // No `backgroundColor` prop: left unset, the native content view stays
+    // nil-backed (clear). Passing "transparent" through the colour
+    // conversion came back as an opaque slab.
     return (
-      <InputAccessoryView
-        nativeID={accessoryId(field)}
-        backgroundColor="transparent"
-        style={styles.accessoryHost}
-      >
+      <InputAccessoryView nativeID={accessoryId(field)} style={styles.accessoryHost}>
         <View style={styles.accessory}>
           {fields.map((target) => (
             <RNPressable
@@ -194,7 +198,7 @@ export function SetRow({
   return (
     <>
     <SwipeToDelete onDelete={() => softDeleteSet(set.id)} childStyle={styles.swipeChild}>
-    <View style={[styles.row, isCompleted && styles.rowCompleted]}>
+    <View style={[styles.row, isCompleted && styles.rowCompleted, isEditing && styles.rowEditing]}>
       <Pressable
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
         onPress={() => updateSet(set.id, { set_type: nextSetType(set.set_type) })}
@@ -212,6 +216,8 @@ export function SetRow({
         <TextInput
           style={[styles.input, { width: SET_TABLE_COLUMNS.cell * 2 }]}
           inputAccessoryViewID={accessoryId('duration')}
+          onFocus={() => setIsEditing(true)}
+          onBlur={() => setIsEditing(false)}
           keyboardType="number-pad"
           placeholder="sec"
           placeholderTextColor={theme.colors.inkMuted}
@@ -223,6 +229,8 @@ export function SetRow({
           <TextInput
             style={[styles.input, { width: SET_TABLE_COLUMNS.cell }]}
             inputAccessoryViewID={accessoryId('weight')}
+            onFocus={() => setIsEditing(true)}
+            onBlur={() => setIsEditing(false)}
             keyboardType="decimal-pad"
             placeholder="kg"
             placeholderTextColor={theme.colors.inkMuted}
@@ -232,6 +240,8 @@ export function SetRow({
           <TextInput
             style={[styles.input, { width: SET_TABLE_COLUMNS.cell }]}
             inputAccessoryViewID={accessoryId('reps')}
+            onFocus={() => setIsEditing(true)}
+            onBlur={() => setIsEditing(false)}
             keyboardType="number-pad"
             placeholder="reps"
             placeholderTextColor={theme.colors.inkMuted}
@@ -276,6 +286,12 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   // visible background of its own, while still hiding the swipe action.
   swipeChild: { backgroundColor: theme.colors.glassSolid, borderRadius: theme.radii.md },
   rowCompleted: { backgroundColor: theme.colors.doneRow },
+  // Active row: slightly lifted fill plus a hairline edge. The border is
+  // drawn in place of the row's transparent default, so nothing shifts.
+  rowEditing: {
+    backgroundColor: theme.colors.activeRow,
+    borderColor: theme.colors.activeRowBorder,
+  },
   // Even inset all round: the same `sm` on every edge, so the checkbox sits
   // the same distance from the row's right edge as from its top and bottom.
   row: {
@@ -284,6 +300,8 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.xs,
     borderRadius: theme.radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'transparent',
     gap: theme.spacing.xs,
   },
   setCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.xs },
