@@ -421,7 +421,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   // the row's done wash. Fill only, no border, so nothing reflows.
   inputPending: { backgroundColor: theme.colors.glassSolid },
   inputDone: { backgroundColor: 'transparent', fontWeight: '700' },
-  // Always shows a checkmark: muted on the chip when pending, filled rose
+  // Always shows a checkmark: muted on the chip when pending, filled blue
   // when done. A completed set used to be signalled by tinting the whole
   // row, which read as a stray coloured rectangle.
   checkbox: {

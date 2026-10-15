@@ -38,8 +38,8 @@ them through `useTheme()` / `useThemedStyles(createStyles)`.
 | `glass` / `glassBorder` | Translucent card fill + hairline edge |
 | `glassControl` | Round buttons sitting on a glass surface |
 | `glassSolid` | `glass` flattened over `canvas`; the fill for set-row chips |
-| `accent` / `onAccent` | Primary action fill and its label |
-| `done` / `doneRow` / `doneChip` | Completion colour, the completed-row wash, and a completed set's number chip |
+| `accent` / `onAccent` | Primary blue (buttons, exercise names) and white on it |
+| `done` (same blue) / `doneRow` / `doneChip` | Completion colour, the completed-row wash, and a completed set's number chip |
 | `activeRow` / `activeRowBorder` | The set row currently being edited |
 | `comp` / `danger` | Competition days / destructive actions |
 
@@ -103,8 +103,9 @@ makes it harder to read for no gain.
   - The fill `frame` goes on the **label**, not the button. Glass button
     styles hug their content, so framing the button only widens its hit area
     and leaves a label-sized capsule.
-  - The label colour must be **explicit**. Our `accent` is near-white in dark
-    mode, so a default white label vanishes into the prominent fill.
+  - The label colour must be **explicit** (`onAccent` on the fill). When
+    `accent` was near-white, SwiftUI's default white label vanished into it;
+    keep it explicit so a palette change can't do that again.
 - `Host`'s `seedColor` themes the SwiftUI accent. Without it, prominent
   buttons paint themselves system blue.
 - Size and colour are props: `size` (`small` / `regular` / `large`, default
@@ -112,7 +113,7 @@ makes it harder to read for no gain.
   override the variant's fill, `labelColor`, and `style` for host layout
   such as `flex: 1`. Colours come from `theme.colors`. Plain glass is left
   untinted unless `tint` is passed, so secondary buttons don't pick up the
-  near-white accent.
+  primary blue.
 
 ### Where SwiftUI can't go
 

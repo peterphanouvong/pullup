@@ -45,18 +45,19 @@ function shadowsFor(ink: string) {
   } as const;
 }
 
-// Nike-app-inspired palette (Peter's call): neutral near-black/greys doing
-// all the structural work, with one rose-pink "done" accent. `accent` is
-// deliberately the ink black — primary buttons are black pills, Nike-style.
+// Neutral near-black/greys doing all the structural work, with one primary
+// blue (Peter's call, after rose-pink and an ink-black accent): primary
+// buttons, exercise names and completion all share it, Hevy-style, so the
+// app has a single colour that means "act here / this is done".
 const lightColors = {
   canvas: '#F5F5F5',
   card: '#FFFFFF',
   cardElevated: '#FFFFFF',
   ink: '#111111',
   inkMuted: '#707072',
-  accent: '#111111',
+  accent: '#1F6FEB',
   onAccent: '#FFFFFF',
-  done: '#CE4F92',
+  done: '#1F6FEB',
   comp: '#E8590C',
   success: '#1F9D55',
   danger: '#C0392B',
@@ -64,7 +65,7 @@ const lightColors = {
   // `done` @ ~14% alpha flattened over `card` (solid, not actual alpha — see
   // darkColors.doneSoft for why these are precomputed instead of using RN's
   // rgba()): the active-workout set row's "completed" fill.
-  doneSoft: '#F8E6F0',
+  doneSoft: '#E0EBFC',
   // Translucent card fill + hairline edge: the "liquid glass" card look —
   // a lifted sheet over the canvas rather than a flat opaque panel.
   glass: 'rgba(255, 255, 255, 0.72)',
@@ -75,7 +76,7 @@ const lightColors = {
   glassControl: 'rgba(17, 17, 17, 0.06)',
   // Fill for the tonal NativeButton (Add Set): fed to the glass prominent
   // style as its tint, so it stays a real Liquid Glass capsule but reads a
-  // step lighter than the card instead of the near-white accent.
+  // step lighter than the card instead of the primary blue.
   tonalFill: 'rgba(17, 17, 17, 0.08)',
   // `glass` flattened over `canvas`. Rows that must be opaque (a swipeable
   // row has to hide the delete action sitting behind it) use this so they
@@ -83,10 +84,10 @@ const lightColors = {
   glassSolid: '#FCFCFC',
   // Completed-set row wash: `done` at low alpha so the row lifts without
   // becoming a slab of colour.
-  doneRow: 'rgba(206, 79, 146, 0.10)',
+  doneRow: 'rgba(31, 111, 235, 0.10)',
   // A completed set's number chip: `done` stronger than the row wash it sits
   // on, so the chip still reads as a chip instead of vanishing into it.
-  doneChip: 'rgba(206, 79, 146, 0.22)',
+  doneChip: 'rgba(31, 111, 235, 0.22)',
   // The set row being edited: a touch lighter than its neighbours, with a
   // hairline edge, so the active row is obvious without shouting.
   activeRow: 'rgba(17, 17, 17, 0.07)',
@@ -105,23 +106,23 @@ const darkColors = {
   cardElevated: '#242426',
   ink: '#F5F5F5',
   inkMuted: '#8E8E93',
-  accent: '#F5F5F5',
-  onAccent: '#111111',
-  done: '#E27BB6',
+  accent: '#3D8BF7',
+  onAccent: '#FFFFFF',
+  done: '#3D8BF7',
   comp: '#FF7A33',
   success: '#34C277',
   danger: '#E05B4D',
   border: '#2C2C2E',
   // `done` @ ~14% alpha flattened over `card`, same rationale as the light
   // theme's doneSoft — precomputed solid color, no RN rgba() call needed.
-  doneSoft: '#322633',
+  doneSoft: '#1F2A3B',
   glass: 'rgba(40, 40, 43, 0.72)',
   glassBorder: 'rgba(255, 255, 255, 0.10)',
   glassControl: 'rgba(255, 255, 255, 0.10)',
   tonalFill: 'rgba(255, 255, 255, 0.14)',
   glassSolid: '#202022',
-  doneRow: 'rgba(226, 123, 182, 0.14)',
-  doneChip: 'rgba(226, 123, 182, 0.28)',
+  doneRow: 'rgba(61, 139, 247, 0.16)',
+  doneChip: 'rgba(61, 139, 247, 0.30)',
   activeRow: 'rgba(255, 255, 255, 0.10)',
   activeRowBorder: 'rgba(255, 255, 255, 0.55)',
   gradientRecap: ['#0A1F44', '#1E40AF'],

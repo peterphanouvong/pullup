@@ -86,11 +86,11 @@ export function NativeButton({
   const { height, control, icon } = SIZES[size];
   const isPrimary = variant === 'primary';
   const fill = tintColor ?? (variant === 'tonal' ? theme.colors.tonalFill : theme.colors.accent);
-  // Explicit, never SwiftUI's default: the primary fill takes our
-  // near-white accent, which would otherwise swallow a white label.
+  // Explicit, never SwiftUI's default: the label must track `onAccent`
+  // (and `ink` off the fill) rather than whatever SwiftUI picks.
   const labelColor = labelColorProp ?? (isPrimary ? theme.colors.onAccent : theme.colors.ink);
   // Secondary glass stays untinted unless asked: tinting it would wash it in
-  // our near-white accent. Ghost has no fill to tint.
+  // the primary blue. Ghost has no fill to tint.
   const applyTint = isPrimary || variant === 'tonal' || (variant === 'secondary' && tintColor != null);
 
   return (
