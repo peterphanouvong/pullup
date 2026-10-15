@@ -20,6 +20,7 @@ import {
 import { startWorkoutOrPrompt } from "@/features/workouts/start-guard";
 import { dayMetrics, dayState } from "@/features/workouts/today-state";
 import { useSession } from "@/lib/auth";
+import { haptics } from "@/lib/haptics";
 import type { Theme } from "@/styles/theme";
 import { useThemedStyles, useTheme } from "@/styles/use-theme";
 import { router, Stack } from "expo-router";
@@ -55,6 +56,17 @@ function SettingsToolbar({
   const theme = useTheme();
   return (
     <Stack.Toolbar placement="right">
+      {/* The training calendar: what you've done and what's coming. */}
+      <Stack.Toolbar.Button
+        icon="calendar"
+        accessibilityLabel="Calendar"
+        hidesSharedBackground
+        tintColor={theme.colors.ink}
+        onPress={() => {
+          haptics.tap();
+          router.push("/calendar");
+        }}
+      />
       <Stack.Toolbar.Menu
         icon="gearshape"
         accessibilityLabel="Settings"

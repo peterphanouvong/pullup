@@ -218,6 +218,19 @@ for Plan and Activity). Things you *visit* don't earn permanent tab-bar
 space; things you *work in* do. Pushed screens reached from the hub carry a
 `BackRow` rather than a native header, matching the rest of the app.
 
+## Calendar
+
+The Programme header's calendar button opens `/calendar`, a month grid
+(Monday first) over the finished workouts and the active programme's
+schedule. A trained day is the one loud mark, a filled blue circle. Upcoming
+planned sessions get a small dot, and the comp day is in `comp`. Past
+planned days you skipped get nothing, the same no-scolding rule as the week
+cards. Today is a thin blue ring. The date maths lives in
+`features/programs/calendar.ts`, local-calendar only, with tests.
+
+The week's progress bar has no caption; the segments are the count, and
+VoiceOver reads it from the bar's accessibility label.
+
 ## Progressive disclosure
 
 Rare actions live in the header menu (`Stack.Toolbar.Menu`), not in
