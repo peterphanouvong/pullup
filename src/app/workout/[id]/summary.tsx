@@ -165,7 +165,7 @@ export default function WorkoutSummaryScreen() {
 
           <View style={styles.actions}>
             <NativeButton label={isSharing ? 'Preparing…' : 'Share'} onPress={handleShare} />
-            <NativeButton label="Done" onPress={() => router.replace('/')} prominent />
+            <NativeButton label="Done" onPress={() => router.replace('/')} variant="primary" />
           </View>
 
           {summary.perExercise.length > 0 && (

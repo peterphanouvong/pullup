@@ -124,7 +124,7 @@ export function ExerciseCard({
         />
       ))}
 
-      <NativeButton label="Add Set" systemImage="plus" onPress={() => addSet(exercise.id)} />
+      <NativeButton label="Add Set" systemImage="plus" variant="tonal" onPress={() => addSet(exercise.id)} />
     </Card>
   );
 }

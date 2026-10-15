@@ -82,8 +82,20 @@ makes it harder to read for no gain.
 ## Buttons
 
 - **`NativeButton`** (`src/components/ui/native-button.tsx`) is the default:
-  a real SwiftUI button, `glassProminent` for commitments and `glass` for
-  secondary actions.
+  a real SwiftUI button with four `variant`s, heaviest first:
+
+  | Variant | SwiftUI style | Use |
+  | --- | --- | --- |
+  | `primary` | `glassProminent` in `accent` | Commitments: Start workout, Done |
+  | `secondary` (default) | `glass` | Optional but real: Add Exercise, Share |
+  | `tonal` | `bordered`, `ink` wash, `md` radius | Actions inside a card: Add Set |
+  | `ghost` | `borderless` | Tertiary actions, links |
+
+  Tonal exists because glass on a glass card muddies; inside a card the
+  button should read as one of the card's controls, like the set-row chips.
+  There's no `outline` (SwiftUI has no native outline style) and no `cta`
+  (that's `primary`). Destructive is a colour, not a variant: pass
+  `tint={theme.colors.danger}`.
 - Two things it took iterations to learn:
   - The fill `frame` goes on the **label**, not the button. Glass button
     styles hug their content, so framing the button only widens its hit area
@@ -93,8 +105,8 @@ makes it harder to read for no gain.
 - `Host`'s `seedColor` themes the SwiftUI accent. Without it, prominent
   buttons paint themselves system blue.
 - Size and colour are props: `size` (`small` / `regular` / `large`, default
-  large), `fullWidth` (default true; false hugs the label), `tint` for the
-  prominent fill or a glass tint, `labelColor`, and `style` for host layout
+  large), `fullWidth` (default true; false hugs the label), `tint` to
+  override the variant's fill, `labelColor`, and `style` for host layout
   such as `flex: 1`. Colours come from `theme.colors`. Plain glass is left
   untinted unless `tint` is passed, so secondary buttons don't pick up the
   near-white accent.

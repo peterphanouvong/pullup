@@ -107,7 +107,7 @@ export function WeekDayCard({
       <GlassSurface cornerRadius={theme.radii.xl} />
       {done && <View style={styles.doneWash} pointerEvents="none" />}
       {body}
-      {onStart != null && <NativeButton label={startLabel} systemImage="play.fill" onPress={onStart} prominent />}
+      {onStart != null && <NativeButton label={startLabel} systemImage="play.fill" onPress={onStart} variant="primary" />}
     </>
   );
 
