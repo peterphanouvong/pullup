@@ -1,8 +1,8 @@
 import { useRef } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
-import { Button, HStack, Host } from '@expo/ui/swift-ui';
-import { buttonStyle } from '@expo/ui/swift-ui/modifiers';
-import { useThemedStyles } from '@/styles/use-theme';
+import { Button, HStack, Host, Text } from '@expo/ui/swift-ui';
+import { buttonStyle, foregroundColor, tint } from '@expo/ui/swift-ui/modifiers';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import type { ProgramWeek } from '@/features/programs/types';
 
@@ -14,7 +14,9 @@ const PILL_PITCH = 96;
 const WEEK_PILL_ROW_HEIGHT = 68;
 
 /** Horizontal week selector built from real SwiftUI buttons (liquid glass on
- * iOS 26+): the viewed week is `glassProminent`, the rest plain `glass`. A
+ * iOS 26+): the viewed week is `glassProminent` filled white (`ink`), the
+ * rest plain `glass`. A selector reads as navigation, not an action, so it
+ * stays neutral rather than taking the primary blue. A
  * single Host wraps the whole HStack — one SwiftUI hosting view for the row
  * rather than one per pill — sized to its content and scrolled by an RN
  * ScrollView. */
@@ -30,6 +32,7 @@ export function WeekPills({
   currentPosition: number;
   onSelect: (position: number) => void;
 }) {
+  const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   const scrollRef = useRef<ScrollView>(null);
   const didInitialScroll = useRef(false);
@@ -50,21 +53,27 @@ export function WeekPills({
         }
       }}
     >
-      {/* Selected pill keeps the system accent (blue) for now — Host's
-          `seedColor` is the lever to theme it if we want it black later. */}
-      <Host matchContents>
+      {/* Labels are explicit Text: SwiftUI's default prominent label is
+          white, which would vanish into the white fill. */}
+      <Host matchContents seedColor={theme.colors.ink}>
         <HStack spacing={8}>
           {weeks.map((week) => {
             const isViewed = week.position === viewedPosition;
             return (
               <Button
                 key={week.id}
-                // The calendar's current week keeps a dot marker so it stays
-                // findable once you've scrolled to another week.
-                label={week.position === currentPosition ? `Week ${week.position} ·` : `Week ${week.position}`}
                 onPress={() => onSelect(week.position)}
-                modifiers={[buttonStyle(isViewed ? 'glassProminent' : 'glass')]}
-              />
+                modifiers={[
+                  buttonStyle(isViewed ? 'glassProminent' : 'glass'),
+                  ...(isViewed ? [tint(theme.colors.ink)] : []),
+                ]}
+              >
+                {/* The calendar's current week keeps a dot marker so it stays
+                    findable once you've scrolled to another week. */}
+                <Text modifiers={[foregroundColor(isViewed ? theme.colors.canvas : theme.colors.ink)]}>
+                  {week.position === currentPosition ? `Week ${week.position} ·` : `Week ${week.position}`}
+                </Text>
+              </Button>
             );
           })}
         </HStack>

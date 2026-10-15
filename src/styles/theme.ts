@@ -42,8 +42,8 @@ function shadowsFor(ink: string, glowColor: string) {
       shadowOpacity: 0.12,
       elevation: 6,
     },
-    // A soft halo in the primary blue, centred (no offset), marking the one
-    // card that's "now" — today's day — without a border or recoloured text.
+    // A soft halo in the primary blue, centred (no offset): the reward state
+    // on a finished day's card.
     glow: {
       shadowColor: glowColor,
       shadowOffset: { width: 0, height: 0 },
