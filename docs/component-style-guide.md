@@ -129,10 +129,13 @@ the background on the `ScrollView` itself.
 
 - Row state is shown by the row's own treatment, never by a coloured block:
   completion is a filled checkbox plus a soft `doneRow` wash; editing is the
-  `activeRow` fill plus a hairline edge drawn in place of a transparent
-  default border, so nothing shifts when it appears.
+  `activeRow` fill plus a 1pt edge drawn in place of a transparent default
+  border, so nothing shifts when it appears. (A hairline at low alpha is
+  invisible in practice — subtle still has to register.)
 - Checkboxes always render their checkmark — hollow and muted when pending,
   filled when done. An empty box gives the eye nothing to aim at.
+- Numeric inputs that arrive prefilled use `selectTextOnFocus`, so typing
+  replaces the value instead of appending to it.
 - Keep tap targets at 44pt. Don't use `hitSlop` to reach that when a
   neighbouring control is close; it creates two targets fighting over one tap.
 

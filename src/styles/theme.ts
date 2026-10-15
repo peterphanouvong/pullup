@@ -78,8 +78,8 @@ const lightColors = {
   doneRow: 'rgba(206, 79, 146, 0.10)',
   // The set row being edited: a touch lighter than its neighbours, with a
   // hairline edge, so the active row is obvious without shouting.
-  activeRow: 'rgba(17, 17, 17, 0.06)',
-  activeRowBorder: 'rgba(17, 17, 17, 0.22)',
+  activeRow: 'rgba(17, 17, 17, 0.07)',
+  activeRowBorder: 'rgba(17, 17, 17, 0.45)',
   gradientRecap: ['#0E2A5C', '#1D4ED8'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
   // Text drawn over gradientRecap/gradientEmber — both gradients stay dark
@@ -108,8 +108,8 @@ const darkColors = {
   glassBorder: 'rgba(255, 255, 255, 0.10)',
   glassSolid: '#202022',
   doneRow: 'rgba(226, 123, 182, 0.14)',
-  activeRow: 'rgba(255, 255, 255, 0.07)',
-  activeRowBorder: 'rgba(255, 255, 255, 0.28)',
+  activeRow: 'rgba(255, 255, 255, 0.10)',
+  activeRowBorder: 'rgba(255, 255, 255, 0.55)',
   gradientRecap: ['#0A1F44', '#1E40AF'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
   onGradient: '#FFFFFF',

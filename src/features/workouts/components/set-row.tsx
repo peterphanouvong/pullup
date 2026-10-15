@@ -218,6 +218,7 @@ export function SetRow({
           inputAccessoryViewID={accessoryId('duration')}
           onFocus={() => setIsEditing(true)}
           onBlur={() => setIsEditing(false)}
+          selectTextOnFocus
           keyboardType="number-pad"
           placeholder="sec"
           placeholderTextColor={theme.colors.inkMuted}
@@ -231,6 +232,7 @@ export function SetRow({
             inputAccessoryViewID={accessoryId('weight')}
             onFocus={() => setIsEditing(true)}
             onBlur={() => setIsEditing(false)}
+            selectTextOnFocus
             keyboardType="decimal-pad"
             placeholder="kg"
             placeholderTextColor={theme.colors.inkMuted}
@@ -242,6 +244,7 @@ export function SetRow({
             inputAccessoryViewID={accessoryId('reps')}
             onFocus={() => setIsEditing(true)}
             onBlur={() => setIsEditing(false)}
+            selectTextOnFocus
             keyboardType="number-pad"
             placeholder="reps"
             placeholderTextColor={theme.colors.inkMuted}
@@ -300,7 +303,9 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.xs,
     borderRadius: theme.radii.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    // Always present but transparent at rest, so turning it on doesn't
+    // shift the row. Hairline was too faint to register — 1pt reads.
+    borderWidth: 1,
     borderColor: 'transparent',
     gap: theme.spacing.xs,
   },
