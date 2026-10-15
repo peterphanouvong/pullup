@@ -4,14 +4,9 @@ import { GlassSurface } from '@/components/ui/glass-surface';
 import { NativeButton } from '@/components/ui/native-button';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
+import { stripWeekdayPrefix } from '@/features/programs/labels';
 import type { DayKind, ProgramDay } from '@/features/programs/types';
 import type { DayMetrics, TodayDayState } from '@/features/workouts/today-state';
-
-/** Day names in the seed data lead with the weekday ("Mon — Lower power");
- * the card's day block already says MON, so the title drops the prefix. */
-function stripWeekdayPrefix(name: string): string {
-  return name.replace(/^(mon|tue|wed|thu|fri|sat|sun)[a-z]*\s*[—–-]\s*/i, '');
-}
 
 const KIND_LABELS: Record<DayKind, string> = {
   lifting: 'LIFT',

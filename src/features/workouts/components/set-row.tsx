@@ -21,6 +21,7 @@ import { workoutExercises$, workouts$, workoutSets$ } from '../store';
 import type { WorkoutSet } from '../types';
 import * as Haptics from 'expo-haptics';
 import { fillDownTargets } from '../edit';
+import { startRestTimer } from '../rest-timer';
 import { completeSet, nextSetType, softDeleteSet, updateSet } from '../hooks';
 
 /** Fixed column widths shared with ExerciseCard's header row, Hevy-style, so
@@ -179,6 +180,14 @@ export function SetRow({
     );
   }
 
+  /** Runs this row's hold on the countdown bar already used for rest. */
+  function startHold() {
+    const seconds = set.duration_seconds;
+    if (seconds == null || seconds <= 0) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    startRestTimer(seconds);
+  }
+
   function handleComplete() {
     // Light tap on the way in, nothing on un-completing: the feedback marks
     // the achievement, not the toggle.
@@ -197,7 +206,18 @@ export function SetRow({
 
   return (
     <>
-    <SwipeToDelete onDelete={() => softDeleteSet(set.id)} childStyle={styles.swipeChild}>
+    <SwipeToDelete
+      onDelete={() => softDeleteSet(set.id)}
+      // Timed work (ISO holds, planks) is the one case where the number in
+      // the row is a thing to *run*, not just record — so a swipe starts it
+      // from the duration already entered.
+      leadingAction={
+        isDuration && (set.duration_seconds ?? 0) > 0
+          ? { label: 'Start', icon: 'play.fill', onPress: startHold }
+          : undefined
+      }
+      childStyle={styles.swipeChild}
+    >
     <View style={[styles.row, isCompleted && styles.rowCompleted, isEditing && styles.rowEditing]}>
       <Pressable
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
