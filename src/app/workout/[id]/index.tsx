@@ -146,7 +146,10 @@ export default function WorkoutScreen() {
       <KeyboardAvoidingView
         style={[styles.flex, { paddingTop: insets.top + HEADER_HEIGHT }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 44 : 0}
+        // 0, not the header height: the column is already padded down by
+        // it, and double-counting opened a tall empty gap above the inputs
+        // whenever the keyboard appeared.
+        keyboardVerticalOffset={0}
       >
         <WorkoutStatsRow workout={workout} volumeKg={volumeKg} completedCount={completedCount} />
 

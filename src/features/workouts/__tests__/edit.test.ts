@@ -6,8 +6,8 @@
 // No store imports — fixtures are built by hand, same style as
 // selectors.test.ts/start.test.ts.
 
-import { moveExercise, buildAddedExercise, buildReplacement } from '../edit';
-import type { Exercise, WorkoutExercise } from '../types';
+import { moveExercise, buildAddedExercise, buildReplacement, fillDownTargets } from '../edit';
+import type { Exercise, WorkoutExercise, WorkoutSet } from '../types';
 
 const ts = '2026-10-14T10:00:00.000Z';
 
@@ -171,5 +171,41 @@ describe('buildReplacement', () => {
     const result = buildReplacement(ex);
     expect(result).toEqual({ exercise_id: 'ex-9', exercise_name: 'Incline bench' });
     expect(Object.keys(result).sort()).toEqual(['exercise_id', 'exercise_name']);
+  });
+});
+
+describe('fillDownTargets', () => {
+  function s(id: string, position: number, deleted = false): WorkoutSet {
+    return {
+      id,
+      user_id: 'u',
+      workout_exercise_id: 'we1',
+      position,
+      set_type: 'working',
+      weight_kg: null,
+      reps: null,
+      duration_seconds: null,
+      target: null,
+      completed_at: null,
+      created_at: '2026-10-14T10:00:00.000Z',
+      updated_at: '2026-10-14T10:00:00.000Z',
+      deleted,
+    };
+  }
+
+  it('returns the live sets below the source, in position order', () => {
+    const sets = [s('c', 3), s('a', 1), s('b', 2)];
+    expect(fillDownTargets(sets, 'a')).toEqual(['b', 'c']);
+  });
+
+  it('skips deleted sets', () => {
+    const sets = [s('a', 1), s('gone', 2, true), s('c', 3)];
+    expect(fillDownTargets(sets, 'a')).toEqual(['c']);
+  });
+
+  it('returns nothing for the last set or an unknown id', () => {
+    const sets = [s('a', 1), s('b', 2)];
+    expect(fillDownTargets(sets, 'b')).toEqual([]);
+    expect(fillDownTargets(sets, 'nope')).toEqual([]);
   });
 });

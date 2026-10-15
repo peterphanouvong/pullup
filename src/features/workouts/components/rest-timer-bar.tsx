@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { use$ } from '@legendapp/state/react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { useThemedStyles } from '@/styles/use-theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassSurface } from '@/components/ui/glass-surface';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { adjustRestTimer, remainingSeconds, restTimer$, skipRestTimer } from '../rest-timer';
 
@@ -25,7 +27,9 @@ function formatRemaining(totalSeconds: number): string {
  * single haptic the moment it reaches zero. Renders nothing while no timer
  * is running. */
 export function RestTimerBar() {
+  const theme = useTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const timer = use$(() => restTimer$.get());
   // The clock is real state: React Compiler memoizes render expressions by
   // their dependencies, so deriving `remaining` from a bare re-render tick
@@ -60,7 +64,10 @@ export function RestTimerBar() {
   if (!timer) return null;
 
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { bottom: insets.bottom + theme.spacing.md }]}>
+      {/* Real Liquid Glass behind the bar — it floats over the set list, so
+          there's content underneath for it to refract. */}
+      <GlassSurface cornerRadius={theme.radii.pill} />
       <Pressable style={styles.adjustButton} onPress={() => adjustRestTimer(-15)} hitSlop={8}>
         <Text style={styles.adjustLabel}>-15s</Text>
       </Pressable>
@@ -83,19 +90,30 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     position: 'absolute',
     left: theme.spacing.lg,
     right: theme.spacing.lg,
-    bottom: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: theme.spacing.sm,
-    backgroundColor: theme.colors.cardElevated,
+    gap: theme.spacing.md,
+    backgroundColor: theme.colors.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.glassBorder,
     borderRadius: theme.radii.pill,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    overflow: 'hidden',
     ...theme.shadow.float,
   },
-  adjustButton: { paddingVertical: theme.spacing.xs, paddingHorizontal: theme.spacing.xs },
-  adjustLabel: { ...theme.type.caption, color: theme.colors.accent, fontWeight: '700' },
-  remaining: { ...theme.type.heading, color: theme.colors.ink, fontVariant: ['tabular-nums'] },
-  skipLabel: { ...theme.type.caption, color: theme.colors.inkMuted },
+  adjustButton: { paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.sm },
+  adjustLabel: { ...theme.type.heading, color: theme.colors.ink },
+  // The countdown is the point of the bar: give it real size.
+  // Explicit lineHeight: without one the 30pt numerals' default line box
+  // got cropped by the bar's `overflow: hidden`.
+  remaining: {
+    ...theme.type.title,
+    fontSize: 30,
+    lineHeight: 38,
+    color: theme.colors.ink,
+    fontVariant: ['tabular-nums'],
+  },
+  skipLabel: { ...theme.type.heading, color: theme.colors.inkMuted },
 });

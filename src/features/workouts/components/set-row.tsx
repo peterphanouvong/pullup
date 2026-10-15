@@ -11,6 +11,8 @@ import { useNumericField } from '../numeric-input';
 import { previousSet } from '../selectors';
 import { workoutExercises$, workouts$, workoutSets$ } from '../store';
 import type { WorkoutSet } from '../types';
+import * as Haptics from 'expo-haptics';
+import { fillDownTargets } from '../edit';
 import { completeSet, nextSetType, softDeleteSet, updateSet } from '../hooks';
 
 /** Fixed column widths shared with ExerciseCard's header row, Hevy-style, so
@@ -106,6 +108,29 @@ export function SetRow({
       ? theme.colors.danger
       : theme.colors.ink;
 
+  /** Copies this row's logged values into every set below it — the common
+   * case of working through a straight-sets block at one weight. */
+  function fillDown() {
+    const targets = fillDownTargets(siblingSets, set.id);
+    if (targets.length === 0) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    for (const id of targets) {
+      updateSet(
+        id,
+        isDuration
+          ? { duration_seconds: set.duration_seconds }
+          : { weight_kg: set.weight_kg, reps: set.reps },
+      );
+    }
+  }
+
+  function handleComplete() {
+    // Light tap on the way in, nothing on un-completing: the feedback marks
+    // the achievement, not the toggle.
+    if (set.completed_at == null) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    completeSet(set.id, new Date());
+  }
+
   function copyGhost() {
     if (!previous) return;
     if (isDuration) {
@@ -116,7 +141,15 @@ export function SetRow({
   }
 
   return (
-    <SwipeToDelete onDelete={() => softDeleteSet(set.id)} childStyle={styles.swipeChild}>
+    <SwipeToDelete
+      onDelete={() => softDeleteSet(set.id)}
+      leadingAction={
+        fillDownTargets(siblingSets, set.id).length > 0
+          ? { label: 'Fill', icon: 'arrow.down.to.line', onPress: fillDown }
+          : undefined
+      }
+      childStyle={styles.swipeChild}
+    >
     <View style={[styles.row, isCompleted && styles.rowCompleted]}>
       <Pressable
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
@@ -167,7 +200,7 @@ export function SetRow({
           one tap" bug this was meant to fix). */}
       <Pressable
         style={[styles.checkCell, { width: SET_TABLE_COLUMNS.check }]}
-        onPress={() => completeSet(set.id, new Date())}
+        onPress={handleComplete}
       >
         <View style={[styles.checkbox, isCompleted && styles.checkboxDone]}>
           <SymbolView
@@ -185,17 +218,23 @@ export function SetRow({
 const createStyles = (theme: Theme) => StyleSheet.create({
   // Matches the card it sits on (see theme.glassSolid) so the row has no
   // visible background of its own, while still hiding the swipe action.
-  swipeChild: { backgroundColor: theme.colors.glassSolid },
+  swipeChild: { backgroundColor: theme.colors.glassSolid, borderRadius: theme.radii.md },
   rowCompleted: { backgroundColor: theme.colors.doneRow },
+  // Even inset all round: the same `sm` on every edge, so the checkbox sits
+  // the same distance from the row's right edge as from its top and bottom.
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: theme.spacing.xs,
-    borderRadius: theme.radii.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.xs,
+    borderRadius: theme.radii.md,
     gap: theme.spacing.xs,
   },
   setCell: { alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.xs },
   previousCell: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.xs },
+  // Stays centred so the checkbox lines up under the header's tick, and
+  // stays 44pt wide so the tap target isn't shrunk (see the note at the
+  // Pressable). The row's own inset supplies the gap to the card edge.
   checkCell: {
     height: 44,
     alignItems: 'center',

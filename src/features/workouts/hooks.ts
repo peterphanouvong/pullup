@@ -11,6 +11,7 @@
  * re-render any screen reading `useWorkout` live.
  */
 
+import * as Haptics from 'expo-haptics';
 import { use$ } from '@legendapp/state/react';
 import type { ProgramDay } from '@/features/programs/types';
 import { buildAddedExercise, buildReplacement, moveExercise } from './edit';
@@ -37,6 +38,7 @@ import type { Exercise, SetType, Workout, WorkoutExercise, WorkoutSet } from './
  * (via `buildWorkoutFromDay`) and writes all of them into the store. Returns
  * the new workout's id so the caller can navigate to `/workout/[id]`. */
 export function startWorkoutFromDay(day: ProgramDay, programDayId: string, userId: string): string {
+  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   const { workout, exercises, sets } = buildWorkoutFromDay(day, {
     userId,
     programDayId,
@@ -151,6 +153,9 @@ export function finishWorkout(id: string, now: Date): void {
   // no row CREATES a partial object (no id/user_id) — a ghost row that can
   // never sync and renders as a key-less Activities entry.
   if (workouts$[id].peek() == null) return;
+  // After the guard: the success tap should mark a workout that actually
+  // finished, not a no-op.
+  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   workouts$[id].assign({ finished_at: now.toISOString(), updated_at: now.toISOString() });
   // A rest timer from the just-finished workout's last set must not keep
   // counting down (or reappear) once the workout is over.

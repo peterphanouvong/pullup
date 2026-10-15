@@ -121,3 +121,14 @@ export function buildAddedExercise(args: BuildAddedExerciseArgs): BuildAddedExer
 export function buildReplacement(exercise: Exercise): Pick<WorkoutExercise, 'exercise_id' | 'exercise_name'> {
   return { exercise_id: exercise.id, exercise_name: exercise.name };
 }
+
+/** Ids of the live sets below `fromSetId` in `siblingSets`, in position
+ * order — the targets of the set row's "fill down" action, which copies a
+ * row's logged values into every set after it. Returns an empty array when
+ * the row is last (or missing), so callers can hide the affordance. */
+export function fillDownTargets(siblingSets: WorkoutSet[], fromSetId: string): string[] {
+  const live = siblingSets.filter((s) => !s.deleted).sort((a, b) => a.position - b.position);
+  const index = live.findIndex((s) => s.id === fromSetId);
+  if (index === -1) return [];
+  return live.slice(index + 1).map((s) => s.id);
+}

@@ -56,9 +56,12 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
+    // Sits a little lower than the bar above it, and keeps less vertical
+    // bulk than horizontal so the strip reads as one line, not a band.
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
+    gap: theme.spacing.md,
   },
   elapsed: { ...theme.type.heading, color: theme.colors.ink, fontVariant: ['tabular-nums'] },
   stat: { ...theme.type.caption, color: theme.colors.inkMuted },
