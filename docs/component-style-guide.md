@@ -220,7 +220,7 @@ space; things you *work in* do. Pushed screens reached from the hub carry a
 
 ## Calendar
 
-The Programme header's calendar button opens `/calendar`, a month grid
+The Programme header's calendar button (leading side; settings has the trailing side) opens `/calendar`, a month grid
 (Monday first) over the finished workouts and the active programme's
 schedule. A trained day is the one loud mark, a filled blue circle. Upcoming
 planned sessions get a small dot, and the comp day is in `comp`. Past

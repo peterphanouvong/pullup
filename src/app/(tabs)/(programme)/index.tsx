@@ -55,45 +55,50 @@ function SettingsToolbar({
 }) {
   const theme = useTheme();
   return (
-    <Stack.Toolbar placement="right">
-      {/* The training calendar: what you've done and what's coming. */}
-      <Stack.Toolbar.Button
-        icon="calendar"
-        accessibilityLabel="Calendar"
-        hidesSharedBackground
-        tintColor={theme.colors.ink}
-        onPress={() => {
-          haptics.tap();
-          router.push("/calendar");
-        }}
-      />
-      <Stack.Toolbar.Menu
-        icon="gearshape"
-        accessibilityLabel="Settings"
-        hidesSharedBackground
-        tintColor={theme.colors.ink}
-      >
-        {/* Starting an unplanned session is the rare case — it lives in the
-            menu rather than occupying a full-width button over the week. */}
-        <Stack.Toolbar.MenuAction icon="plus" onPress={onStartEmpty}>
-          Start empty workout
-        </Stack.Toolbar.MenuAction>
-        {programId != null && (
-          <Stack.Toolbar.MenuAction
-            icon="list.bullet.rectangle"
-            onPress={() => router.push(`/program/${programId}`)}
-          >
-            View programme
-          </Stack.Toolbar.MenuAction>
-        )}
-        <Stack.Toolbar.MenuAction
-          icon="rectangle.stack"
-          onPress={() => router.push("/plan")}
+    <>
+      {/* The training calendar, leading: what you've done and what's coming.
+        Settings stays alone on the trailing side. */}
+      <Stack.Toolbar placement="left">
+        <Stack.Toolbar.Button
+          icon="calendar"
+          accessibilityLabel="Calendar"
+          hidesSharedBackground
+          tintColor={theme.colors.ink}
+          onPress={() => {
+            haptics.tap();
+            router.push("/calendar");
+          }}
+        />
+      </Stack.Toolbar>
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Menu
+          icon="gearshape"
+          accessibilityLabel="Settings"
+          hidesSharedBackground
+          tintColor={theme.colors.ink}
         >
-          Switch plan
-        </Stack.Toolbar.MenuAction>
-      </Stack.Toolbar.Menu>
-    </Stack.Toolbar>
+          {/* Starting an unplanned session is the rare case — it lives in the
+            menu rather than occupying a full-width button over the week. */}
+          <Stack.Toolbar.MenuAction icon="plus" onPress={onStartEmpty}>
+            Start empty workout
+          </Stack.Toolbar.MenuAction>
+          {programId != null && (
+            <Stack.Toolbar.MenuAction
+              icon="list.bullet.rectangle"
+              onPress={() => router.push(`/program/${programId}`)}
+            >
+              View programme
+            </Stack.Toolbar.MenuAction>
+          )}
+          <Stack.Toolbar.MenuAction
+            icon="rectangle.stack"
+            onPress={() => router.push("/plan")}
+          >
+            Switch plan
+          </Stack.Toolbar.MenuAction>
+        </Stack.Toolbar.Menu>
+      </Stack.Toolbar>
+    </>
   );
 }
 
