@@ -144,6 +144,7 @@ export default function WorkoutScreen() {
           <HeaderIconButton
             icon="chevron.down"
             iconSize={HEADER_CHEVRON_SIZE}
+            size="large"
             accessibilityLabel="Minimize workout"
             onPress={() => router.back()}
           />

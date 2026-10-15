@@ -91,6 +91,7 @@ export default function SaveWorkoutScreen() {
           <HeaderIconButton
             icon="chevron.left"
             iconSize={HEADER_CHEVRON_SIZE}
+            size="large"
             accessibilityLabel="Back to workout"
             onPress={() => router.back()}
           />

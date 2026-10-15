@@ -6,6 +6,7 @@ import {
   buttonStyle,
   controlSize,
   foregroundColor,
+  padding,
   tint,
 } from '@expo/ui/swift-ui/modifiers';
 import { useTheme } from '@/styles/use-theme';
@@ -22,7 +23,11 @@ import { useTheme } from '@/styles/use-theme';
 /** Symbol size inside a header circle. Chevrons are thin glyphs that read
  * small at the same point size as a filled icon, so they get a bump. */
 export const HEADER_ICON_SIZE = 17;
-export const HEADER_CHEVRON_SIZE = 21;
+export const HEADER_CHEVRON_SIZE = 22;
+
+/** Space after the trailing pill. Hiding the bar's shared background also
+ * drops the inset it gave, leaving the pill tight to the screen edge. */
+const TRAILING_INSET = 8;
 
 /** A round glass button holding one SF Symbol. */
 export function HeaderIconButton({
@@ -30,11 +35,14 @@ export function HeaderIconButton({
   accessibilityLabel,
   onPress,
   iconSize = HEADER_ICON_SIZE,
+  size = 'regular',
 }: {
   icon: SFSymbol;
   accessibilityLabel: string;
   onPress: () => void;
   iconSize?: number;
+  /** SwiftUI control size; `large` for the screen's main exit (the chevron). */
+  size?: 'regular' | 'large';
 }) {
   const theme = useTheme();
   return (
@@ -44,7 +52,7 @@ export function HeaderIconButton({
         modifiers={[
           buttonStyle('glass'),
           buttonBorderShape('circle'),
-          controlSize('regular'),
+          controlSize(size),
           a11yLabel(accessibilityLabel),
         ]}
       >
@@ -62,7 +70,13 @@ export function HeaderPrimaryButton({ label, onPress }: { label: string; onPress
     <Host matchContents seedColor={theme.colors.accent}>
       <Button
         onPress={onPress}
-        modifiers={[buttonStyle('glassProminent'), controlSize('regular'), tint(theme.colors.accent)]}
+        modifiers={[
+          buttonStyle('glassProminent'),
+          controlSize('regular'),
+          tint(theme.colors.accent),
+          // After the style, so it's space outside the pill, not inside it.
+          padding({ trailing: TRAILING_INSET }),
+        ]}
       >
         <Text modifiers={[foregroundColor(theme.colors.onAccent)]}>{label}</Text>
       </Button>
