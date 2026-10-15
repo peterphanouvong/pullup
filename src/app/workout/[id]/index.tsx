@@ -11,6 +11,14 @@ import { WorkoutStatsRow } from '@/features/workouts/components/workout-header';
 import { discardWorkout, finishWorkout, useWorkout } from '@/features/workouts/hooks';
 import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selectors';
 
+// Module-level so the object identity is stable: expo-router's Stack.Screen
+// calls navigation.setOptions whenever the `options` prop changes identity,
+// and an inline literal does that on EVERY render — which re-configures the
+// native header mid-animation. Everything else is declared with the
+// composition components (Stack.Title/Header/Toolbar), which memoize.
+const MODAL_OPTIONS = { presentation: 'fullScreenModal' } as const;
+const MODAL_NO_HEADER_OPTIONS = { presentation: 'fullScreenModal', headerShown: false } as const;
+
 export default function WorkoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { workout, exercises } = useWorkout(id);
@@ -21,7 +29,7 @@ export default function WorkoutScreen() {
   if (!workout) {
     return (
       <Screen>
-        <Stack.Screen options={{ headerShown: false, presentation: 'fullScreenModal' }} />
+        <Stack.Screen options={MODAL_NO_HEADER_OPTIONS} />
         <Text style={styles.notFound}>Workout not found.</Text>
       </Screen>
     );
@@ -85,43 +93,38 @@ export default function WorkoutScreen() {
 
   return (
     <Screen topInset={false}>
-      {/* Native navigation bar, native header items (SF Symbols, liquid-glass
-          backgrounds on iOS 26): chevron.down dismisses the modal downward
-          (the workout keeps running — the minimized bar picks it up on
-          Today), trash discards, Finish completes. */}
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          presentation: 'fullScreenModal',
-          title: workout.title,
-          headerStyle: { backgroundColor: theme.colors.canvas },
-          headerShadowVisible: false,
-          headerTintColor: theme.colors.ink,
-          unstable_headerLeftItems: () => [
-            {
-              type: 'button' as const,
-              label: 'Minimize',
-              icon: { type: 'sfSymbol' as const, name: 'chevron.down' as const },
-              onPress: () => router.back(),
-            },
-          ],
-          unstable_headerRightItems: () => [
-            {
-              type: 'button' as const,
-              label: 'Discard',
-              icon: { type: 'sfSymbol' as const, name: 'trash' as const },
-              tintColor: theme.colors.danger,
-              onPress: handleDiscard,
-            },
-            {
-              type: 'button' as const,
-              label: 'Finish',
-              variant: 'prominent' as const,
-              onPress: handleFinish,
-            },
-          ],
+      {/* Native navigation bar via expo-router's composition components
+          (SF Symbols, liquid-glass backgrounds on iOS 26): chevron.down
+          dismisses the modal downward — the workout keeps running and the
+          minimized bar picks it up on Today — trash discards, Finish
+          completes. */}
+      <Stack.Screen options={MODAL_OPTIONS} />
+      <Stack.Title>{workout.title}</Stack.Title>
+      <Stack.Header
+        style={{
+          backgroundColor: theme.colors.canvas,
+          color: theme.colors.ink,
+          shadowColor: 'transparent',
         }}
       />
+      <Stack.Toolbar placement="left">
+        <Stack.Toolbar.Button
+          icon="chevron.down"
+          accessibilityLabel="Minimize workout"
+          onPress={() => router.back()}
+        />
+      </Stack.Toolbar>
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          icon="trash"
+          accessibilityLabel="Discard workout"
+          tintColor={theme.colors.danger}
+          onPress={handleDiscard}
+        />
+        <Stack.Toolbar.Button variant="prominent" onPress={handleFinish}>
+          Finish
+        </Stack.Toolbar.Button>
+      </Stack.Toolbar>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

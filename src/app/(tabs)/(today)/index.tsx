@@ -57,35 +57,24 @@ function metaFor(day: ProgramDay): string {
 
 /** Native header gear: a UIKit menu (not an action sheet) so it gets the
  * system's liquid-glass bar background and overflow handling for free. */
-function settingsHeaderItems(programId: string | null) {
-  // Spread-built (not push/unshift) so TS infers a union of both item
-  // shapes rather than pinning the array to the first element's literals.
-  const items = [
-    ...(programId != null
-      ? [
-          {
-            type: 'action' as const,
-            label: 'View programme',
-            icon: { type: 'sfSymbol' as const, name: 'list.bullet.rectangle' as const },
-            onPress: () => router.push(`/program/${programId}`),
-          },
-        ]
-      : []),
-    {
-      type: 'action' as const,
-      label: 'Switch plan',
-      icon: { type: 'sfSymbol' as const, name: 'rectangle.stack' as const },
-      onPress: () => router.push('/plan'),
-    },
-  ];
-  return [
-    {
-      type: 'menu' as const,
-      label: 'Settings',
-      icon: { type: 'sfSymbol' as const, name: 'gearshape' as const },
-      menu: { items },
-    },
-  ];
+function SettingsToolbar({ programId }: { programId: string | null }) {
+  return (
+    <Stack.Toolbar placement="right">
+      <Stack.Toolbar.Menu icon="gearshape" accessibilityLabel="Settings">
+        {programId != null && (
+          <Stack.Toolbar.MenuAction
+            icon="list.bullet.rectangle"
+            onPress={() => router.push(`/program/${programId}`)}
+          >
+            View programme
+          </Stack.Toolbar.MenuAction>
+        )}
+        <Stack.Toolbar.MenuAction icon="rectangle.stack" onPress={() => router.push('/plan')}>
+          Switch plan
+        </Stack.Toolbar.MenuAction>
+      </Stack.Toolbar.Menu>
+    </Stack.Toolbar>
+  );
 }
 
 export default function TodayScreen() {
@@ -182,7 +171,7 @@ export default function TodayScreen() {
   if (!active.data || !active.data.startDate) {
     return (
       <>
-        <Stack.Screen options={{ unstable_headerRightItems: () => settingsHeaderItems(null) }} />
+        <SettingsToolbar programId={null} />
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.content}
@@ -264,7 +253,7 @@ export default function TodayScreen() {
     // content ScrollView by walking subviews[0] from the screen, so any View
     // between the screen and the ScrollView breaks the large-title collapse.
     <>
-      <Stack.Screen options={{ unstable_headerRightItems: () => settingsHeaderItems(programId) }} />
+      <SettingsToolbar programId={programId} />
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}

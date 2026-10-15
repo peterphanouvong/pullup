@@ -1,14 +1,16 @@
-import { useTheme } from "@/styles/use-theme";
 import { Stack } from "expo-router";
+import { useTheme } from "@/styles/use-theme";
 
 /** The Today tab is its own native stack purely for the Apple-native header:
- * large "Today" title that collapses into the top bar on scroll.
+ * a large "Today" title that collapses into the bar on scroll.
  *
- * Deliberately NOT headerTransparent: pairing it with headerLargeTitle
- * severs the content-inset link UIKit uses to drive the collapse, so the
- * title never shrinks and scrolling fights the header ("hijacked" feel).
- * Without it the collapse is fully native, and iOS 26's scroll-edge effect
- * still gives the collapsed bar its glass treatment. */
+ * The title lives in `screenOptions` (not a `Stack.Title` under a
+ * `Stack.Screen` in this layout — that reserved the large-title space but
+ * rendered no text) and NOT as an `options` prop on the page: an inline
+ * options object there changes identity every render, re-running
+ * setOptions and resetting the collapse animation mid-scroll. Per-screen
+ * chrome that needs page data is declared with Stack.Toolbar, which
+ * memoizes its options. */
 export default function TodayStackLayout() {
   const theme = useTheme();
   return (
@@ -17,10 +19,12 @@ export default function TodayStackLayout() {
         title: "Today",
         headerLargeTitleEnabled: true,
         headerShadowVisible: false,
-        // Expanded-state (scroll-edge) background — matches the canvas so the
-        // large-title area blends into the screen.
+        headerLargeTitleShadowVisible: false,
+        // Expanded-state background — matches the canvas so the large-title
+        // area blends into the screen.
         headerLargeStyle: { backgroundColor: theme.colors.canvas },
         headerTintColor: theme.colors.ink,
+        headerLargeTitleStyle: { color: theme.colors.ink },
       }}
     />
   );
