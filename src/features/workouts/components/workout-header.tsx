@@ -59,8 +59,8 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     // Sits a little lower than the bar above it, and keeps less vertical
     // bulk than horizontal so the strip reads as one line, not a band.
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
     gap: theme.spacing.md,
   },
   elapsed: { ...theme.type.heading, color: theme.colors.ink, fontVariant: ['tabular-nums'] },
