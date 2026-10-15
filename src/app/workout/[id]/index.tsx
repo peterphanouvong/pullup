@@ -1,7 +1,6 @@
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { IconCircle } from '@/components/ui/icon-circle';
 import { Screen } from '@/components/ui/screen';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
@@ -11,15 +10,6 @@ import { RestTimerBar } from '@/features/workouts/components/rest-timer-bar';
 import { WorkoutStatsRow } from '@/features/workouts/components/workout-header';
 import { discardWorkout, finishWorkout, useWorkout } from '@/features/workouts/hooks';
 import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selectors';
-
-function FinishButton({ onPress }: { onPress: () => void }) {
-  const styles = useThemedStyles(createStyles);
-  return (
-    <Pressable style={({ pressed }) => [styles.finishPill, pressed && styles.pressed]} onPress={onPress}>
-      <Text style={styles.finishLabel}>Finish</Text>
-    </Pressable>
-  );
-}
 
 export default function WorkoutScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -95,7 +85,8 @@ export default function WorkoutScreen() {
 
   return (
     <Screen topInset={false}>
-      {/* Native navigation bar: chevron.down dismisses the modal downward
+      {/* Native navigation bar, native header items (SF Symbols, liquid-glass
+          backgrounds on iOS 26): chevron.down dismisses the modal downward
           (the workout keeps running — the minimized bar picks it up on
           Today), trash discards, Finish completes. */}
       <Stack.Screen
@@ -106,13 +97,29 @@ export default function WorkoutScreen() {
           headerStyle: { backgroundColor: theme.colors.canvas },
           headerShadowVisible: false,
           headerTintColor: theme.colors.ink,
-          headerLeft: () => <IconCircle name="chevron.down" size={32} onPress={() => router.back()} />,
-          headerRight: () => (
-            <View style={styles.headerActions}>
-              <IconCircle name="trash" size={32} tint={theme.colors.danger} onPress={handleDiscard} />
-              <FinishButton onPress={handleFinish} />
-            </View>
-          ),
+          unstable_headerLeftItems: () => [
+            {
+              type: 'button' as const,
+              label: 'Minimize',
+              icon: { type: 'sfSymbol' as const, name: 'chevron.down' as const },
+              onPress: () => router.back(),
+            },
+          ],
+          unstable_headerRightItems: () => [
+            {
+              type: 'button' as const,
+              label: 'Discard',
+              icon: { type: 'sfSymbol' as const, name: 'trash' as const },
+              tintColor: theme.colors.danger,
+              onPress: handleDiscard,
+            },
+            {
+              type: 'button' as const,
+              label: 'Finish',
+              variant: 'prominent' as const,
+              onPress: handleFinish,
+            },
+          ],
         }}
       />
       <KeyboardAvoidingView
@@ -151,14 +158,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   notFound: { ...theme.type.body, color: theme.colors.ink, padding: theme.spacing.lg },
   empty: { ...theme.type.body, color: theme.colors.inkMuted, textAlign: 'center', paddingTop: theme.spacing.xl },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
-  finishPill: {
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.radii.pill,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-  },
-  finishLabel: { ...theme.type.caption, color: theme.colors.onAccent, fontWeight: '700' },
   pressed: { opacity: 0.7 },
   // Quiet outlined CTA (not a filled PrimaryButton pill) — the editing
   // surface's own affordance, kept visually subordinate to the native

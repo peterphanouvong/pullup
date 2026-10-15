@@ -1,36 +1,25 @@
 import { useTheme } from "@/styles/use-theme";
 import { Stack } from "expo-router";
-import { Text } from "react-native";
 
 /** The Today tab is its own native stack purely for the Apple-native header:
- * a compact bold "Today" sharing one bar row with the gear button. The title
- * renders via headerLeft because iOS always centers the native title slot
- * (headerTitleAlign is Android-only in react-native-screens). */
+ * large "Today" title that collapses into the top bar on scroll.
+ *
+ * Deliberately NOT headerTransparent: pairing it with headerLargeTitle
+ * severs the content-inset link UIKit uses to drive the collapse, so the
+ * title never shrinks and scrolling fights the header ("hijacked" feel).
+ * Without it the collapse is fully native, and iOS 26's scroll-edge effect
+ * still gives the collapsed bar its glass treatment. */
 export default function TodayStackLayout() {
   const theme = useTheme();
   return (
     <Stack
       screenOptions={{
         title: "Today",
-        // Suppress the centered native title slot — the headerLeft text IS
-        // the title (iOS can't left-align the native slot).
-        headerTitle: "",
-        headerLeft: () => (
-          <Text
-            style={{
-              fontSize: 24,
-              fontWeight: "bold",
-              color: theme.colors.ink,
-            }}
-          >
-            Today
-          </Text>
-        ),
-        // No explicit headerBlurEffect: on iOS 26 the system's scroll-edge
-        // effect already gives the bar its glass treatment, and setting both
-        // makes RNScreens warn about overlapping effects.
-        headerTransparent: true,
+        headerLargeTitleEnabled: true,
         headerShadowVisible: false,
+        // Expanded-state (scroll-edge) background — matches the canvas so the
+        // large-title area blends into the screen.
+        headerLargeStyle: { backgroundColor: theme.colors.canvas },
         headerTintColor: theme.colors.ink,
       }}
     />

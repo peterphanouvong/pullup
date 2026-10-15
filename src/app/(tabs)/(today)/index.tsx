@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ActionSheetIOS, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, Stack } from 'expo-router';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
@@ -7,10 +7,8 @@ import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
 import { DayStrip, type DayStripItem } from '@/components/ui/day-strip';
 import { FLOATING_ACTION_CLEARANCE, FloatingAction } from '@/components/ui/floating-action';
-import { IconCircle } from '@/components/ui/icon-circle';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { ProgressSegments } from '@/components/ui/progress-segments';
-import { Screen } from '@/components/ui/screen';
 import { WeekDayCard } from '@/components/ui/week-day-card';
 import { WeekPills } from '@/components/ui/week-pills';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
@@ -57,21 +55,37 @@ function metaFor(day: ProgramDay): string {
   return 'Rest day';
 }
 
-/** Header gear → quick actions: programme overview, or off to Plan to pick a
- * different programme. */
-function openSettingsSheet(programId: string | null) {
-  const options = programId != null ? ['View programme', 'Switch plan', 'Cancel'] : ['Switch plan', 'Cancel'];
-  ActionSheetIOS.showActionSheetWithOptions(
-    { options, cancelButtonIndex: options.length - 1 },
-    (index) => {
-      if (programId != null && index === 0) router.push(`/program/${programId}`);
-      else if ((programId != null && index === 1) || (programId == null && index === 0)) router.push('/plan');
+/** Native header gear: a UIKit menu (not an action sheet) so it gets the
+ * system's liquid-glass bar background and overflow handling for free. */
+function settingsHeaderItems(programId: string | null) {
+  // Spread-built (not push/unshift) so TS infers a union of both item
+  // shapes rather than pinning the array to the first element's literals.
+  const items = [
+    ...(programId != null
+      ? [
+          {
+            type: 'action' as const,
+            label: 'View programme',
+            icon: { type: 'sfSymbol' as const, name: 'list.bullet.rectangle' as const },
+            onPress: () => router.push(`/program/${programId}`),
+          },
+        ]
+      : []),
+    {
+      type: 'action' as const,
+      label: 'Switch plan',
+      icon: { type: 'sfSymbol' as const, name: 'rectangle.stack' as const },
+      onPress: () => router.push('/plan'),
     },
-  );
-}
-
-function SettingsButton({ programId }: { programId: string | null }) {
-  return <IconCircle name="gearshape.fill" size={32} onPress={() => openSettingsSheet(programId)} />;
+  ];
+  return [
+    {
+      type: 'menu' as const,
+      label: 'Settings',
+      icon: { type: 'sfSymbol' as const, name: 'gearshape' as const },
+      menu: { items },
+    },
+  ];
 }
 
 export default function TodayScreen() {
@@ -89,6 +103,9 @@ export default function TodayScreen() {
   // Scroll-aware floating action: which day card the viewport is "on". Null
   // until the user scrolls — the button then targets today's session.
   const [focusedDayId, setFocusedDayId] = useState<string | null>(null);
+  // Mirrors focusedDayId so the scroll handler can compare without a state
+  // read (and without re-subscribing), keeping scroll-time work ref-only.
+  const focusedDayIdRef = useRef<string | null>(null);
   // Which programme week the screen shows. Null = follow the calendar's
   // current week; a number pins the view to that week (via the week pills).
   const [viewedWeekPosition, setViewedWeekPosition] = useState<number | null>(null);
@@ -164,9 +181,10 @@ export default function TodayScreen() {
 
   if (!active.data || !active.data.startDate) {
     return (
-      <Screen topInset={false}>
-        <Stack.Screen options={{ headerRight: () => <SettingsButton programId={null} /> }} />
+      <>
+        <Stack.Screen options={{ unstable_headerRightItems: () => settingsHeaderItems(null) }} />
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="automatic"
@@ -178,7 +196,7 @@ export default function TodayScreen() {
           </Card>
         </ScrollView>
         {renderFloating(null, false, false)}
-      </Screen>
+      </>
     );
   }
 
@@ -237,14 +255,19 @@ export default function TodayScreen() {
     // Selecting the calendar's current week clears the pin so the view keeps
     // tracking day changes.
     setViewedWeekPosition(selected === position.week ? null : selected);
+    focusedDayIdRef.current = null;
     setFocusedDayId(null);
   }
 
   return (
-    <Screen topInset={false}>
-      <Stack.Screen options={{ headerRight: () => <SettingsButton programId={programId} /> }} />
+    // Fragment, NOT a wrapper View: react-native-screens finds the header's
+    // content ScrollView by walking subviews[0] from the screen, so any View
+    // between the screen and the ScrollView breaks the large-title collapse.
+    <>
+      <Stack.Screen options={{ unstable_headerRightItems: () => settingsHeaderItems(programId) }} />
       <ScrollView
         ref={scrollRef}
+        style={styles.scroll}
         contentContainerStyle={[styles.content, styles.contentWithFloating]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
@@ -252,14 +275,19 @@ export default function TodayScreen() {
         onScroll={(e) => {
           // Focus = the last day card whose top sits above a third of the
           // viewport; offsets come from onLayout, so promoted/taller cards
-          // can't drift the math.
+          // can't drift the math. Only a CHANGE of focused day writes state —
+          // setting it on every scroll event re-rendered the whole screen
+          // ~10x/sec mid-scroll, which read as the scroll being hijacked.
           const anchorY = e.nativeEvent.contentOffset.y + e.nativeEvent.layoutMeasurement.height / 3;
           let focused: string | null = null;
           for (const d of days) {
             const y = cardOffsets.current[d.id];
             if (y != null && y <= anchorY) focused = d.id;
           }
-          setFocusedDayId(focused);
+          if (focused !== focusedDayIdRef.current) {
+            focusedDayIdRef.current = focused;
+            setFocusedDayId(focused);
+          }
         }}
       >
         {position.finished ? (
@@ -320,11 +348,13 @@ export default function TodayScreen() {
         )}
       </ScrollView>
       {renderFloating(position.finished ? null : targetDay, targetCompleted, targetIsToday)}
-    </Screen>
+    </>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  // Canvas lives on the ScrollView itself — there's no wrapper View to paint.
+  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, paddingTop: theme.spacing.sm, gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
   contentWithFloating: { paddingBottom: FLOATING_ACTION_CLEARANCE + 96 },
   phaseLabel: { ...theme.type.label, color: theme.colors.inkMuted, marginTop: theme.spacing.sm },
