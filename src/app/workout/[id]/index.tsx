@@ -17,6 +17,7 @@ import type { Theme } from '@/styles/theme';
 import { ExerciseCard } from '@/features/workouts/components/exercise-card';
 import { openExercisePicker, openStartRestSheet } from '@/features/workouts/components/exercise-menu';
 import { RestTimerBar } from '@/features/workouts/components/rest-timer-bar';
+import { FinishMenu, HeaderIconButton } from '@/features/workouts/components/header-buttons';
 import { WorkoutStatsRow } from '@/features/workouts/components/workout-header';
 import { WorkoutSkeleton } from '@/features/workouts/components/workout-skeleton';
 import { NativeButton } from '@/components/ui/native-button';
@@ -142,8 +143,8 @@ export default function WorkoutScreen() {
       {/* Native navigation bar via expo-router's composition components
           (SF Symbols, liquid-glass backgrounds on iOS 26): chevron.down
           dismisses the modal downward — the workout keeps running and the
-          minimized bar picks it up on Today — trash discards, Finish
-          completes. */}
+          minimized bar picks it up on Today — the timer starts a rest, and
+          the Finish menu completes or discards. */}
       <Stack.Screen options={MODAL_OPTIONS} />
       <Stack.Title>{workout.title}</Stack.Title>
       {/* Translucent bar: the blur effect implies a transparent header, so
@@ -153,28 +154,21 @@ export default function WorkoutScreen() {
         blurEffect="systemChromeMaterialDark"
         style={{ color: theme.colors.ink, shadowColor: 'transparent' }}
       />
+      {/* Small SwiftUI glass buttons in custom toolbar views: native bar
+          items have a fixed size with no option to shrink them. Discard
+          lives in the Finish menu, not in its own bin button. */}
       <Stack.Toolbar placement="left">
-        <Stack.Toolbar.Button
-          icon="chevron.down"
-          accessibilityLabel="Minimize workout"
-          onPress={() => router.back()}
-        />
+        <Stack.Toolbar.View hidesSharedBackground>
+          <HeaderIconButton icon="chevron.down" accessibilityLabel="Minimize workout" onPress={() => router.back()} />
+        </Stack.Toolbar.View>
       </Stack.Toolbar>
       <Stack.Toolbar placement="right">
-        <Stack.Toolbar.Button
-          icon="timer"
-          accessibilityLabel="Start rest timer"
-          onPress={openStartRestSheet}
-        />
-        <Stack.Toolbar.Button
-          icon="trash"
-          accessibilityLabel="Discard workout"
-          tintColor={theme.colors.danger}
-          onPress={handleDiscard}
-        />
-        <Stack.Toolbar.Button variant="prominent" onPress={handleFinish}>
-          Finish
-        </Stack.Toolbar.Button>
+        <Stack.Toolbar.View hidesSharedBackground>
+          <HeaderIconButton icon="timer" accessibilityLabel="Start rest timer" onPress={openStartRestSheet} />
+        </Stack.Toolbar.View>
+        <Stack.Toolbar.View hidesSharedBackground>
+          <FinishMenu onFinish={handleFinish} onDiscard={handleDiscard} />
+        </Stack.Toolbar.View>
       </Stack.Toolbar>
       {/* The header is transparent, so the screen starts under it: pad the
           column down by the bar's height or the stats row (and the top of
