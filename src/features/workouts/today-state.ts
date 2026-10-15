@@ -37,25 +37,6 @@ export function dayState(day: ProgramDay, todayPosition: number, completed: bool
   return 'upcoming';
 }
 
-export type FloatingActionState =
-  | { kind: 'resume'; workoutId: string }
-  | { kind: 'startToday' }
-  | { kind: 'startEmpty' };
-
-/** The floating button's state, first match wins: an in-progress workout
- * beats starting today's session beats the empty-workout fallback. */
-export function floatingAction(args: {
-  activeWorkout: Workout | null;
-  todayDay: ProgramDay | null;
-  todayCompleted: boolean;
-}): FloatingActionState {
-  if (args.activeWorkout != null) return { kind: 'resume', workoutId: args.activeWorkout.id };
-  if (args.todayDay != null && args.todayDay.kind === 'lifting' && !args.todayCompleted) {
-    return { kind: 'startToday' };
-  }
-  return { kind: 'startEmpty' };
-}
-
 export interface DayMetrics {
   exercises: number;
   /** Prescribed working sets across the day (exercises with no prescribed

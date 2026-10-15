@@ -1,4 +1,4 @@
-import { dayMetrics, dayState, floatingAction, weekCompletion } from '../today-state';
+import { dayMetrics, dayState, weekCompletion } from '../today-state';
 import type { ProgramDay } from '@/features/programs/types';
 import type { Workout } from '../types';
 
@@ -64,39 +64,6 @@ describe('dayState', () => {
     expect(dayState(day({ id: 'c', position: 1, kind: 'court' }), 5, false)).toBe('info');
     expect(dayState(day({ id: 'r', position: 5, kind: 'rest' }), 5, false)).toBe('info');
     expect(dayState(day({ id: 'x', position: 7, kind: 'comp' }), 5, true)).toBe('info');
-  });
-});
-
-describe('floatingAction', () => {
-  const todayLifting = day({ id: 'd', position: 3, kind: 'lifting' });
-
-  it('an active workout wins over everything', () => {
-    const active = workout({ id: 'w1', finished_at: null });
-    expect(
-      floatingAction({ activeWorkout: active, todayDay: todayLifting, todayCompleted: false }),
-    ).toEqual({ kind: 'resume', workoutId: 'w1' });
-  });
-
-  it("today's undone lifting session beats the fallback", () => {
-    expect(floatingAction({ activeWorkout: null, todayDay: todayLifting, todayCompleted: false })).toEqual({
-      kind: 'startToday',
-    });
-  });
-
-  it('falls back to startEmpty when today is done, non-lifting, or absent', () => {
-    expect(floatingAction({ activeWorkout: null, todayDay: todayLifting, todayCompleted: true })).toEqual({
-      kind: 'startEmpty',
-    });
-    expect(
-      floatingAction({
-        activeWorkout: null,
-        todayDay: day({ id: 'r', position: 3, kind: 'rest' }),
-        todayCompleted: false,
-      }),
-    ).toEqual({ kind: 'startEmpty' });
-    expect(floatingAction({ activeWorkout: null, todayDay: null, todayCompleted: false })).toEqual({
-      kind: 'startEmpty',
-    });
   });
 });
 

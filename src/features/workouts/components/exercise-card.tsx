@@ -1,8 +1,9 @@
 import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 import { Card } from '@/components/ui/card';
 import { IconCircle } from '@/components/ui/icon-circle';
-import { useThemedStyles } from '@/styles/use-theme';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { addSet, updateExerciseNotes, type WorkoutExerciseWithSets } from '../hooks';
 import { openExerciseMenu, openRestTimerSheet } from './exercise-menu';
@@ -48,8 +49,10 @@ export function ExerciseCard({
   canMoveUp: boolean;
   canMoveDown: boolean;
 }) {
+  const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   const isDuration = isDurationExercise(exercise);
+  const doneCount = exercise.sets.filter((s) => s.completed_at != null).length;
   const notesRef = useRef<TextInput>(null);
 
   return (
@@ -72,18 +75,28 @@ export function ExerciseCard({
         />
       </View>
 
+      {/* At-a-glance metrics, same language as the Today week cards: icon +
+          number, with rest as a tappable chip rather than a prose line. */}
+      <View style={styles.metrics}>
+        <View style={styles.metric}>
+          <SymbolView name="square.stack.3d.up.fill" size={12} tintColor={theme.colors.inkMuted} />
+          <Text style={styles.metricText}>{`${doneCount}/${exercise.sets.length} sets`}</Text>
+        </View>
+        <Pressable style={styles.metric} onPress={() => openRestTimerSheet(exercise.id)} hitSlop={6}>
+          <SymbolView name="timer" size={12} tintColor={theme.colors.inkMuted} />
+          <Text style={styles.metricText}>{formatRestTimer(exercise.rest_seconds)}</Text>
+        </Pressable>
+      </View>
+
       <TextInput
         ref={notesRef}
         style={styles.notes}
         placeholder="Add notes here…"
+        placeholderTextColor={theme.colors.inkMuted}
         value={exercise.notes ?? ''}
         onChangeText={(text) => updateExerciseNotes(exercise.id, text)}
         multiline
       />
-
-      <Pressable onPress={() => openRestTimerSheet(exercise.id)} hitSlop={4}>
-        <Text style={styles.restRow}>{`Rest Timer: ${formatRestTimer(exercise.rest_seconds)}`}</Text>
-      </Pressable>
 
       <View style={styles.header}>
         <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.set, textAlign: 'center' }]}>SET</Text>
@@ -110,9 +123,12 @@ export function ExerciseCard({
         />
       ))}
 
-      <Text style={styles.addSet} onPress={() => addSet(exercise.id)}>
-        + Add Set
-      </Text>
+      <Pressable
+        style={({ pressed }) => [styles.addSet, pressed && styles.addSetPressed]}
+        onPress={() => addSet(exercise.id)}
+      >
+        <Text style={styles.addSetLabel}>+ Add Set</Text>
+      </Pressable>
     </Card>
   );
 }
@@ -122,18 +138,20 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.sm },
   name: { ...theme.type.heading, color: theme.colors.accent, flex: 1 },
   notes: { ...theme.type.body, color: theme.colors.ink, paddingVertical: theme.spacing.xs },
-  restRow: { ...theme.type.caption, color: theme.colors.inkMuted },
+  metrics: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  metric: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  metricText: { ...theme.type.caption, color: theme.colors.inkMuted, fontVariant: ['tabular-nums'] },
   header: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, marginTop: theme.spacing.xs },
   headerLabel: { ...theme.type.label, color: theme.colors.inkMuted },
   headerPrevious: { flex: 1 },
   addSet: {
-    ...theme.type.heading,
-    color: theme.colors.inkMuted,
-    textAlign: 'center',
+    alignItems: 'center',
     paddingVertical: theme.spacing.sm,
     marginTop: theme.spacing.xs,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.border,
-    borderRadius: theme.radii.md,
+    borderRadius: theme.radii.pill,
   },
+  addSetPressed: { opacity: 0.7 },
+  addSetLabel: { ...theme.type.heading, color: theme.colors.inkMuted },
 });

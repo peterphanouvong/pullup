@@ -1,10 +1,16 @@
 import type { ReactNode } from 'react';
-import { StyleSheet } from 'react-native';
+import { Appearance, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { AuthGate, useSession } from '@/lib/auth';
 import { initWorkoutStore } from '@/features/workouts/store';
+
+// Pull Up is a dark-mode app. `userInterfaceStyle: "dark"` in app.json
+// covers real builds, but Expo Go ignores it — overriding the scheme at
+// runtime makes the native chrome (nav bars, tab bar, keyboards) go dark
+// too, not just our own themed views.
+Appearance.setColorScheme('dark');
 
 const queryClient = new QueryClient();
 

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { useThemedStyles } from '@/styles/use-theme';
@@ -22,7 +22,7 @@ import {
 } from '@/features/workouts/hooks';
 import { MinimizedWorkoutBar } from '@/features/workouts/components/minimized-workout-bar';
 import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
-import { dayMetrics, dayState, floatingAction } from '@/features/workouts/today-state';
+import { dayMetrics, dayState } from '@/features/workouts/today-state';
 
 const WEEKDAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
@@ -64,16 +64,6 @@ export default function TodayScreen() {
   const session = useSession();
   const styles = useThemedStyles(createStyles);
   const activeWorkout = useActiveWorkout();
-  const scrollRef = useRef<ScrollView>(null);
-  // Card y-offsets recorded from onLayout (not index math) so the strip's
-  // jump-nav stays correct however tall individual cards render.
-  const cardOffsets = useRef<Record<string, number>>({});
-  // Scroll-aware floating action: which day card the viewport is "on". Null
-  // until the user scrolls — the button then targets today's session.
-  const [focusedDayId, setFocusedDayId] = useState<string | null>(null);
-  // Mirrors focusedDayId so the scroll handler can compare without a state
-  // read (and without re-subscribing), keeping scroll-time work ref-only.
-  const focusedDayIdRef = useRef<string | null>(null);
   // Which programme week the screen shows. Null = follow the calendar's
   // current week; a number pins the view to that week (via the week pills).
   const [viewedWeekPosition, setViewedWeekPosition] = useState<number | null>(null);
@@ -101,36 +91,11 @@ export default function TodayScreen() {
     });
   }
 
-  /** The floating button follows the scroll: it targets the day card the
-   * viewport is on (when that day is a startable lifting session), labelled
-   * "Start today's session" / "Start THU session" accordingly. A live
-   * workout always wins — as the Hevy-style minimized bar; everything else
-   * falls back to an explicit "Start empty workout". */
-  function renderFloating(
-    targetDay: ProgramDay | null,
-    targetCompleted: boolean,
-    targetIsToday: boolean,
-  ) {
-    const action = floatingAction({ activeWorkout, todayDay: targetDay, todayCompleted: targetCompleted });
-    if (action.kind === 'resume' && activeWorkout != null) {
-      return <MinimizedWorkoutBar workout={activeWorkout} />;
-    }
-    if (action.kind === 'startToday' && targetDay != null) {
-      const label = targetIsToday
-        ? "Start today's session"
-        : `Start ${WEEKDAY_LABELS[targetDay.position - 1] ?? ''} session`;
-      return (
-        <FloatingAction
-          label={label}
-          onPress={() =>
-            guardedStart(() => {
-              const workoutId = startWorkoutFromDay(targetDay, targetDay.id, session.user.id);
-              router.push(`/workout/${workoutId}`);
-            })
-          }
-        />
-      );
-    }
+  /** The floating slot has exactly two jobs now that each day card carries
+   * its own start button: resume a live workout (as the Hevy-style
+   * minimized bar), or start an unplanned one. */
+  function renderFloating() {
+    if (activeWorkout != null) return <MinimizedWorkoutBar workout={activeWorkout} />;
     return <FloatingAction label="Start empty workout" onPress={handleStartEmpty} />;
   }
 
@@ -159,7 +124,7 @@ export default function TodayScreen() {
             <PrimaryButton title="Browse programmes" onPress={() => router.push('/plan')} />
           </Card>
         </ScrollView>
-        {renderFloating(null, false, false)}
+        {renderFloating()}
       </>
     );
   }
@@ -181,7 +146,6 @@ export default function TodayScreen() {
   const week = viewedWeek;
   const days = week?.days ?? [];
   const isCurrentWeek = !position.finished && week?.position === position.week;
-  const todayDay = isCurrentWeek ? days.find((d) => d.position === position.day) ?? null : null;
   // Which position counts as "today" for missed/passed states: in a past
   // week every day is behind us (8), in a future week none are (0).
   const effectiveTodayPosition = week == null || isCurrentWeek
@@ -189,13 +153,6 @@ export default function TodayScreen() {
     : week.position < position.week
       ? 8
       : 0;
-
-  // The button's target: the scrolled-to day when the user has scrolled,
-  // today's session otherwise.
-  const focusedDay = focusedDayId != null ? days.find((d) => d.id === focusedDayId) ?? null : null;
-  const targetDay = focusedDay ?? todayDay;
-  const targetCompleted = targetDay != null && completion[targetDay.id] === true;
-  const targetIsToday = targetDay != null && todayDay != null && targetDay.id === todayDay.id;
 
   const liftingDays = days.filter((d) => d.kind === 'lifting');
   const doneCount = liftingDays.filter((d) => completion[d.id]).length;
@@ -206,8 +163,6 @@ export default function TodayScreen() {
     // Selecting the calendar's current week clears the pin so the view keeps
     // tracking day changes.
     setViewedWeekPosition(selected === position.week ? null : selected);
-    focusedDayIdRef.current = null;
-    setFocusedDayId(null);
   }
 
   return (
@@ -217,29 +172,10 @@ export default function TodayScreen() {
     <>
       <SettingsToolbar programId={programId} />
       <ScrollView
-        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={[styles.content, styles.contentWithFloating]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
-        scrollEventThrottle={100}
-        onScroll={(e) => {
-          // Focus = the last day card whose top sits above a third of the
-          // viewport; offsets come from onLayout, so promoted/taller cards
-          // can't drift the math. Only a CHANGE of focused day writes state —
-          // setting it on every scroll event re-rendered the whole screen
-          // ~10x/sec mid-scroll, which read as the scroll being hijacked.
-          const anchorY = e.nativeEvent.contentOffset.y + e.nativeEvent.layoutMeasurement.height / 3;
-          let focused: string | null = null;
-          for (const d of days) {
-            const y = cardOffsets.current[d.id];
-            if (y != null && y <= anchorY) focused = d.id;
-          }
-          if (focused !== focusedDayIdRef.current) {
-            focusedDayIdRef.current = focused;
-            setFocusedDayId(focused);
-          }
-        }}
       >
         {position.finished ? (
           <Card style={styles.messageCard}>
@@ -269,9 +205,6 @@ export default function TodayScreen() {
               return (
                 <Pressable
                   key={d.id}
-                  onLayout={(e) => {
-                    cardOffsets.current[d.id] = e.nativeEvent.layout.y;
-                  }}
                 >
                   <WeekDayCard
                     day={d}
@@ -302,7 +235,7 @@ export default function TodayScreen() {
           </>
         )}
       </ScrollView>
-      {renderFloating(position.finished ? null : targetDay, targetCompleted, targetIsToday)}
+      {renderFloating()}
     </>
   );
 }

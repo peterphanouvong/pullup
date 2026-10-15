@@ -6,10 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "pullup",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.peterphanouvong.pullup"
+      "bundleIdentifier": "com.peterphanouvong.pullup",
+      "userInterfaceStyle": "dark"
     },
     "android": {
       "adaptiveIcon": {
