@@ -145,8 +145,10 @@ mid-swipe.
 - The workout screen's title is a custom **left** bar item beside the
   chevron, not the centred title: a centred title only gets twice the
   narrower side, and timer + Finish left it no room (the timer sat on top of
-  it). It's the session name with the live stats as a subtitle. There's no
-  separate stats strip under the bar any more.
+  it). It's the session name with the live stats as a subtitle, built in
+  SwiftUI so tapping it can open a `Popover` (full name, labelled stats).
+  `@expo/ui`'s popover sets compact adaptation to `.popover`, so on iPhone
+  it's a real popover, not a sheet. There's no stats strip under the bar.
 - Headers are **transparent with no material**, like the Programme tab:
   iOS 26 then draws its soft scroll-edge effect as content passes under. If
   you ever do want a material, name the dark one explicitly

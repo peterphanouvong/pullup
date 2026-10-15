@@ -1,7 +1,17 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { useThemedStyles } from '@/styles/use-theme';
-import type { Theme } from '@/styles/theme';
+import { useWindowDimensions } from 'react-native';
+import { Button, HStack, Host, Popover, Text, VStack } from '@expo/ui/swift-ui';
+import {
+  accessibilityLabel as a11yLabel,
+  buttonStyle,
+  font,
+  foregroundColor,
+  frame,
+  lineLimit,
+  monospacedDigit,
+  padding,
+} from '@expo/ui/swift-ui/modifiers';
+import { useTheme } from '@/styles/use-theme';
 import { elapsedSeconds } from '../selectors';
 import type { Workout } from '../types';
 
@@ -46,6 +56,9 @@ const TITLE_SIDE_ROOM = 300;
  * a centred title only gets twice the narrower of the two sides, and the
  * timer + Finish side left it almost no room, so the timer sat on top of
  * it. Left-aligned, it gets everything up to the right-hand buttons.
+ *
+ * Tapping it opens a popover with the untruncated name and each stat
+ * labelled — the bar has to squeeze both.
  */
 export function WorkoutHeaderTitle({
   workout,
@@ -59,29 +72,71 @@ export function WorkoutHeaderTitle({
   /** Live sets in the workout — the "of N". */
   totalCount: number;
 }) {
-  const styles = useThemedStyles(createStyles);
+  const theme = useTheme();
   const now = useNow();
   const { width } = useWindowDimensions();
-  const elapsed = elapsedSeconds(workout, now);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const duration = formatElapsed(elapsedSeconds(workout, now));
+  const volume = `${Math.round(volumeKg)} kg`;
+  const sets = `${completedCount} of ${totalCount}`;
+  const titleWidth = Math.max(80, width - TITLE_SIDE_ROOM);
 
   return (
-    <View style={[styles.titleView, { maxWidth: Math.max(80, width - TITLE_SIDE_ROOM) }]}>
-      <Text style={styles.titleText} numberOfLines={1}>
-        {workout.title}
-      </Text>
-      <Text style={styles.titleStats} numberOfLines={1}>
-        {`${formatElapsed(elapsed)} · ${Math.round(volumeKg)} kg · ${completedCount} of ${totalCount} sets`}
-      </Text>
-    </View>
+    // SwiftUI throughout: the popover needs a SwiftUI trigger. A fixed
+    // frame width (not hug) is what makes long names truncate in the bar.
+    <Host matchContents seedColor={theme.colors.accent}>
+      <Popover isPresented={isOpen} onIsPresentedChange={setIsOpen} arrowEdge="top">
+        <Popover.Trigger>
+          <Button onPress={() => setIsOpen(true)} modifiers={[buttonStyle('plain'), a11yLabel(`${workout.title}, show stats`)]}>
+            <VStack
+              alignment="leading"
+              spacing={1}
+              modifiers={[frame({ width: titleWidth, height: TITLE_HEIGHT, alignment: 'leading' })]}
+            >
+              <Text modifiers={[font({ size: 17, weight: 'semibold' }), foregroundColor(theme.colors.ink), lineLimit(1)]}>
+                {workout.title}
+              </Text>
+              <Text
+                modifiers={[
+                  font({ size: 13, weight: 'medium' }),
+                  monospacedDigit(),
+                  foregroundColor(theme.colors.inkMuted),
+                  lineLimit(1),
+                ]}
+              >
+                {`${duration} · ${volume} · ${sets} sets`}
+              </Text>
+            </VStack>
+          </Button>
+        </Popover.Trigger>
+        {/* The full picture the bar has to squeeze: the untruncated name
+            and each number with its label. */}
+        <Popover.Content>
+          <VStack alignment="leading" spacing={14} modifiers={[padding({ all: 16 }), frame({ minWidth: 260, alignment: 'leading' })]}>
+            <Text modifiers={[font({ size: 17, weight: 'semibold' }), foregroundColor(theme.colors.ink)]}>
+              {workout.title}
+            </Text>
+            <HStack spacing={20}>
+              <PopoverStat label="DURATION" value={duration} />
+              <PopoverStat label="VOLUME" value={volume} />
+              <PopoverStat label="SETS" value={sets} />
+            </HStack>
+          </VStack>
+        </Popover.Content>
+      </Popover>
+    </Host>
   );
 }
 
-const createStyles = (theme: Theme) => StyleSheet.create({
-  titleView: { height: TITLE_HEIGHT, justifyContent: 'center', alignItems: 'flex-start', gap: 1 },
-  titleText: { ...theme.type.heading, color: theme.colors.ink },
-  titleStats: {
-    ...theme.type.caption,
-    color: theme.colors.inkMuted,
-    fontVariant: ['tabular-nums'],
-  },
-});
+function PopoverStat({ label, value }: { label: string; value: string }) {
+  const theme = useTheme();
+  return (
+    <VStack alignment="leading" spacing={2}>
+      <Text modifiers={[font({ size: 11, weight: 'semibold' }), foregroundColor(theme.colors.inkMuted)]}>{label}</Text>
+      <Text modifiers={[font({ size: 17, weight: 'semibold' }), monospacedDigit(), foregroundColor(theme.colors.ink)]}>
+        {value}
+      </Text>
+    </VStack>
+  );
+}
