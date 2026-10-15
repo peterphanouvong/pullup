@@ -58,7 +58,7 @@ export function WeekDayCard({
   const body = (
     <View style={styles.row}>
       <View style={styles.dayBlock}>
-        <Text style={[styles.weekday, isToday && styles.weekdayToday]}>{weekday}</Text>
+        <Text style={styles.weekday}>{weekday}</Text>
         <Text style={styles.kindLabel}>{KIND_LABELS[day.kind]}</Text>
       </View>
 
@@ -98,7 +98,7 @@ export function WeekDayCard({
     </View>
   );
 
-  const cardStyle = [styles.card, done && styles.cardDone, isToday && styles.cardToday];
+  const cardStyle = [styles.card, done && styles.cardDone];
 
   const content = (
     <>
@@ -111,14 +111,19 @@ export function WeekDayCard({
     </>
   );
 
-  if (onPress) {
-    return (
+  const card =
+    onPress != null ? (
       <Pressable onPress={onPress} style={({ pressed }) => [...cardStyle, pressed && styles.cardPressed]}>
         {content}
       </Pressable>
+    ) : (
+      <View style={cardStyle}>{content}</View>
     );
-  }
-  return <View style={cardStyle}>{content}</View>;
+
+  // Today glows. The halo lives on an unclipped wrapper: the card itself has
+  // `overflow: 'hidden'` (to clip its glass layer), which clips any shadow
+  // drawn on it too.
+  return isToday ? <View style={styles.todayGlow}>{card}</View> : card;
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
@@ -133,17 +138,15 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     overflow: 'hidden',
     ...theme.shadow.card,
   },
-  cardToday: { borderWidth: 1.5, borderColor: theme.colors.done },
+  todayGlow: { borderRadius: theme.radii.xl, ...theme.shadow.glow },
   // Done edge: the wash's colour carried to the hairline, so the card reads
-  // as complete at full strength rather than greyed out. Today's thicker
-  // `done` edge, applied after, wins when both hold.
+  // as complete at full strength rather than greyed out.
   cardDone: { borderColor: theme.colors.doneRow },
   doneWash: { ...StyleSheet.absoluteFill, backgroundColor: theme.colors.doneRow },
   cardPressed: { opacity: 0.85 },
   row: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.lg },
   dayBlock: { width: 48, gap: 2 },
   weekday: { ...theme.type.title, fontSize: 20, color: theme.colors.ink },
-  weekdayToday: { color: theme.colors.done },
   kindLabel: { ...theme.type.label, fontSize: 9, color: theme.colors.inkMuted },
   divider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: theme.colors.border },
   body: { flex: 1, gap: 4 },

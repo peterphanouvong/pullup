@@ -26,7 +26,7 @@ const shared = {
 // Shadow color is the theme's own `ink` token (per spec: "@ 8%/12% ink"), so
 // it's built per-theme rather than shared — in dark mode this reads as a
 // subtle light rim rather than a drop shadow, which is the intended effect.
-function shadowsFor(ink: string) {
+function shadowsFor(ink: string, glowColor: string) {
   return {
     card: {
       shadowColor: ink,
@@ -41,6 +41,15 @@ function shadowsFor(ink: string) {
       shadowRadius: 24,
       shadowOpacity: 0.12,
       elevation: 6,
+    },
+    // A soft halo in the primary blue, centred (no offset), marking the one
+    // card that's "now" — today's day — without a border or recoloured text.
+    glow: {
+      shadowColor: glowColor,
+      shadowOffset: { width: 0, height: 0 },
+      shadowRadius: 16,
+      shadowOpacity: 0.55,
+      elevation: 8,
     },
   } as const;
 }
@@ -149,11 +158,11 @@ export interface Theme {
 export const lightTheme: Theme = {
   ...shared,
   colors: lightColors,
-  shadow: shadowsFor(lightColors.ink),
+  shadow: shadowsFor(lightColors.ink, lightColors.accent),
 };
 
 export const darkTheme: Theme = {
   ...shared,
   colors: darkColors,
-  shadow: shadowsFor(darkColors.ink),
+  shadow: shadowsFor(darkColors.ink, darkColors.accent),
 };
