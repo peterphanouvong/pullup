@@ -18,10 +18,10 @@ function formatElapsed(totalSeconds: number): string {
 /**
  * The live strip under the workout screen's native header.
  *
- * A session has a finish line — every set is either done or not — so the
- * strip opens with a progress line that fills as sets land. Underneath,
- * each number carries its own label: mid-set and breathing hard, a bare run
- * of values takes longer to read than three labelled columns.
+ * Each number carries its own label: mid-set and breathing hard, a bare run
+ * of values takes longer to read than three labelled columns. Progress is
+ * the SETS column ("3 of 13"); there's no separate progress line, because at
+ * zero its empty track read as a grey divider under the header.
  */
 export function WorkoutStatsRow({
   workout,
@@ -32,7 +32,7 @@ export function WorkoutStatsRow({
   workout: Workout;
   volumeKg: number;
   completedCount: number;
-  /** Live sets in the workout — the denominator of the progress line. */
+  /** Live sets in the workout — the "of N" in the SETS column. */
   totalCount: number;
 }) {
   const styles = useThemedStyles(createStyles);
@@ -47,19 +47,12 @@ export function WorkoutStatsRow({
   }, []);
 
   const elapsed = elapsedSeconds(workout, now);
-  const progress = totalCount > 0 ? Math.min(1, completedCount / totalCount) : 0;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.track}>
-        <View style={[styles.trackFill, { width: `${progress * 100}%` }]} />
-      </View>
-
-      <View style={styles.statRow}>
-        <Stat label="DURATION" value={formatElapsed(elapsed)} />
-        <Stat label="VOLUME" value={`${Math.round(volumeKg)} kg`} />
-        <Stat label="SETS" value={`${completedCount} of ${totalCount}`} />
-      </View>
+    <View style={styles.statRow}>
+      <Stat label="DURATION" value={formatElapsed(elapsed)} />
+      <Stat label="VOLUME" value={`${Math.round(volumeKg)} kg`} />
+      <Stat label="SETS" value={`${completedCount} of ${totalCount}`} />
     </View>
   );
 }
@@ -75,12 +68,12 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
-  container: { gap: theme.spacing.md },
-  track: { height: 3, backgroundColor: theme.colors.border },
-  trackFill: { height: 3, backgroundColor: theme.colors.done },
+  // Breathing room under the header: the top padding is the gap the old
+  // progress line used to fill, and a little more.
   statRow: {
     flexDirection: 'row',
     paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.md,
   },
   stat: { flex: 1, gap: 2 },
