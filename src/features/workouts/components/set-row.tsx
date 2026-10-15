@@ -149,23 +149,28 @@ export function SetRow({
    * hierarchy, and mounting a SwiftUI host there crashes. For the same
    * reason the press handler is RN's Pressable, not gesture-handler's. */
   function renderFillAccessory(field: FillField) {
+    // No accessory at all on the last row: rendering an empty one still
+    // mounts the accessory's own backdrop, which shows as a dark slab.
+    if (fillTargetCount === 0) return null;
     const fields: FillField[] = isDuration ? ['duration'] : ['weight', 'reps'];
     return (
-      <InputAccessoryView nativeID={accessoryId(field)} backgroundColor="transparent">
-        {fillTargetCount > 0 ? (
-          <View style={styles.accessory}>
-            {fields.map((target) => (
-              <RNPressable
-                key={target}
-                style={({ pressed }) => [styles.fillButton, pressed && styles.fillButtonPressed]}
-                onPress={() => fillDown(target)}
-              >
-                <SymbolView name="arrow.down.to.line" size={14} tintColor={theme.colors.onAccent} />
-                <Text style={styles.fillLabel}>{`Fill ${FIELD_LABELS[target]}`}</Text>
-              </RNPressable>
-            ))}
-          </View>
-        ) : null}
+      <InputAccessoryView
+        nativeID={accessoryId(field)}
+        backgroundColor="transparent"
+        style={styles.accessoryHost}
+      >
+        <View style={styles.accessory}>
+          {fields.map((target) => (
+            <RNPressable
+              key={target}
+              style={({ pressed }) => [styles.fillButton, pressed && styles.fillButtonPressed]}
+              onPress={() => fillDown(target)}
+            >
+              <SymbolView name="arrow.down.to.line" size={14} tintColor={theme.colors.onAccent} />
+              <Text style={styles.fillLabel}>{`Fill ${FIELD_LABELS[target]}`}</Text>
+            </RNPressable>
+          ))}
+        </View>
       </InputAccessoryView>
     );
   }
@@ -293,11 +298,16 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   },
   // Buttons floating above the keyboard — no toolbar bar behind them, and
   // sized to their labels rather than stretched across the screen.
+  accessoryHost: { backgroundColor: 'transparent' },
   accessory: {
     flexDirection: 'row',
+    justifyContent: 'flex-end',
     gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.sm,
+    // Explicitly clear: the accessory's own backdrop is otherwise an opaque
+    // slab behind the pills.
+    backgroundColor: 'transparent',
   },
   fillButton: {
     flexDirection: 'row',
