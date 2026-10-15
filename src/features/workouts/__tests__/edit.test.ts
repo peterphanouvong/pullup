@@ -6,7 +6,7 @@
 // No store imports — fixtures are built by hand, same style as
 // selectors.test.ts/start.test.ts.
 
-import { moveExercise, buildAddedExercise, buildReplacement, fillDownTargets } from '../edit';
+import { moveExercise, buildAddedExercise, buildReplacement, fillDownTargets, fillFromPrevious } from '../edit';
 import type { Exercise, WorkoutExercise, WorkoutSet } from '../types';
 
 const ts = '2026-10-14T10:00:00.000Z';
@@ -207,5 +207,31 @@ describe('fillDownTargets', () => {
     const sets = [s('a', 1), s('b', 2)];
     expect(fillDownTargets(sets, 'b')).toEqual([]);
     expect(fillDownTargets(sets, 'nope')).toEqual([]);
+  });
+});
+
+describe('fillFromPrevious', () => {
+  const empty = { weight_kg: null, reps: null, duration_seconds: null };
+
+  it('fills every empty field from the last lift', () => {
+    expect(fillFromPrevious(empty, { weight_kg: 62.5, reps: 3, duration_seconds: null })).toEqual({
+      weight_kg: 62.5,
+      reps: 3,
+    });
+  });
+
+  it('keeps what was typed this session', () => {
+    // A program day prefills reps; only the missing weight is borrowed.
+    expect(
+      fillFromPrevious({ weight_kg: null, reps: 5, duration_seconds: null }, { weight_kg: 60, reps: 3, duration_seconds: null }),
+    ).toEqual({ weight_kg: 60 });
+  });
+
+  it('fills a timed hold', () => {
+    expect(fillFromPrevious(empty, { weight_kg: null, reps: null, duration_seconds: 45 })).toEqual({ duration_seconds: 45 });
+  });
+
+  it('borrows nothing without a previous lift', () => {
+    expect(fillFromPrevious(empty, null)).toEqual({});
   });
 });

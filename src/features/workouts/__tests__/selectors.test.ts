@@ -150,165 +150,148 @@ describe('elapsedSeconds', () => {
 
 describe('previousSet', () => {
   const EXERCISE_ID = 'ex-power-clean';
+  const done = '2026-10-14T11:10:00.000Z';
 
-  it('finds the same-position set from the most recent finished workout containing that exercise', () => {
-    const workouts: Record<string, Workout> = {
+  function lookup(
+    setIndex: number,
+    workouts: Record<string, Workout>,
+    workoutExercises: Record<string, WorkoutExercise>,
+    sets: Record<string, WorkoutSet>,
+  ) {
+    return previousSet({ exerciseId: EXERCISE_ID, setIndex, currentWorkoutId: 'current', workouts, workoutExercises, sets });
+  }
+
+  it('takes the set at the same place in the order from the most recent finished workout', () => {
+    const workouts = {
       older: workout({ id: 'older', finished_at: '2026-10-07T11:00:00.000Z' }),
       newer: workout({ id: 'newer', finished_at: '2026-10-14T11:00:00.000Z' }),
       current: workout({ id: 'current', finished_at: null }),
     };
-    const workoutExercises: Record<string, WorkoutExercise> = {
+    const workoutExercises = {
       we_older: exercise({ id: 'we_older', workout_id: 'older', exercise_id: EXERCISE_ID }),
       we_newer: exercise({ id: 'we_newer', workout_id: 'newer', exercise_id: EXERCISE_ID }),
     };
-    const sets: Record<string, WorkoutSet> = {
-      s_older_pos2: set({ id: 's_older_pos2', workout_exercise_id: 'we_older', position: 2, weight_kg: 90, reps: 2, completed_at: '2026-10-07T11:10:00.000Z' }),
-      s_newer_pos2: set({ id: 's_newer_pos2', workout_exercise_id: 'we_newer', position: 2, weight_kg: 95, reps: 2, completed_at: '2026-10-14T11:10:00.000Z' }),
+    const sets = {
+      o1: set({ id: 'o1', workout_exercise_id: 'we_older', position: 1, weight_kg: 85, reps: 2, completed_at: done }),
+      o2: set({ id: 'o2', workout_exercise_id: 'we_older', position: 2, weight_kg: 90, reps: 2, completed_at: done }),
+      n1: set({ id: 'n1', workout_exercise_id: 'we_newer', position: 1, weight_kg: 90, reps: 2, completed_at: done }),
+      n2: set({ id: 'n2', workout_exercise_id: 'we_newer', position: 2, weight_kg: 95, reps: 2, completed_at: done }),
     };
 
-    const result = previousSet({
-      exerciseId: EXERCISE_ID,
-      position: 2,
-      currentWorkoutId: 'current',
-      workouts,
-      workoutExercises,
-      sets,
-    });
+    expect(lookup(1, workouts, workoutExercises, sets)?.id).toBe('n2');
+  });
 
-    expect(result?.id).toBe('s_newer_pos2');
-    expect(result?.weight_kg).toBe(95);
+  it('skips sets that were never completed (a prefilled template is not a lift)', () => {
+    // Regression: program workouts prefill reps with no weight; an unticked
+    // set from the last session showed "3 reps" instead of the weight.
+    const workouts = {
+      older: workout({ id: 'older', finished_at: '2026-10-07T11:00:00.000Z' }),
+      newer: workout({ id: 'newer', finished_at: '2026-10-14T11:00:00.000Z' }),
+    };
+    const workoutExercises = {
+      we_older: exercise({ id: 'we_older', workout_id: 'older', exercise_id: EXERCISE_ID }),
+      we_newer: exercise({ id: 'we_newer', workout_id: 'newer', exercise_id: EXERCISE_ID }),
+    };
+    const sets = {
+      o1: set({ id: 'o1', workout_exercise_id: 'we_older', position: 1, weight_kg: 62.5, reps: 3, completed_at: done }),
+      n1: set({ id: 'n1', workout_exercise_id: 'we_newer', position: 1, weight_kg: null, reps: 3, completed_at: null }),
+    };
+
+    const result = lookup(0, workouts, workoutExercises, sets);
+    expect(result?.id).toBe('o1');
+    expect(result?.weight_kg).toBe(62.5);
+  });
+
+  it('matches by order, not stored position, so gaps from deleted sets do not shift it', () => {
+    const workouts = { prev: workout({ id: 'prev', finished_at: done }) };
+    const workoutExercises = { we: exercise({ id: 'we', workout_id: 'prev', exercise_id: EXERCISE_ID }) };
+    const sets = {
+      a: set({ id: 'a', workout_exercise_id: 'we', position: 1, weight_kg: 60, reps: 3, completed_at: done }),
+      gone: set({ id: 'gone', workout_exercise_id: 'we', position: 2, weight_kg: 61, reps: 3, completed_at: done, deleted: true }),
+      b: set({ id: 'b', workout_exercise_id: 'we', position: 3, weight_kg: 65, reps: 3, completed_at: done }),
+    };
+
+    expect(lookup(1, workouts, workoutExercises, sets)?.id).toBe('b');
   });
 
   it('excludes the current workout even if it is the most recently finished', () => {
-    const workouts: Record<string, Workout> = {
+    const workouts = {
       current: workout({ id: 'current', finished_at: '2026-10-20T11:00:00.000Z' }),
       previous: workout({ id: 'previous', finished_at: '2026-10-14T11:00:00.000Z' }),
     };
-    const workoutExercises: Record<string, WorkoutExercise> = {
+    const workoutExercises = {
       we_current: exercise({ id: 'we_current', workout_id: 'current', exercise_id: EXERCISE_ID }),
       we_previous: exercise({ id: 'we_previous', workout_id: 'previous', exercise_id: EXERCISE_ID }),
     };
-    const sets: Record<string, WorkoutSet> = {
-      s_current: set({ id: 's_current', workout_exercise_id: 'we_current', position: 1, weight_kg: 999, completed_at: '2026-10-20T11:10:00.000Z' }),
-      s_previous: set({ id: 's_previous', workout_exercise_id: 'we_previous', position: 1, weight_kg: 90, completed_at: '2026-10-14T11:10:00.000Z' }),
+    const sets = {
+      s_current: set({ id: 's_current', workout_exercise_id: 'we_current', weight_kg: 999, completed_at: done }),
+      s_previous: set({ id: 's_previous', workout_exercise_id: 'we_previous', weight_kg: 90, completed_at: done }),
     };
 
-    const result = previousSet({
-      exerciseId: EXERCISE_ID,
-      position: 1,
-      currentWorkoutId: 'current',
-      workouts,
-      workoutExercises,
-      sets,
-    });
-
-    expect(result?.id).toBe('s_previous');
+    expect(lookup(0, workouts, workoutExercises, sets)?.id).toBe('s_previous');
   });
 
   it('ignores unfinished workouts entirely', () => {
-    const workouts: Record<string, Workout> = {
-      active: workout({ id: 'active', finished_at: null }),
-    };
-    const workoutExercises: Record<string, WorkoutExercise> = {
-      we_active: exercise({ id: 'we_active', workout_id: 'active', exercise_id: EXERCISE_ID }),
-    };
-    const sets: Record<string, WorkoutSet> = {
-      s_active: set({ id: 's_active', workout_exercise_id: 'we_active', position: 1, weight_kg: 90, completed_at: ts }),
-    };
+    const workouts = { active: workout({ id: 'active', finished_at: null }) };
+    const workoutExercises = { we_active: exercise({ id: 'we_active', workout_id: 'active', exercise_id: EXERCISE_ID }) };
+    const sets = { s_active: set({ id: 's_active', workout_exercise_id: 'we_active', weight_kg: 90, completed_at: ts }) };
 
-    expect(
-      previousSet({ exerciseId: EXERCISE_ID, position: 1, currentWorkoutId: 'current', workouts, workoutExercises, sets }),
-    ).toBeNull();
+    expect(lookup(0, workouts, workoutExercises, sets)).toBeNull();
   });
 
   it('ignores deleted workouts, deleted workout_exercises, and deleted sets', () => {
-    const workouts: Record<string, Workout> = {
+    const workouts = {
       deletedWorkout: workout({ id: 'deletedWorkout', finished_at: '2026-10-19T00:00:00.000Z', deleted: true }),
       deletedExerciseWorkout: workout({ id: 'deletedExerciseWorkout', finished_at: '2026-10-18T00:00:00.000Z' }),
       deletedSetWorkout: workout({ id: 'deletedSetWorkout', finished_at: '2026-10-17T00:00:00.000Z' }),
       good: workout({ id: 'good', finished_at: '2026-10-16T00:00:00.000Z' }),
     };
-    const workoutExercises: Record<string, WorkoutExercise> = {
+    const workoutExercises = {
       we1: exercise({ id: 'we1', workout_id: 'deletedWorkout', exercise_id: EXERCISE_ID }),
       we2: exercise({ id: 'we2', workout_id: 'deletedExerciseWorkout', exercise_id: EXERCISE_ID, deleted: true }),
       we3: exercise({ id: 'we3', workout_id: 'deletedSetWorkout', exercise_id: EXERCISE_ID }),
       we4: exercise({ id: 'we4', workout_id: 'good', exercise_id: EXERCISE_ID }),
     };
-    const sets: Record<string, WorkoutSet> = {
-      s1: set({ id: 's1', workout_exercise_id: 'we1', position: 1, weight_kg: 1, completed_at: ts }),
-      s2: set({ id: 's2', workout_exercise_id: 'we2', position: 1, weight_kg: 2, completed_at: ts }),
-      s3: set({ id: 's3', workout_exercise_id: 'we3', position: 1, weight_kg: 3, completed_at: ts, deleted: true }),
-      s4: set({ id: 's4', workout_exercise_id: 'we4', position: 1, weight_kg: 4, completed_at: ts }),
+    const sets = {
+      s1: set({ id: 's1', workout_exercise_id: 'we1', weight_kg: 1, completed_at: ts }),
+      s2: set({ id: 's2', workout_exercise_id: 'we2', weight_kg: 2, completed_at: ts }),
+      s3: set({ id: 's3', workout_exercise_id: 'we3', weight_kg: 3, completed_at: ts, deleted: true }),
+      s4: set({ id: 's4', workout_exercise_id: 'we4', weight_kg: 4, completed_at: ts }),
     };
 
-    const result = previousSet({
-      exerciseId: EXERCISE_ID,
-      position: 1,
-      currentWorkoutId: 'current',
-      workouts,
-      workoutExercises,
-      sets,
-    });
-
-    expect(result?.id).toBe('s4');
+    expect(lookup(0, workouts, workoutExercises, sets)?.id).toBe('s4');
   });
 
   it('returns null when no finished workout contains the exercise', () => {
-    expect(
-      previousSet({
-        exerciseId: 'nonexistent',
-        position: 1,
-        currentWorkoutId: 'current',
-        workouts: {},
-        workoutExercises: {},
-        sets: {},
-      }),
-    ).toBeNull();
+    expect(lookup(0, {}, {}, {})).toBeNull();
   });
 
-  it('returns null when no qualifying workout has a set at that position (nothing earlier to fall back to)', () => {
-    const workouts: Record<string, Workout> = {
-      only: workout({ id: 'only', finished_at: ts }),
-    };
-    const workoutExercises: Record<string, WorkoutExercise> = {
-      we1: exercise({ id: 'we1', workout_id: 'only', exercise_id: EXERCISE_ID }),
-    };
-    const sets: Record<string, WorkoutSet> = {
-      s1: set({ id: 's1', workout_exercise_id: 'we1', position: 1, weight_kg: 1, completed_at: ts }),
-    };
+  it('returns null when no session completed that many sets', () => {
+    const workouts = { only: workout({ id: 'only', finished_at: ts }) };
+    const workoutExercises = { we1: exercise({ id: 'we1', workout_id: 'only', exercise_id: EXERCISE_ID }) };
+    const sets = { s1: set({ id: 's1', workout_exercise_id: 'we1', weight_kg: 1, completed_at: ts }) };
 
-    // Requesting position 3, which this (only, most recent) matching workout never logged.
-    expect(
-      previousSet({ exerciseId: EXERCISE_ID, position: 3, currentWorkoutId: 'current', workouts, workoutExercises, sets }),
-    ).toBeNull();
+    expect(lookup(2, workouts, workoutExercises, sets)).toBeNull();
   });
 
-  it('falls back to an earlier workout when the most recent one logged the exercise but not at that position', () => {
-    const workouts: Record<string, Workout> = {
+  it('falls back to an earlier workout when the most recent completed fewer sets', () => {
+    const workouts = {
       newer: workout({ id: 'newer', finished_at: '2026-10-14T00:00:00.000Z' }),
       older: workout({ id: 'older', finished_at: '2026-10-07T00:00:00.000Z' }),
     };
-    const workoutExercises: Record<string, WorkoutExercise> = {
+    const workoutExercises = {
       we_newer: exercise({ id: 'we_newer', workout_id: 'newer', exercise_id: EXERCISE_ID }),
       we_older: exercise({ id: 'we_older', workout_id: 'older', exercise_id: EXERCISE_ID }),
     };
-    const sets: Record<string, WorkoutSet> = {
-      // "newer" only logged 2 sets; "older" logged a 3rd.
-      s_newer_1: set({ id: 's_newer_1', workout_exercise_id: 'we_newer', position: 1, weight_kg: 10, completed_at: ts }),
-      s_newer_2: set({ id: 's_newer_2', workout_exercise_id: 'we_newer', position: 2, weight_kg: 10, completed_at: ts }),
-      s_older_3: set({ id: 's_older_3', workout_exercise_id: 'we_older', position: 3, weight_kg: 9, completed_at: ts }),
+    const sets = {
+      n1: set({ id: 'n1', workout_exercise_id: 'we_newer', position: 1, weight_kg: 10, completed_at: ts }),
+      n2: set({ id: 'n2', workout_exercise_id: 'we_newer', position: 2, weight_kg: 10, completed_at: ts }),
+      o1: set({ id: 'o1', workout_exercise_id: 'we_older', position: 1, weight_kg: 9, completed_at: ts }),
+      o2: set({ id: 'o2', workout_exercise_id: 'we_older', position: 2, weight_kg: 9, completed_at: ts }),
+      o3: set({ id: 'o3', workout_exercise_id: 'we_older', position: 3, weight_kg: 9, completed_at: ts }),
     };
 
-    const result = previousSet({
-      exerciseId: EXERCISE_ID,
-      position: 3,
-      currentWorkoutId: 'current',
-      workouts,
-      workoutExercises,
-      sets,
-    });
-
-    expect(result?.id).toBe('s_older_3');
+    expect(lookup(2, workouts, workoutExercises, sets)?.id).toBe('o3');
   });
 });
 

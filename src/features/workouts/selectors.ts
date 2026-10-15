@@ -38,7 +38,8 @@ export function elapsedSeconds(workout: Workout, now: Date): number {
 
 export interface PreviousSetArgs {
   exerciseId: string;
-  position: number;
+  /** 0-based order of the set among its exercise's live sets. */
+  setIndex: number;
   currentWorkoutId: string;
   workouts: Record<string, Workout>;
   workoutExercises: Record<string, WorkoutExercise>;
@@ -46,34 +47,39 @@ export interface PreviousSetArgs {
 }
 
 /**
- * The same-position set from the user's most recent *finished* workout
- * containing `exerciseId` (excluding the current workout). Walks finished
- * workouts newest-first and returns the first live set found at `position`
- * for that exercise; a workout that logged the exercise but has nothing at
- * that exact position (fewer sets that session, or the row was individually
- * soft-deleted) is skipped in favor of the next most recent one.
+ * What you lifted last time for this set: the set at the same place in the
+ * order (`setIndex`, 0-based among the exercise's live sets) from the most
+ * recent *finished* workout containing `exerciseId`, excluding the current
+ * one.
+ *
+ * Only completed sets count. Program workouts prefill reps but leave weight
+ * empty, so an unticked set from an earlier session is a template, not a
+ * lift — matching it showed "3 reps" where the weight should be. And sets
+ * are matched by order, not stored `position`, because positions keep gaps
+ * after a set is deleted.
+ *
+ * A session with fewer completed sets than `setIndex` is skipped in favour
+ * of the next most recent one.
  */
 export function previousSet(args: PreviousSetArgs): WorkoutSet | null {
-  const { exerciseId, position, currentWorkoutId, workouts, workoutExercises, sets } = args;
+  const { exerciseId, setIndex, currentWorkoutId, workouts, workoutExercises, sets } = args;
 
   const candidateWorkouts = Object.values(workouts)
     .filter((w) => !w.deleted && w.finished_at != null && w.id !== currentWorkoutId)
     .sort((a, b) => new Date(b.finished_at as string).getTime() - new Date(a.finished_at as string).getTime());
 
   for (const w of candidateWorkouts) {
-    const matchingExercises = Object.values(workoutExercises).filter(
-      (we) => !we.deleted && we.workout_id === w.id && we.exercise_id === exerciseId,
+    const matchingExerciseIds = new Set(
+      Object.values(workoutExercises)
+        .filter((we) => !we.deleted && we.workout_id === w.id && we.exercise_id === exerciseId)
+        .map((we) => we.id),
     );
-    if (matchingExercises.length === 0) continue;
+    if (matchingExerciseIds.size === 0) continue;
 
-    const matchingExerciseIds = new Set(matchingExercises.map((we) => we.id));
-    const match = Object.values(sets).find(
-      (s) => !s.deleted && matchingExerciseIds.has(s.workout_exercise_id) && s.position === position,
-    );
-    // This workout logged the exercise but not at this exact position (e.g.
-    // it had fewer sets, or the set at this position was itself soft-
-    // deleted) — fall back to the next most recent qualifying workout
-    // rather than giving up.
+    const completed = Object.values(sets)
+      .filter((s) => !s.deleted && s.completed_at != null && matchingExerciseIds.has(s.workout_exercise_id))
+      .sort((a, b) => a.position - b.position);
+    const match = completed[setIndex];
     if (match) return match;
   }
 

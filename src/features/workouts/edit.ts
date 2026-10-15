@@ -132,3 +132,21 @@ export function fillDownTargets(siblingSets: WorkoutSet[], fromSetId: string): s
   if (index === -1) return [];
   return live.slice(index + 1).map((s) => s.id);
 }
+
+/** Ticking off a set whose inputs are still empty logs what the placeholders
+ * showed: your last lift for that set. Only empty fields are filled, so
+ * anything typed in this session wins. Returns an empty patch when there's
+ * nothing to borrow. */
+export function fillFromPrevious(
+  current: Pick<WorkoutSet, 'weight_kg' | 'reps' | 'duration_seconds'>,
+  previous: Pick<WorkoutSet, 'weight_kg' | 'reps' | 'duration_seconds'> | null,
+): Partial<Pick<WorkoutSet, 'weight_kg' | 'reps' | 'duration_seconds'>> {
+  if (previous == null) return {};
+  const patch: Partial<Pick<WorkoutSet, 'weight_kg' | 'reps' | 'duration_seconds'>> = {};
+  if (current.weight_kg == null && previous.weight_kg != null) patch.weight_kg = previous.weight_kg;
+  if (current.reps == null && previous.reps != null) patch.reps = previous.reps;
+  if (current.duration_seconds == null && previous.duration_seconds != null) {
+    patch.duration_seconds = previous.duration_seconds;
+  }
+  return patch;
+}

@@ -20,7 +20,7 @@ import { previousSet } from '../selectors';
 import { workoutExercises$, workouts$, workoutSets$ } from '../store';
 import type { WorkoutSet } from '../types';
 import * as Haptics from 'expo-haptics';
-import { fillDownTargets } from '../edit';
+import { fillDownTargets, fillFromPrevious } from '../edit';
 import { startRestTimer } from '../rest-timer';
 import { completeSet, nextSetType, softDeleteSet, updateSet } from '../hooks';
 
@@ -76,7 +76,8 @@ function formatGhost(set: WorkoutSet | null, isDuration: boolean): string {
   if (isDuration) {
     return set.duration_seconds != null ? `${set.duration_seconds}s` : '—';
   }
-  if (set.weight_kg != null && set.reps != null) return `${set.weight_kg} × ${set.reps}`;
+  if (set.weight_kg != null && set.reps != null) return `${set.weight_kg}kg × ${set.reps}`;
+  if (set.weight_kg != null) return `${set.weight_kg}kg`;
   if (set.reps != null) return `${set.reps} reps`;
   return '—';
 }
@@ -97,11 +98,15 @@ export function SetRow({
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
 
+  // Where this set sits in the exercise's order — what "the same set last
+  // time" is matched on (stored positions keep gaps after deletes).
+  const setIndex = siblingSets.findIndex((s) => s.id === set.id);
+
   const previous = use$(() => {
-    if (!exerciseId) return null;
+    if (!exerciseId || setIndex < 0) return null;
     return previousSet({
       exerciseId,
-      position: set.position,
+      setIndex,
       currentWorkoutId: workoutId,
       workouts: workouts$.get() ?? {},
       workoutExercises: workoutExercises$.get() ?? {},
@@ -192,9 +197,14 @@ export function SetRow({
   }
 
   function handleComplete() {
-    // Light tap on the way in, nothing on un-completing: the feedback marks
-    // the achievement, not the toggle.
-    if (set.completed_at == null) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (set.completed_at == null) {
+      // Empty inputs log what their placeholders showed: last time's lift.
+      const borrowed = fillFromPrevious(set, previous);
+      if (Object.keys(borrowed).length > 0) updateSet(set.id, borrowed);
+      // Light tap on the way in, nothing on un-completing: the feedback
+      // marks the achievement, not the toggle.
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     completeSet(set.id, new Date());
   }
 
@@ -249,7 +259,7 @@ export function SetRow({
           onBlur={() => setIsEditing(false)}
           selectTextOnFocus
           keyboardType="number-pad"
-          placeholder="sec"
+          placeholder={previous?.duration_seconds != null ? String(previous.duration_seconds) : 'sec'}
           placeholderTextColor={theme.colors.inkMuted}
           value={durationField.text}
           onChangeText={durationField.onChangeText}
@@ -267,7 +277,7 @@ export function SetRow({
             onBlur={() => setIsEditing(false)}
             selectTextOnFocus
             keyboardType="decimal-pad"
-            placeholder="kg"
+            placeholder={previous?.weight_kg != null ? String(previous.weight_kg) : 'kg'}
             placeholderTextColor={theme.colors.inkMuted}
             value={weightField.text}
             onChangeText={weightField.onChangeText}
@@ -283,7 +293,7 @@ export function SetRow({
             onBlur={() => setIsEditing(false)}
             selectTextOnFocus
             keyboardType="number-pad"
-            placeholder="reps"
+            placeholder={previous?.reps != null ? String(previous.reps) : 'reps'}
             placeholderTextColor={theme.colors.inkMuted}
             value={repsField.text}
             onChangeText={repsField.onChangeText}
