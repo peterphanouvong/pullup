@@ -117,7 +117,7 @@ export function SetRow({
 
   return (
     <SwipeToDelete onDelete={() => softDeleteSet(set.id)} childStyle={styles.swipeChild}>
-    <View style={styles.row}>
+    <View style={[styles.row, isCompleted && styles.rowCompleted]}>
       <Pressable
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
         onPress={() => updateSet(set.id, { set_type: nextSetType(set.set_type) })}
@@ -183,7 +183,10 @@ export function SetRow({
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
-  swipeChild: { backgroundColor: theme.colors.card },
+  // Matches the card it sits on (see theme.glassSolid) so the row has no
+  // visible background of its own, while still hiding the swipe action.
+  swipeChild: { backgroundColor: theme.colors.glassSolid },
+  rowCompleted: { backgroundColor: theme.colors.doneRow },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

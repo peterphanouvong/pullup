@@ -1,4 +1,5 @@
-import { Button, Host, Text } from '@expo/ui/swift-ui';
+import type { SFSymbol } from 'expo-symbols';
+import { Button, Host, HStack, Image, Text } from '@expo/ui/swift-ui';
 import { buttonStyle, controlSize, foregroundColor, frame } from '@expo/ui/swift-ui/modifiers';
 import { useTheme } from '@/styles/use-theme';
 
@@ -20,14 +21,18 @@ const FILL = 100_000;
  */
 export function NativeButton({
   label,
+  systemImage,
   onPress,
   prominent = false,
 }: {
   label: string;
+  /** SF Symbol shown before the label. */
+  systemImage?: SFSymbol;
   onPress: () => void;
   prominent?: boolean;
 }) {
   const theme = useTheme();
+  const labelColor = prominent ? theme.colors.onAccent : theme.colors.ink;
   return (
     // seedColor themes the SwiftUI accent, so the prominent button picks up
     // our ink rather than painting itself system blue.
@@ -41,14 +46,12 @@ export function NativeButton({
             hit area and leaves the capsule label-sized. The colour is
             explicit too — the prominent fill takes our near-white accent,
             which would otherwise swallow a white label. */}
-        <Text
-          modifiers={[
-            frame({ maxWidth: FILL }),
-            foregroundColor(prominent ? theme.colors.onAccent : theme.colors.ink),
-          ]}
-        >
-          {label}
-        </Text>
+        <HStack spacing={6} modifiers={[frame({ maxWidth: FILL, alignment: 'center' })]}>
+          {systemImage != null ? (
+            <Image systemName={systemImage} size={15} color={labelColor} />
+          ) : null}
+          <Text modifiers={[foregroundColor(labelColor)]}>{label}</Text>
+        </HStack>
       </Button>
     </Host>
   );

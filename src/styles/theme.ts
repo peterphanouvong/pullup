@@ -69,6 +69,13 @@ const lightColors = {
   // a lifted sheet over the canvas rather than a flat opaque panel.
   glass: 'rgba(255, 255, 255, 0.72)',
   glassBorder: 'rgba(17, 17, 17, 0.08)',
+  // `glass` flattened over `canvas`. Rows that must be opaque (a swipeable
+  // row has to hide the delete action sitting behind it) use this so they
+  // disappear into the card instead of reading as a lighter patch.
+  glassSolid: '#FCFCFC',
+  // Completed-set row wash: `done` at low alpha so the row lifts without
+  // becoming a slab of colour.
+  doneRow: 'rgba(206, 79, 146, 0.10)',
   gradientRecap: ['#0E2A5C', '#1D4ED8'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
   // Text drawn over gradientRecap/gradientEmber — both gradients stay dark
@@ -95,6 +102,8 @@ const darkColors = {
   doneSoft: '#322633',
   glass: 'rgba(40, 40, 43, 0.72)',
   glassBorder: 'rgba(255, 255, 255, 0.10)',
+  glassSolid: '#202022',
+  doneRow: 'rgba(226, 123, 182, 0.14)',
   gradientRecap: ['#0A1F44', '#1E40AF'],
   gradientEmber: ['#7A1E1E', '#C2410C'],
   onGradient: '#FFFFFF',

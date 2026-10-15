@@ -19,6 +19,9 @@ import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selector
 // and an inline literal does that on EVERY render — which re-configures the
 // native header mid-animation. Everything else is declared with the
 // composition components (Stack.Title/Header/Toolbar), which memoize.
+/** Standard iOS navigation bar height — the transparent header's footprint. */
+const HEADER_HEIGHT = 44;
+
 const MODAL_OPTIONS = { presentation: 'fullScreenModal' } as const;
 const MODAL_NO_HEADER_OPTIONS = { presentation: 'fullScreenModal', headerShown: false } as const;
 
@@ -137,8 +140,11 @@ export default function WorkoutScreen() {
           Finish
         </Stack.Toolbar.Button>
       </Stack.Toolbar>
+      {/* The header is transparent, so the screen starts under it: pad the
+          column down by the bar's height or the stats row (and the top of
+          the list) sits beneath it, hidden. */}
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={[styles.flex, { paddingTop: insets.top + HEADER_HEIGHT }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 44 : 0}
       >
@@ -156,7 +162,11 @@ export default function WorkoutScreen() {
                 canMoveDown={index < exercises.length - 1}
               />
             ))}
-            <NativeButton label="Add Exercise" onPress={() => openExercisePicker(workout.id, 'add')} />
+            <NativeButton
+              label="Add Exercise"
+              systemImage="plus"
+              onPress={() => openExercisePicker(workout.id, 'add')}
+            />
           </ScrollView>
         ) : (
           <WorkoutSkeleton exerciseCount={exercises.length} />

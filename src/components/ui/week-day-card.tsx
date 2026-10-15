@@ -118,7 +118,7 @@ export function WeekDayCard({
           translucent fill stays as the pre-iOS-26 fallback. */}
       <GlassSurface cornerRadius={theme.radii.xl} />
       {body}
-      {onStart != null && <NativeButton label={startLabel} onPress={onStart} prominent />}
+      {onStart != null && <NativeButton label={startLabel} systemImage="play.fill" onPress={onStart} prominent />}
     </>
   );
 

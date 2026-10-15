@@ -51,6 +51,24 @@ export function isTimedPrescription(reps: string | null): boolean {
   return TIMED_PRESCRIPTION_RE.test(reps.trim());
 }
 
+/** Prescribed reps as a startable number, or null when the prescription
+ * isn't a plain count.
+ *
+ * A single count ("3", "12 reps") prefills so the lifter only edits weight.
+ * Ranges ("12-15") prefill their LOW end — the number you're committed to —
+ * and anything non-numeric (timed holds, "Max") or distance-shaped ("30 m")
+ * stays blank, with the prescription still visible as ghost text.
+ */
+export function prefillReps(reps: string | null): number | null {
+  if (!reps) return null;
+  if (isTimedPrescription(reps)) return null;
+  if (/\d\s*m\b/i.test(reps)) return null;
+  const match = reps.trim().match(/^(\d+)/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return value > 0 ? value : null;
+}
+
 /** Human ghost text shown on each set row, e.g. "4 × 2 @ 85%" or, when the
  * programme has no load column for this row, "2 × 20 s/side". */
 export function composeTarget(sets: number, reps: string | null, load: string | null): string {
@@ -109,7 +127,7 @@ export function buildWorkoutFromDay(
         position: i + 1,
         set_type: 'working',
         weight_kg: null,
-        reps: null,
+        reps: prefillReps(dayExercise.reps),
         duration_seconds: null,
         target,
         completed_at: null,

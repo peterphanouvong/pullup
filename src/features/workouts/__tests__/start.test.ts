@@ -6,7 +6,7 @@
 // iso" / "Copenhagen plank" / "Bench press" rows used to exercise the
 // timed-vs-reps and missing-load branches of target composition.
 
-import { buildWorkoutFromDay } from '../start';
+import { buildWorkoutFromDay, prefillReps } from '../start';
 import type { ProgramDay } from '@/features/programs/types';
 
 function idSequence(prefix: string): () => string {
@@ -130,7 +130,7 @@ describe('buildWorkoutFromDay', () => {
     }
   });
 
-  it('creates `sets` rows per exercise (DayExercise.sets count), set_type working, no actual values yet', () => {
+  it('creates `sets` rows per exercise (DayExercise.sets count), set_type working, reps prefilled from the prescription', () => {
     const { exercises, sets } = buildWorkoutFromDay(mondayLowerPower, opts);
     const powerCleanSets = sets.filter((s) => s.workout_exercise_id === exercises[1].id);
 
@@ -139,7 +139,9 @@ describe('buildWorkoutFromDay', () => {
     for (const s of powerCleanSets) {
       expect(s.set_type).toBe('working');
       expect(s.weight_kg).toBeNull();
-      expect(s.reps).toBeNull();
+      // Power clean is prescribed "2" reps, so the count is prefilled and
+      // only the weight is left for the lifter to enter.
+      expect(s.reps).toBe(2);
       expect(s.duration_seconds).toBeNull();
       expect(s.completed_at).toBeNull();
       expect(s.deleted).toBe(false);
@@ -282,5 +284,25 @@ describe('buildWorkoutFromDay', () => {
     });
     expect(typeof w2.id).toBe('string');
     expect(w2.id.length).toBeGreaterThan(0);
+  });
+});
+
+describe('prefillReps', () => {
+  it('prefills a plain count so only weight is left to enter', () => {
+    expect(prefillReps('3')).toBe(3);
+    expect(prefillReps('12 reps')).toBe(12);
+  });
+
+  it('prefills the low end of a range', () => {
+    expect(prefillReps('12-15')).toBe(12);
+    expect(prefillReps('12\u201315')).toBe(12);
+  });
+
+  it('leaves timed, distance and non-numeric prescriptions blank', () => {
+    expect(prefillReps('20 s')).toBeNull();
+    expect(prefillReps('30 s/side')).toBeNull();
+    expect(prefillReps('30 m')).toBeNull();
+    expect(prefillReps('Max')).toBeNull();
+    expect(prefillReps(null)).toBeNull();
   });
 });
