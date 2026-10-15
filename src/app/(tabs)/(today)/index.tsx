@@ -1,11 +1,9 @@
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, Stack } from 'expo-router';
-import { useThemedStyles, useTheme } from '@/styles/use-theme';
+import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
-import { DayStrip, type DayStripItem } from '@/components/ui/day-strip';
 import { FLOATING_ACTION_CLEARANCE, FloatingAction } from '@/components/ui/floating-action';
 import { PrimaryButton } from '@/components/ui/primary-button';
 import { ProgressSegments } from '@/components/ui/progress-segments';
@@ -27,23 +25,6 @@ import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
 import { dayState, floatingAction } from '@/features/workouts/today-state';
 
 const WEEKDAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-
-/** Local-calendar-date arithmetic for the day strip — day positions are
- * template order (1 = Monday), matching schedule.ts. */
-function parseYMDLocal(dateStr: string): Date {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function addDaysLocal(date: Date, days: number): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function isSameYMD(a: Date, b: Date): boolean {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
 
 function metaFor(day: ProgramDay): string {
   if (day.kind === 'lifting') {
@@ -81,9 +62,7 @@ export default function TodayScreen() {
   const active = useActiveProgram();
   const program = useProgram(active.data?.programId ?? '');
   const session = useSession();
-  const theme = useTheme();
   const styles = useThemedStyles(createStyles);
-  const insets = useSafeAreaInsets();
   const activeWorkout = useActiveWorkout();
   const scrollRef = useRef<ScrollView>(null);
   // Card y-offsets recorded from onLayout (not index math) so the strip's
@@ -98,10 +77,6 @@ export default function TodayScreen() {
   // Which programme week the screen shows. Null = follow the calendar's
   // current week; a number pins the view to that week (via the week pills).
   const [viewedWeekPosition, setViewedWeekPosition] = useState<number | null>(null);
-
-  // The collapsed glass header's height — jump-nav scroll targets stop below
-  // it instead of underneath it.
-  const headerClearance = insets.top + 56;
 
   // Derived ahead of the early returns so the completion hook can be called
   // unconditionally (Rules of Hooks); empty until programme data loads.
@@ -226,19 +201,6 @@ export default function TodayScreen() {
   const doneCount = liftingDays.filter((d) => completion[d.id]).length;
 
   const weekPosition = week?.position ?? position.week;
-  const stripItems: DayStripItem[] = days.map((d) => {
-    const offset = (weekPosition - 1) * 7 + (d.position - 1);
-    const date = addDaysLocal(parseYMDLocal(startDate), offset);
-    const dotColor = d.kind === 'rest' ? undefined : d.kind === 'lifting' ? theme.colors.accent : theme.colors.comp;
-    return {
-      key: d.id,
-      weekdayLabel: WEEKDAY_LABELS[d.position - 1] ?? '',
-      dayNumber: date.getDate(),
-      dotColor,
-      isToday: isSameYMD(date, today),
-      isPast: d.position < effectiveTodayPosition,
-    };
-  });
 
   function handleSelectWeek(selected: number) {
     // Selecting the calendar's current week clears the pin so the view keeps
@@ -289,21 +251,13 @@ export default function TodayScreen() {
           </Card>
         ) : (
           <>
+            {/* Day-of-month chips are gone — each card already carries its
+                weekday — so the week pills sit directly above the phase. */}
             <WeekPills
               weeks={data.weeks}
               viewedPosition={weekPosition}
               currentPosition={position.week}
               onSelect={handleSelectWeek}
-            />
-
-            <DayStrip
-              items={stripItems}
-              onSelect={(key) => {
-                const y = cardOffsets.current[key];
-                if (y != null) {
-                  scrollRef.current?.scrollTo({ y: y - headerClearance, animated: true });
-                }
-              }}
             />
 
             <Text style={styles.phaseLabel}>{week?.phase ?? ''}</Text>
@@ -346,7 +300,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, paddingTop: theme.spacing.sm, gap: theme.spacing.md, paddingBottom: theme.spacing.xl },
   contentWithFloating: { paddingBottom: FLOATING_ACTION_CLEARANCE + 96 },
-  phaseLabel: { ...theme.type.label, color: theme.colors.inkMuted, marginTop: theme.spacing.sm },
+  phaseLabel: { ...theme.type.label, color: theme.colors.inkMuted },
   messageCard: { gap: theme.spacing.sm },
   messageTitle: { ...theme.type.heading, color: theme.colors.ink },
   messageBody: { ...theme.type.body, color: theme.colors.inkMuted },

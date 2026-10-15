@@ -1,5 +1,7 @@
 import { useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
+import { Button, HStack, Host } from '@expo/ui/swift-ui';
+import { buttonStyle } from '@expo/ui/swift-ui/modifiers';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import type { ProgramWeek } from '@/features/programs/types';
@@ -7,8 +9,15 @@ import type { ProgramWeek } from '@/features/programs/types';
 /** Approximate pill pitch used to pre-scroll the selected week into view. */
 const PILL_PITCH = 96;
 
-/** Horizontal week selector: the viewed week is a raised pill, the rest are
- * quiet labels; the calendar's current week carries a small dot marker. */
+/** Tall enough for the prominent (selected) pill plus breathing room above
+ * and below, so the row never clips it or jumps height on selection. */
+const WEEK_PILL_ROW_HEIGHT = 68;
+
+/** Horizontal week selector built from real SwiftUI buttons (liquid glass on
+ * iOS 26+): the viewed week is `glassProminent`, the rest plain `glass`. A
+ * single Host wraps the whole HStack — one SwiftUI hosting view for the row
+ * rather than one per pill — sized to its content and scrolled by an RN
+ * ScrollView. */
 export function WeekPills({
   weeks,
   viewedPosition,
@@ -41,52 +50,38 @@ export function WeekPills({
         }
       }}
     >
-      {weeks.map((week) => {
-        const isViewed = week.position === viewedPosition;
-        const isCurrent = week.position === currentPosition;
-        return (
-          <Pressable
-            key={week.id}
-            onPress={() => onSelect(week.position)}
-            style={({ pressed }) => [styles.pill, isViewed && styles.pillViewed, pressed && styles.pressed]}
-          >
-            <Text style={[styles.label, isViewed && styles.labelViewed]}>{`Week ${week.position}`}</Text>
-            {isCurrent && <View style={styles.currentDot} />}
-          </Pressable>
-        );
-      })}
+      {/* Selected pill keeps the system accent (blue) for now — Host's
+          `seedColor` is the lever to theme it if we want it black later. */}
+      <Host matchContents>
+        <HStack spacing={8}>
+          {weeks.map((week) => {
+            const isViewed = week.position === viewedPosition;
+            return (
+              <Button
+                key={week.id}
+                // The calendar's current week keeps a dot marker so it stays
+                // findable once you've scrolled to another week.
+                label={week.position === currentPosition ? `Week ${week.position} ·` : `Week ${week.position}`}
+                onPress={() => onSelect(week.position)}
+                modifiers={[buttonStyle(isViewed ? 'glassProminent' : 'glass')]}
+              />
+            );
+          })}
+        </HStack>
+      </Host>
     </ScrollView>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
   // Bleed the scroller to the screen edges while the first pill still lines
-  // up with the content column.
-  row: { marginHorizontal: -theme.spacing.lg },
+  // up with the content column. The fixed height keeps the row from
+  // resizing as the selected pill grows into its prominent style (the
+  // ScrollView clips, so a growing pill would otherwise be cut off).
+  row: { marginHorizontal: -theme.spacing.lg, height: WEEK_PILL_ROW_HEIGHT },
   rowContent: {
     paddingHorizontal: theme.spacing.lg,
-    gap: theme.spacing.xs,
-    alignItems: 'center',
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
     paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radii.pill,
-  },
-  pillViewed: {
-    backgroundColor: theme.colors.card,
-    ...theme.shadow.card,
-  },
-  pressed: { opacity: 0.7 },
-  label: { ...theme.type.heading, color: theme.colors.inkMuted },
-  labelViewed: { color: theme.colors.ink },
-  currentDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: theme.colors.done,
+    alignItems: 'center',
   },
 });
