@@ -141,11 +141,11 @@ mid-swipe.
   mid-scroll.
 - **Never toggle `headerShown` inside a modal.** It remounts the screen and
   drops local state.
-- The workout screen's title is custom (`Stack.Title asChild`): the
-  session name, plus a compact stats line that fades in, while the name
-  lifts, as the stats strip scrolls away. Both run off one animated value,
-  so the numbers hand off rather than disappear. Opaque strips don't scroll
-  under the transparent bar; the bar carries the numbers instead.
+- The workout screen's title is a custom **left** bar item beside the
+  chevron, not the centred title: a centred title only gets twice the
+  narrower side, and timer + Finish left it no room (the timer sat on top of
+  it). It's the session name with the live stats as a subtitle. There's no
+  separate stats strip under the bar any more.
 - Headers are **transparent with no material**, like the Programme tab:
   iOS 26 then draws its soft scroll-edge effect as content passes under. If
   you ever do want a material, name the dark one explicitly

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Animated, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { elapsedSeconds } from '../selectors';
@@ -28,70 +28,35 @@ function useNow(): Date {
   return now;
 }
 
-/**
- * The live strip under the workout screen's native header.
- *
- * Each number carries its own label: mid-set and breathing hard, a bare run
- * of values takes longer to read than three labelled columns. Progress is
- * the SETS column ("3 of 13"); there's no separate progress line, because at
- * zero its empty track read as a grey divider under the header.
- */
-export function WorkoutStatsRow({
-  workout,
-  volumeKg,
-  completedCount,
-  totalCount,
-}: {
-  workout: Workout;
-  volumeKg: number;
-  completedCount: number;
-  /** Live sets in the workout — the "of N" in the SETS column. */
-  totalCount: number;
-}) {
-  const styles = useThemedStyles(createStyles);
-  const now = useNow();
-
-  const elapsed = elapsedSeconds(workout, now);
-
-  return (
-    <View style={styles.statRow}>
-      <Stat label="DURATION" value={formatElapsed(elapsed)} />
-      <Stat label="VOLUME" value={`${Math.round(volumeKg)} kg`} />
-      <Stat label="SETS" value={`${completedCount} of ${totalCount}`} />
-    </View>
-  );
-}
-
 /** Height of the custom title view: two lines inside the 44pt bar. */
 const TITLE_HEIGHT = 40;
-/** How far the name lifts to make room for the stats line. */
-const TITLE_LIFT = 8;
-/** Room the bar's own items take on either side of the title (chevron on
- * the left; timer and Finish on the right), so a long name truncates
- * instead of running under them. */
-const TITLE_SIDE_ROOM = 210;
+/** Everything else in the bar's row: the screen margins, the chevron and
+ * its gap on the left, and the timer, Finish pill and its inset on the
+ * right. The title takes what's left and truncates, so it can never run
+ * under the buttons. Generous on purpose: a gap is fine, an overlap isn't. */
+const TITLE_SIDE_ROOM = 270;
 
 /**
- * The workout screen's header title: the session name, plus a compact stats
- * line that appears only while the stats strip below the bar is scrolled
- * away. `reveal` is the same animated value that hides the strip (0 = strip
- * showing, 1 = strip hidden), so the numbers hand off from the strip to the
- * bar instead of vanishing while you work down the list.
+ * The workout screen's header title: the session name with the live stats
+ * as its subtitle — duration, volume, sets done of total. The bar carries
+ * the numbers so no strip has to float over the list.
  *
- * Opacity and transforms only, so it runs on the native driver.
+ * Rendered as a LEFT bar item beside the chevron, not as the centred title:
+ * a centred title only gets twice the narrower of the two sides, and the
+ * timer + Finish side left it almost no room, so the timer sat on top of
+ * it. Left-aligned, it gets everything up to the right-hand buttons.
  */
 export function WorkoutHeaderTitle({
   workout,
   volumeKg,
   completedCount,
   totalCount,
-  reveal,
 }: {
   workout: Workout;
   volumeKg: number;
   completedCount: number;
+  /** Live sets in the workout — the "of N". */
   totalCount: number;
-  reveal: Animated.Value;
 }) {
   const styles = useThemedStyles(createStyles);
   const now = useNow();
@@ -100,62 +65,22 @@ export function WorkoutHeaderTitle({
 
   return (
     <View style={[styles.titleView, { maxWidth: Math.max(120, width - TITLE_SIDE_ROOM) }]}>
-      <Animated.Text
-        style={[
-          styles.titleText,
-          { transform: [{ translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [0, -TITLE_LIFT] }) }] },
-        ]}
-        numberOfLines={1}
-      >
+      <Text style={styles.titleText} numberOfLines={1}>
         {workout.title}
-      </Animated.Text>
-      <Animated.Text
-        style={[
-          styles.titleStats,
-          {
-            opacity: reveal,
-            transform: [{ translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [4, 0] }) }],
-          },
-        ]}
-        numberOfLines={1}
-      >
-        {`${formatElapsed(elapsed)} · ${Math.round(volumeKg)} kg · ${completedCount} of ${totalCount}`}
-      </Animated.Text>
-    </View>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  const styles = useThemedStyles(createStyles);
-  return (
-    <View style={styles.stat}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
+      </Text>
+      <Text style={styles.titleStats} numberOfLines={1}>
+        {`${formatElapsed(elapsed)} · ${Math.round(volumeKg)} kg · ${completedCount} of ${totalCount} sets`}
+      </Text>
     </View>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
-  // Breathing room under the header: the top padding is the gap the old
-  // progress line used to fill, and a little more.
-  statRow: {
-    flexDirection: 'row',
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.lg,
-    paddingBottom: theme.spacing.md,
-  },
-  stat: { flex: 1, gap: 2 },
-  statLabel: { ...theme.type.label, fontSize: 9, color: theme.colors.inkMuted },
-  statValue: { ...theme.type.heading, color: theme.colors.ink, fontVariant: ['tabular-nums'] },
-  // Name centred in the bar when alone; the stats line sits in the bottom
-  // of the same box and the name lifts to clear it.
-  titleView: { height: TITLE_HEIGHT, justifyContent: 'center', alignItems: 'center' },
+  titleView: { height: TITLE_HEIGHT, justifyContent: 'center', alignItems: 'flex-start', gap: 1 },
   titleText: { ...theme.type.heading, color: theme.colors.ink },
   titleStats: {
     ...theme.type.caption,
     color: theme.colors.inkMuted,
     fontVariant: ['tabular-nums'],
-    position: 'absolute',
-    bottom: 0,
   },
 });
