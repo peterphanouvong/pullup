@@ -31,10 +31,11 @@ function useNow(): Date {
 /** Height of the custom title view: two lines inside the 44pt bar. */
 const TITLE_HEIGHT = 40;
 /** Everything else in the bar's row: the screen margins, the chevron and
- * its gap on the left, and the timer, Finish pill and its inset on the
- * right. The title takes what's left and truncates, so it can never run
- * under the buttons. Generous on purpose: a gap is fine, an overlap isn't. */
-const TITLE_SIDE_ROOM = 270;
+ * its gap on the left, the timer + Finish group on the right, and UIKit's
+ * own spacing between bar items. The title takes what's left and truncates.
+ * Generous on purpose: if the row overflows, iOS drops the last bar item
+ * (Finish) without warning, so a gap is fine and an overflow isn't. */
+const TITLE_SIDE_ROOM = 300;
 
 /**
  * The workout screen's header title: the session name with the live stats
@@ -64,7 +65,7 @@ export function WorkoutHeaderTitle({
   const elapsed = elapsedSeconds(workout, now);
 
   return (
-    <View style={[styles.titleView, { maxWidth: Math.max(120, width - TITLE_SIDE_ROOM) }]}>
+    <View style={[styles.titleView, { maxWidth: Math.max(80, width - TITLE_SIDE_ROOM) }]}>
       <Text style={styles.titleText} numberOfLines={1}>
         {workout.title}
       </Text>

@@ -140,11 +140,14 @@ export default function WorkoutScreen() {
         </Stack.Toolbar.View>
       </Stack.Toolbar>
       <Stack.Toolbar placement="right">
+        {/* One bar item for both: every separate item adds UIKit's own
+            spacing, and when the row overflows iOS silently drops the last
+            item — that's how Finish disappeared once the title moved left. */}
         <Stack.Toolbar.View hidesSharedBackground>
-          <HeaderIconButton icon="timer" accessibilityLabel="Start rest timer" onPress={openStartRestSheet} />
-        </Stack.Toolbar.View>
-        <Stack.Toolbar.View hidesSharedBackground>
-          <HeaderPrimaryButton label="Finish" onPress={handleFinish} />
+          <View style={styles.trailing}>
+            <HeaderIconButton icon="timer" accessibilityLabel="Start rest timer" onPress={openStartRestSheet} />
+            <HeaderPrimaryButton label="Finish" onPress={handleFinish} />
+          </View>
         </Stack.Toolbar.View>
       </Stack.Toolbar>
       {/* First subview: see the header note above. */}
@@ -189,6 +192,7 @@ export default function WorkoutScreen() {
 const createStyles = (theme: Theme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   leading: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
+  trailing: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   notFound: { ...theme.type.body, color: theme.colors.ink, padding: theme.spacing.lg },
   empty: { ...theme.type.body, color: theme.colors.inkMuted, textAlign: 'center', paddingTop: theme.spacing.xl },
