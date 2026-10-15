@@ -9,24 +9,29 @@ export interface DayStripItem {
   /** Resolved theme color for the session-kind dot; omit for no dot. */
   dotColor?: string;
   isToday?: boolean;
-  isSelected?: boolean;
+  /** Calendar days already behind us — rendered faded. */
+  isPast?: boolean;
 }
 
-/** Mon–Sun horizontal strip: weekday label + day-of-month numeral, a
- * kind-colored dot under session days, a filled ring on today, and an
- * ink-filled circle (canvas-colored numeral) on the selected day. */
+/** Calendar-app style Mon–Sun strip: kind-colored dot above, day-of-month
+ * numeral, tiny weekday label below. Today sits in a rounded-rect outline
+ * with its weekday tinted; passed days fade out. */
 export function DayStrip({ items, onSelect }: { items: DayStripItem[]; onSelect: (key: string) => void }) {
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.row}>
       {items.map((item) => (
-        <Pressable key={item.key} style={styles.column} onPress={() => onSelect(item.key)}>
-          <Text style={styles.weekday}>{item.weekdayLabel}</Text>
-          <View style={[styles.numeralWrap, item.isToday && styles.todayRing, item.isSelected && styles.selectedFill]}>
-            <Text style={[styles.dayNumber, item.isSelected && styles.selectedNumber]}>{item.dayNumber}</Text>
-          </View>
+        <Pressable
+          key={item.key}
+          style={[styles.column, item.isPast && !item.isToday && styles.columnPast]}
+          onPress={() => onSelect(item.key)}
+        >
           <View style={styles.dotSlot}>
             {item.dotColor != null && <View style={[styles.dot, { backgroundColor: item.dotColor }]} />}
+          </View>
+          <View style={[styles.cell, item.isToday && styles.cellToday]}>
+            <Text style={[styles.dayNumber, !item.isToday && styles.dayNumberQuiet]}>{item.dayNumber}</Text>
+            <Text style={[styles.weekday, item.isToday && styles.weekdayToday]}>{item.weekdayLabel}</Text>
           </View>
         </Pressable>
       ))}
@@ -37,28 +42,26 @@ export function DayStrip({ items, onSelect }: { items: DayStripItem[]; onSelect:
 const createStyles = (theme: Theme) => StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   column: { flex: 1, alignItems: 'center', gap: theme.spacing.xs },
-  weekday: { ...theme.type.label, color: theme.colors.inkMuted },
-  numeralWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  columnPast: { opacity: 0.4 },
+  dotSlot: { height: 6, justifyContent: 'center' },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  cell: {
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 2,
+    paddingVertical: theme.spacing.xs,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radii.md,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
-  todayRing: {
-    borderWidth: 2,
-    borderColor: theme.colors.accent,
-  },
-  selectedFill: {
-    backgroundColor: theme.colors.ink,
-  },
+  cellToday: { borderColor: theme.colors.ink },
   dayNumber: {
     ...theme.type.title,
-    fontSize: 16,
+    fontSize: 17,
     color: theme.colors.ink,
     fontVariant: ['tabular-nums'],
   },
-  selectedNumber: { color: theme.colors.canvas },
-  dotSlot: { height: 6, justifyContent: 'center' },
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  dayNumberQuiet: { color: theme.colors.inkMuted },
+  weekday: { ...theme.type.label, fontSize: 10, color: theme.colors.inkMuted },
+  weekdayToday: { color: theme.colors.done },
 });

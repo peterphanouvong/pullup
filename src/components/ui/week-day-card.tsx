@@ -21,12 +21,14 @@ const TILE_SYMBOLS: Record<DayKind, SFSymbol> = {
 /** One row of the Today week checklist, modelled on Nike's plan rows: a
  * kind-icon tile standing in for Nike's artwork square, a weekday eyebrow
  * ("Day 1" in Nike, "MON"/"TODAY" here), title + meta, and a rose "done"
- * check circle on the right. Done rows mute, past undone lifting days read
- * "Missed", informational court/rest/comp rows aren't pressable. */
+ * check circle on the right. Three time states: today carries a rose border
+ * indicator, passed days fade hard (lifting ones read "Missed"), done rows
+ * mute gently behind their check. */
 export function WeekDayCard({
   day,
   state,
   isToday,
+  passed,
   eyebrow,
   meta,
   onPress,
@@ -34,6 +36,8 @@ export function WeekDayCard({
   day: ProgramDay;
   state: TodayDayState;
   isToday: boolean;
+  /** Calendar-past day (relative to the viewed week) — fades the card. */
+  passed: boolean;
   /** Weekday label ("MON"…"SUN") — replaced by "TODAY" when `isToday`. */
   eyebrow: string;
   meta: string;
@@ -42,7 +46,7 @@ export function WeekDayCard({
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  const muted = state === 'done' || (state === 'info' && !isToday);
+  const muted = state === 'done' || passed;
 
   // Tile palette per kind: lifting gets the bold ink tile (Nike's statement
   // square), comp the rose accent, court/rest stay quiet neutrals.
@@ -85,7 +89,12 @@ export function WeekDayCard({
     </View>
   );
 
-  const cardStyle = [styles.card, muted && styles.cardMuted];
+  const cardStyle = [
+    styles.card,
+    isToday && styles.cardToday,
+    state === 'done' && styles.cardDone,
+    passed && state !== 'done' && styles.cardPassed,
+  ];
 
   if (onPress) {
     return (
@@ -104,7 +113,9 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     overflow: 'hidden',
     ...theme.shadow.card,
   },
-  cardMuted: { opacity: 0.75 },
+  cardToday: { borderWidth: 1.5, borderColor: theme.colors.done },
+  cardDone: { opacity: 0.75 },
+  cardPassed: { opacity: 0.5 },
   pressed: { opacity: 0.85 },
   row: { flexDirection: 'row', alignItems: 'center', padding: theme.spacing.lg, gap: theme.spacing.lg },
   tile: {

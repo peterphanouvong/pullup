@@ -10,13 +10,20 @@ import type { Theme } from '@/styles/theme';
 export function Screen({
   children,
   style,
+  topInset = true,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
+  /** Pass false on screens with a native (transparent) header — the
+   * ScrollView's automatic content-inset adjustment owns the top spacing
+   * there, and the safe-area padding would double it. */
+  topInset?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const styles = useThemedStyles(createStyles);
-  return <View style={[styles.container, { paddingTop: insets.top }, style]}>{children}</View>;
+  return (
+    <View style={[styles.container, topInset && { paddingTop: insets.top }, style]}>{children}</View>
+  );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({

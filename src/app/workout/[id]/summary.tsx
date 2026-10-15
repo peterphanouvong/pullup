@@ -78,7 +78,7 @@ export default function WorkoutSummaryScreen() {
           </View>
         )}
 
-        <PrimaryButton title="Done" onPress={() => router.replace('/(tabs)')} />
+        <PrimaryButton title="Done" onPress={() => router.replace('/')} />
       </ScrollView>
     </Screen>
   );

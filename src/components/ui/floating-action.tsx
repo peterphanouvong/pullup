@@ -1,19 +1,19 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { useThemedStyles, useTheme } from '@/styles/use-theme';
-import type { Theme } from '@/styles/theme';
+import type { Theme } from "@/styles/theme";
+import { useTheme, useThemedStyles } from "@/styles/use-theme";
+import { SymbolView, type SFSymbol } from "expo-symbols";
+import { Pressable, StyleSheet, Text } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /** Vertical room the floating button needs above the screen bottom: the
  * translucent native tab bar plus a small gap. Scroll content on screens
  * hosting a FloatingAction should pad its bottom by this plus the button
  * height (~56). */
-export const FLOATING_ACTION_CLEARANCE = 54;
+export const FLOATING_ACTION_CLEARANCE = 32;
 
 /** Runna-style floating primary action, pinned above the glass tab bar. */
 export function FloatingAction({
   label,
-  icon = 'play.fill',
+  icon = "play.fill",
   onPress,
 }: {
   label: string;
@@ -39,20 +39,21 @@ export function FloatingAction({
   );
 }
 
-const createStyles = (theme: Theme) => StyleSheet.create({
-  button: {
-    position: 'absolute',
-    left: theme.spacing.lg,
-    right: theme.spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.sm,
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.radii.pill,
-    paddingVertical: theme.spacing.lg,
-    ...theme.shadow.float,
-  },
-  pressed: { opacity: 0.9 },
-  label: { ...theme.type.heading, color: theme.colors.onAccent },
-});
+const createStyles = (theme: Theme) =>
+  StyleSheet.create({
+    button: {
+      position: "absolute",
+      left: theme.spacing.lg,
+      right: theme.spacing.lg,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: theme.spacing.sm,
+      backgroundColor: theme.colors.accent,
+      borderRadius: theme.radii.pill,
+      paddingVertical: theme.spacing.lg,
+      ...theme.shadow.float,
+    },
+    pressed: { opacity: 0.9 },
+    label: { ...theme.type.heading, color: theme.colors.onAccent },
+  });

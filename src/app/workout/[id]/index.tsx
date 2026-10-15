@@ -29,7 +29,7 @@ export default function WorkoutScreen() {
   const completedCount = completedSetCount(allSets);
 
   function goHome() {
-    router.replace('/(tabs)');
+    router.replace('/');
   }
 
   function goToSummary() {
