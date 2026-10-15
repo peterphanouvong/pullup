@@ -145,8 +145,10 @@ mid-swipe.
   The exception is the workout screen: native bar items have a fixed size
   with no option to shrink them in the left/right placements, so its header
   hosts SwiftUI glass buttons at the `regular` control size (`small` was too small) (`header-buttons.tsx`) in
-  `Stack.Toolbar.View` with `hidesSharedBackground`. Discard lives in the
-  Finish menu rather than as its own bin button.
+  `Stack.Toolbar.View` with `hidesSharedBackground`. Chevrons use
+  `HEADER_CHEVRON_SIZE`, a step up from other symbols, because the thin
+  glyph reads small. Finish opens a Save step (name, description, date,
+  Discard) before the summary; an empty workout is offered a discard first.
 
 ### The scroll view must be the first child
 

@@ -43,8 +43,9 @@ function formatDateLabel(iso: string): string {
  * moving — the hero numeral lands, the context line says where you are in
  * the peak, and the share card carries that countdown as its kicker.
  *
- * Reached via `router.replace` from the workout screen, and Done `replace`s
- * too, so the finished workout never sits behind this on the back stack.
+ * Reached from the Save step, which pops itself and `replace`s the workout
+ * screen with this one; Done `replace`s too, so the finished workout never
+ * sits behind this on the back stack.
  */
 export default function WorkoutSummaryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

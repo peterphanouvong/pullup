@@ -21,6 +21,7 @@ import {
   searchExercises,
   recentExerciseIds,
   currentExerciseName,
+  savedTimes,
 } from '../selectors';
 import type { Exercise, Workout, WorkoutExercise, WorkoutSet } from '../types';
 
@@ -682,5 +683,31 @@ describe('recentExerciseIds', () => {
 
     const result = recentExerciseIds(workouts, workoutExercises, 2);
     expect(result).toEqual(['ex-3', 'ex-2']);
+  });
+});
+
+describe('savedTimes', () => {
+  const start = '2026-10-15T08:00:00.000Z';
+  const now = new Date('2026-10-15T09:05:00.000Z');
+
+  it('finishes now when the start is unchanged', () => {
+    expect(savedTimes(start, new Date(start), now)).toEqual({
+      started_at: start,
+      finished_at: now.toISOString(),
+    });
+  });
+
+  it('keeps the trained duration when the start moves', () => {
+    const yesterday = new Date('2026-10-14T18:30:00.000Z');
+    expect(savedTimes(start, yesterday, now)).toEqual({
+      started_at: yesterday.toISOString(),
+      finished_at: '2026-10-14T19:35:00.000Z',
+    });
+  });
+
+  it('never yields a negative duration', () => {
+    const future = new Date('2026-10-15T10:00:00.000Z');
+    const result = savedTimes(future.toISOString(), future, now);
+    expect(result.finished_at).toBe(result.started_at);
   });
 });

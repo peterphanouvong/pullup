@@ -22,6 +22,7 @@ import {
   finishedWorkoutSummaries,
   hasFinishedWorkoutForDay,
   recentExerciseIds,
+  savedTimes,
   searchExercises,
   type FinishedWorkoutSummary,
 } from './selectors';
@@ -159,6 +160,29 @@ export function finishWorkout(id: string, now: Date): void {
   workouts$[id].assign({ finished_at: now.toISOString(), updated_at: now.toISOString() });
   // A rest timer from the just-finished workout's last set must not keep
   // counting down (or reappear) once the workout is over.
+  skipRestTimer();
+}
+
+/** The Save step's commit: writes the edited name, description and start,
+ * then marks the workout finished. A blank name keeps the old one; a blank
+ * description clears it. `updated_at` is the real save time even when the
+ * start moved into the past, since sync orders writes by it. */
+export function saveWorkout(
+  id: string,
+  details: { title: string; notes: string; startedAt: Date },
+  now: Date,
+): void {
+  const workout = workouts$[id].peek();
+  if (workout == null) return;
+  const times = savedTimes(workout.started_at, details.startedAt, now);
+  void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  workouts$[id].assign({
+    title: details.title.trim() || workout.title,
+    notes: details.notes.trim() || null,
+    started_at: times.started_at,
+    finished_at: times.finished_at,
+    updated_at: now.toISOString(),
+  });
   skipRestTimer();
 }
 

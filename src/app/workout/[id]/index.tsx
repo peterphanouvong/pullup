@@ -17,11 +17,15 @@ import type { Theme } from '@/styles/theme';
 import { ExerciseCard } from '@/features/workouts/components/exercise-card';
 import { openExercisePicker, openStartRestSheet } from '@/features/workouts/components/exercise-menu';
 import { RestTimerBar } from '@/features/workouts/components/rest-timer-bar';
-import { FinishMenu, HeaderIconButton } from '@/features/workouts/components/header-buttons';
+import {
+  HEADER_CHEVRON_SIZE,
+  HeaderIconButton,
+  HeaderPrimaryButton,
+} from '@/features/workouts/components/header-buttons';
 import { WorkoutStatsRow } from '@/features/workouts/components/workout-header';
 import { WorkoutSkeleton } from '@/features/workouts/components/workout-skeleton';
 import { NativeButton } from '@/components/ui/native-button';
-import { discardWorkout, finishWorkout, useWorkout } from '@/features/workouts/hooks';
+import { discardWorkout, useWorkout } from '@/features/workouts/hooks';
 import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selectors';
 
 // Module-level so the object identity is stable: expo-router's Stack.Screen
@@ -90,52 +94,30 @@ export default function WorkoutScreen() {
     router.replace('/');
   }
 
-  function goToSummary() {
-    router.replace(`/workout/${id}/summary`);
+  function goToSave() {
+    router.push(`/workout/${id}/save`);
   }
 
+  /** Finish heads to the Save step. With nothing ticked off there's nothing
+   * to save, so it suggests discarding first — but still lets you save, in
+   * case you logged the numbers and forgot the ticks. */
   function handleFinish() {
     if (completedCount === 0) {
-      Alert.alert('No sets completed', 'Discard this workout instead?', [
+      Alert.alert('No sets completed', 'Nothing has been ticked off yet. Discard this workout?', [
         { text: 'Keep logging', style: 'cancel' },
+        { text: 'Save anyway', onPress: goToSave },
         {
-          text: 'Discard',
+          text: 'Discard workout',
           style: 'destructive',
           onPress: () => {
             discardWorkout(id);
             goHome();
-          },
-        },
-        {
-          text: 'Finish anyway',
-          onPress: () => {
-            finishWorkout(id, new Date());
-            goToSummary();
           },
         },
       ]);
       return;
     }
-    finishWorkout(id, new Date());
-    goToSummary();
-  }
-
-  function handleDiscard() {
-    Alert.alert(
-      'Discard workout?',
-      "This removes the workout and everything logged in it. This can't be undone.",
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Discard',
-          style: 'destructive',
-          onPress: () => {
-            discardWorkout(id);
-            goHome();
-          },
-        },
-      ],
-    );
+    goToSave();
   }
 
   return (
@@ -144,7 +126,7 @@ export default function WorkoutScreen() {
           (SF Symbols, liquid-glass backgrounds on iOS 26): chevron.down
           dismisses the modal downward — the workout keeps running and the
           minimized bar picks it up on Today — the timer starts a rest, and
-          the Finish menu completes or discards. */}
+          Finish opens the Save step. */}
       <Stack.Screen options={MODAL_OPTIONS} />
       <Stack.Title>{workout.title}</Stack.Title>
       {/* Translucent bar: the blur effect implies a transparent header, so
@@ -156,10 +138,15 @@ export default function WorkoutScreen() {
       />
       {/* Small SwiftUI glass buttons in custom toolbar views: native bar
           items have a fixed size with no option to shrink them. Discard
-          lives in the Finish menu, not in its own bin button. */}
+          lives on the Save step that Finish opens, not in a bin button. */}
       <Stack.Toolbar placement="left">
         <Stack.Toolbar.View hidesSharedBackground>
-          <HeaderIconButton icon="chevron.down" accessibilityLabel="Minimize workout" onPress={() => router.back()} />
+          <HeaderIconButton
+            icon="chevron.down"
+            iconSize={HEADER_CHEVRON_SIZE}
+            accessibilityLabel="Minimize workout"
+            onPress={() => router.back()}
+          />
         </Stack.Toolbar.View>
       </Stack.Toolbar>
       <Stack.Toolbar placement="right">
@@ -167,7 +154,7 @@ export default function WorkoutScreen() {
           <HeaderIconButton icon="timer" accessibilityLabel="Start rest timer" onPress={openStartRestSheet} />
         </Stack.Toolbar.View>
         <Stack.Toolbar.View hidesSharedBackground>
-          <FinishMenu onFinish={handleFinish} onDiscard={handleDiscard} />
+          <HeaderPrimaryButton label="Finish" onPress={handleFinish} />
         </Stack.Toolbar.View>
       </Stack.Toolbar>
       {/* The header is transparent, so the screen starts under it: pad the

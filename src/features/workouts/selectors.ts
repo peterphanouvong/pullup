@@ -212,6 +212,22 @@ export function currentExerciseName(
 
 /** `mm:ss` under an hour, `h:mm` (no seconds) at an hour or more — the
  * summary/Activities duration format. */
+/** The start and finish a workout is saved with. The Save step lets you
+ * move the start (logging yesterday's session today); the duration you
+ * actually trained is kept, so the finish moves with it. These are instants,
+ * not calendar days, so ISO strings are right here. */
+export function savedTimes(
+  originalStartIso: string,
+  chosenStart: Date,
+  now: Date,
+): { started_at: string; finished_at: string } {
+  const durationMs = Math.max(0, now.getTime() - new Date(originalStartIso).getTime());
+  return {
+    started_at: chosenStart.toISOString(),
+    finished_at: new Date(chosenStart.getTime() + durationMs).toISOString(),
+  };
+}
+
 export function formatWorkoutDuration(totalSeconds: number): string {
   const clamped = Math.max(0, Math.round(totalSeconds));
   const h = Math.floor(clamped / 3600);

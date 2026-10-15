@@ -1,5 +1,5 @@
 import type { SFSymbol } from 'expo-symbols';
-import { Button, Divider, Host, Image, Menu, Text } from '@expo/ui/swift-ui';
+import { Button, Host, Image, Text } from '@expo/ui/swift-ui';
 import {
   accessibilityLabel as a11yLabel,
   buttonBorderShape,
@@ -19,15 +19,22 @@ import { useTheme } from '@/styles/use-theme';
  * `hidesSharedBackground`, so the bar doesn't draw a second capsule around
  * them). Each host sizes itself to its button. */
 
-/** A small round glass button holding one SF Symbol. */
+/** Symbol size inside a header circle. Chevrons are thin glyphs that read
+ * small at the same point size as a filled icon, so they get a bump. */
+export const HEADER_ICON_SIZE = 17;
+export const HEADER_CHEVRON_SIZE = 21;
+
+/** A round glass button holding one SF Symbol. */
 export function HeaderIconButton({
   icon,
   accessibilityLabel,
   onPress,
+  iconSize = HEADER_ICON_SIZE,
 }: {
   icon: SFSymbol;
   accessibilityLabel: string;
   onPress: () => void;
+  iconSize?: number;
 }) {
   const theme = useTheme();
   return (
@@ -41,28 +48,24 @@ export function HeaderIconButton({
           a11yLabel(accessibilityLabel),
         ]}
       >
-        <Image systemName={icon} size={17} color={theme.colors.ink} />
+        <Image systemName={icon} size={iconSize} color={theme.colors.ink} />
       </Button>
     </Host>
   );
 }
 
-/** The prominent Finish pill. Tapping it opens a menu: finishing is the
- * headline item, and discarding lives here rather than as its own bin button
- * in the header — a rare, destructive action shouldn't sit one tap away
- * beside the timer. */
-export function FinishMenu({ onFinish, onDiscard }: { onFinish: () => void; onDiscard: () => void }) {
+/** The header's commitment pill (Finish, Save): glass prominent in our
+ * accent, at the same control size as the icon buttons beside it. */
+export function HeaderPrimaryButton({ label, onPress }: { label: string; onPress: () => void }) {
   const theme = useTheme();
   return (
     <Host matchContents seedColor={theme.colors.accent}>
-      <Menu
-        label={<Text modifiers={[foregroundColor(theme.colors.onAccent)]}>Finish</Text>}
+      <Button
+        onPress={onPress}
         modifiers={[buttonStyle('glassProminent'), controlSize('regular'), tint(theme.colors.accent)]}
       >
-        <Button label="Finish workout" systemImage="checkmark" onPress={onFinish} />
-        <Divider />
-        <Button label="Discard workout" systemImage="trash" role="destructive" onPress={onDiscard} />
-      </Menu>
+        <Text modifiers={[foregroundColor(theme.colors.onAccent)]}>{label}</Text>
+      </Button>
     </Host>
   );
 }

@@ -12,6 +12,7 @@ import {
   nextSetType,
   removeExercise,
   replaceExercise,
+  saveWorkout,
   selectWorkoutView,
   softDeleteSet,
   startEmptyWorkout,
@@ -493,5 +494,36 @@ describe('selectWorkoutView (useWorkout\'s projection)', () => {
 
     expect(result.workout).toBeNull();
     expect(result.exercises).toEqual([]);
+  });
+});
+
+describe('saveWorkout', () => {
+  it('writes the edited details and finishes, keeping the duration when the start moves', () => {
+    const userId = freshUser();
+    initWorkoutStore(userId);
+    const workoutId = startWorkoutFromDay(liftingDay, 'day-1', userId);
+    const originalTitle = workouts$[workoutId].title.get();
+    workouts$[workoutId].started_at.set('2026-10-15T08:00:00.000Z');
+
+    const now = new Date('2026-10-15T09:00:00.000Z');
+    const movedStart = new Date('2026-10-14T08:00:00.000Z');
+    saveWorkout(workoutId, { title: '  ', notes: ' felt strong ', startedAt: movedStart }, now);
+
+    const saved = workouts$[workoutId].get()!;
+    expect(saved.title).toBe(originalTitle);
+    expect(saved.notes).toBe('felt strong');
+    expect(saved.started_at).toBe(movedStart.toISOString());
+    expect(saved.finished_at).toBe('2026-10-14T09:00:00.000Z');
+    expect(saved.updated_at).toBe(now.toISOString());
+  });
+
+  it('clears a blank description', () => {
+    const userId = freshUser();
+    initWorkoutStore(userId);
+    const workoutId = startWorkoutFromDay(liftingDay, 'day-1', userId);
+    const started = new Date(workouts$[workoutId].started_at.get()!);
+    saveWorkout(workoutId, { title: 'Pull day', notes: '', startedAt: started }, new Date());
+    expect(workouts$[workoutId].title.get()).toBe('Pull day');
+    expect(workouts$[workoutId].notes.get()).toBeNull();
   });
 });
