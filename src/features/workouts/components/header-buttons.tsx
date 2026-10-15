@@ -1,6 +1,7 @@
 import type { SFSymbol } from 'expo-symbols';
 import { Button, Divider, Host, Image, Menu, Text } from '@expo/ui/swift-ui';
 import {
+  accessibilityLabel as a11yLabel,
   buttonBorderShape,
   buttonStyle,
   controlSize,
@@ -32,9 +33,14 @@ export function HeaderIconButton({
     <Host matchContents seedColor={theme.colors.accent}>
       <Button
         onPress={onPress}
-        modifiers={[buttonStyle('glass'), buttonBorderShape('circle'), controlSize('small')]}
+        modifiers={[
+          buttonStyle('glass'),
+          buttonBorderShape('circle'),
+          controlSize('small'),
+          a11yLabel(accessibilityLabel),
+        ]}
       >
-        <Image systemName={icon} size={14} color={theme.colors.ink} accessibilityLabel={accessibilityLabel} />
+        <Image systemName={icon} size={14} color={theme.colors.ink} />
       </Button>
     </Host>
   );

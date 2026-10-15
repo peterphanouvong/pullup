@@ -127,6 +127,11 @@ mid-swipe.
   falls back to the *light* material — a white strip with an invisible title.
 - Header buttons use `Stack.Toolbar` items (SF Symbols, real UIKit menus,
   liquid-glass backgrounds) rather than custom views.
+  The exception is the workout screen: native bar items have a fixed size
+  with no option to shrink them in the left/right placements, so its header
+  hosts small SwiftUI glass buttons (`header-buttons.tsx`) in
+  `Stack.Toolbar.View` with `hidesSharedBackground`. Discard lives in the
+  Finish menu rather than as its own bin button.
 
 ### The scroll view must be the first child
 
