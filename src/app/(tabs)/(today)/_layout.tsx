@@ -1,5 +1,5 @@
-import { Stack } from "expo-router";
 import { useTheme } from "@/styles/use-theme";
+import { Stack } from "expo-router";
 
 /** The Today tab is its own native stack for the Apple-native header: a
  * compact "Today" title sharing the bar row with the gear button. (Large
@@ -18,7 +18,6 @@ export default function TodayStackLayout() {
         title: "Today",
         headerShadowVisible: false,
         headerTransparent: true,
-        headerBlurEffect: 'systemChromeMaterialDark',
         headerTintColor: theme.colors.ink,
       }}
     />
