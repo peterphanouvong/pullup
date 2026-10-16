@@ -13,35 +13,43 @@ export function useSession(): Session {
   return session;
 }
 
+/**
+ * Holds the app until there's a session, and keeps it current.
+ *
+ * Every change flows through `onAuthStateChange`: linking Apple/Google
+ * onto the guest (same user, now permanent), switching to an existing
+ * account, signing out. With no session — first launch, or just signed
+ * out — it signs in anonymously, so the app always has a user.
+ */
 export function AuthGate({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  // undefined: not known yet. null: known to be signed out.
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const styles = useThemedStyles(createStyles);
 
   useEffect(() => {
+    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (session !== null) return;
     let cancelled = false;
-    (async () => {
-      setError(null);
-      const { data } = await supabase.auth.getSession();
-      if (cancelled) return;
-      if (data.session) {
-        setSession(data.session);
-        return;
-      }
-      const { data: anon, error: anonError } = await supabase.auth.signInAnonymously();
-      if (cancelled) return;
-      if (anonError) setError(anonError.message);
-      else setSession(anon.session);
-    })();
+    void supabase.auth.signInAnonymously().then(({ error: anonError }) => {
+      if (!cancelled && anonError) setError(anonError.message);
+    });
     return () => { cancelled = true; };
-  }, [attempt]);
+  }, [session, attempt]);
 
   if (error) {
     return (
       <View style={styles.container}>
         <Text style={styles.message}>Couldn&apos;t connect. Check your connection and try again.</Text>
-        <Button title="Retry" onPress={() => setAttempt((a) => a + 1)} />
+        <Button title="Retry" onPress={() => {
+            setError(null);
+            setAttempt((a) => a + 1);
+          }} />
       </View>
     );
   }

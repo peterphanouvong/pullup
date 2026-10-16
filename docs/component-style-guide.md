@@ -218,6 +218,27 @@ for Plan and Activity). Things you *visit* don't earn permanent tab-bar
 space; things you *work in* do. Pushed screens reached from the hub carry a
 `BackRow` rather than a native header, matching the rest of the app.
 
+## Account
+
+- Everyone starts as an anonymous guest. The account card at the top of
+  Profile (`src/features/account/components/account-card.tsx`) makes the
+  case for signing in; once signed in it becomes a row with your name and
+  provider, and tapping it renames you.
+- Sign in **links** Apple or Google onto the guest user, so the id and
+  every workout keyed to it stay put. If that Apple ID or Google account
+  already has a Pull Up account, ask before switching: the guest's
+  workouts stay with the guest.
+- Apple's button is Apple's own (`AppleAuthenticationButton`, white style
+  on our dark ground), sized to `NativeButton`'s large height with capsule
+  corners so it lines up with the Google button beneath it. Google uses a
+  secondary `NativeButton`, and is hidden until its client IDs are set.
+- The name is what a crew will see: 1–30 characters, asked for with
+  `Alert.prompt` when the provider doesn't supply one (Apple only sends it
+  on the very first sign in).
+- Sign out and Delete account are ghost buttons at the bottom of Profile,
+  each behind a confirm. Delete is the danger colour. Neither appears for a
+  guest.
+
 ## Calendar
 
 The Programme header's calendar button (leading side; settings has the trailing side) opens `/calendar`, a month grid

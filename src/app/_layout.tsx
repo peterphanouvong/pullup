@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Appearance, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -17,10 +17,14 @@ const queryClient = new QueryClient();
 // Builds the workout-logging observables for the signed-in user before the
 // rest of the tree (which may read them) renders. initWorkoutStore is
 // idempotent, so re-renders of this gate don't recreate the sync machinery.
+//
+// Keyed on the user: switching accounts or signing out remounts the app
+// against the new user's store, rather than leaving screens holding the
+// old one. Upgrading a guest keeps the same id, so it remounts nothing.
 function WorkoutStoreGate({ children }: { children: ReactNode }) {
   const session = useSession();
   initWorkoutStore(session.user.id);
-  return children;
+  return <Fragment key={session.user.id}>{children}</Fragment>;
 }
 
 export default function RootLayout() {

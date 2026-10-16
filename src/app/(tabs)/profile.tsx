@@ -7,10 +7,11 @@ import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
 import { useFinishedWorkouts } from '@/features/workouts/hooks';
+import { AccountActions, AccountCard } from '@/features/account/components/account-card';
 
 /**
- * The hub for everything that isn't this week's training: which programme
- * you're on, and what you've already done.
+ * The hub for everything that isn't this week's training: who you are,
+ * which programme you're on, and what you've already done.
  *
  * Each row carries its own count or name, so the screen answers "how much
  * is in there?" without you having to open it.
@@ -33,6 +34,8 @@ export default function ProfileScreen() {
       >
         <ScreenTitle title="Profile" />
 
+        <AccountCard />
+
         <View style={styles.rows}>
           <HubRow
             icon="list.bullet.rectangle"
@@ -51,6 +54,8 @@ export default function ProfileScreen() {
             onPress={() => router.push('/activities')}
           />
         </View>
+
+        <AccountActions />
       </ScrollView>
     </Screen>
   );
