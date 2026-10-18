@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { SymbolView } from 'expo-symbols';
 import { Card } from '@/components/ui/card';
@@ -59,6 +59,14 @@ function GuestCard() {
   const queryClient = useQueryClient();
   const styles = useThemedStyles(createStyles);
   const [busy, setBusy] = useState(false);
+  // False on a build without the native module (or off iOS); Apple's
+  // button renders nothing there and warns, so don't render it.
+  const appleAvailable = useQuery({
+    queryKey: ['apple-sign-in-available'],
+    queryFn: AppleAuthentication.isAvailableAsync,
+    staleTime: Infinity,
+  }).data === true;
+  const anyAvailable = appleAvailable || googleSignInAvailable;
 
   async function nameAccount(userId: string, suggestedName: string | null) {
     const suggested = suggestedName == null ? null : cleanDisplayName(suggestedName);
@@ -119,17 +127,21 @@ function GuestCard() {
       <View style={styles.guestText}>
         <Text style={styles.title}>Save your training</Text>
         <Text style={styles.body}>
-          You’re training as a guest. Sign in to back up your workouts and get ready for crews.
+          {anyAvailable
+            ? 'You’re training as a guest. Sign in to back up your workouts and get ready for crews.'
+            : 'You’re training as a guest. Signing in needs the latest build of the app.'}
         </Text>
       </View>
       <View style={styles.buttons}>
-        <AppleAuthentication.AppleAuthenticationButton
-          buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-          cornerRadius={BUTTON_HEIGHT / 2}
-          style={styles.appleButton}
-          onPress={() => void handle('apple')}
-        />
+        {appleAvailable && (
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+            cornerRadius={BUTTON_HEIGHT / 2}
+            style={styles.appleButton}
+            onPress={() => void handle('apple')}
+          />
+        )}
         {googleSignInAvailable && (
           <NativeButton label="Continue with Google" onPress={() => void handle('google')} />
         )}

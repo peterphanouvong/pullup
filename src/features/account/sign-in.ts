@@ -1,6 +1,6 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
-import { GoogleSignin, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
+import { TurboModuleRegistry } from 'react-native';
 import type { SignInWithIdTokenCredentials } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
@@ -35,9 +35,20 @@ interface ProviderToken {
 const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
-/** Google needs both client IDs (and a build with its URL scheme, which
- * app.config.ts only adds when the iOS one is set). */
-export const googleSignInAvailable = Boolean(GOOGLE_IOS_CLIENT_ID && GOOGLE_WEB_CLIENT_ID);
+/** Google needs both client IDs and its native module in this build (plus
+ * the URL scheme, which app.config.ts only adds once the iOS ID is set). */
+export const googleSignInAvailable =
+  Boolean(GOOGLE_IOS_CLIENT_ID && GOOGLE_WEB_CLIENT_ID) && TurboModuleRegistry.get('RNGoogleSignin') != null;
+
+type GoogleModule = typeof import('@react-native-google-signin/google-signin');
+
+/** Loaded on first use, never at import: the library looks up its native
+ * module eagerly and throws when the build lacks it, which took the whole
+ * Profile route down with it. */
+function loadGoogle(): GoogleModule {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- deliberately lazy, see above
+  return require('@react-native-google-signin/google-signin') as GoogleModule;
+}
 
 let googleConfigured = false;
 
@@ -67,6 +78,7 @@ async function appleToken(): Promise<ProviderToken | null> {
 }
 
 async function googleToken(): Promise<ProviderToken | null> {
+  const { GoogleSignin, isSuccessResponse, statusCodes } = loadGoogle();
   if (!googleConfigured) {
     GoogleSignin.configure({ iosClientId: GOOGLE_IOS_CLIENT_ID, webClientId: GOOGLE_WEB_CLIENT_ID });
     googleConfigured = true;
@@ -113,7 +125,7 @@ export async function signInWith(provider: SignInProvider): Promise<SignInResult
 /** Back to a fresh guest. The auth gate sees the session end and signs in
  * anonymously; the account's workouts stay with the account. */
 export async function signOut(): Promise<void> {
-  if (googleConfigured) await GoogleSignin.signOut().catch(() => {});
+  if (googleConfigured) await loadGoogle().GoogleSignin.signOut().catch(() => {});
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
