@@ -47,7 +47,28 @@
       ],
       "expo-sqlite",
       "expo-sharing",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.peterphanouvong.pullup.widgets",
+          "groupIdentifier": "group.com.peterphanouvong.pullup",
+          "widgets": [
+            {
+              "name": "WeekWidget",
+              "displayName": "This week",
+              "description": "Sessions done this week, and what’s next.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "accessoryRectangular"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

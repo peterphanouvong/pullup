@@ -1,0 +1,117 @@
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+import { requireOptionalNativeModule } from 'expo';
+import { use$ } from '@legendapp/state/react';
+import type { LiveActivityFactory, Widget } from 'expo-widgets';
+import { useActiveProgram, useProgram } from '@/features/programs/hooks';
+import { restTimer$ } from '@/features/workouts/rest-timer';
+import { activeWorkout } from '@/features/workouts/selectors';
+import { workoutExercises$, workouts$, workoutSets$ } from '@/features/workouts/store';
+import { useFinishedWorkouts } from '@/features/workouts/hooks';
+import type { WorkoutActivityProps } from '@/widgets/workout-activity';
+import type { WeekWidgetProps } from '@/widgets/week-widget';
+import { weekWidgetTimeline, workoutActivityProps } from './props';
+
+/** Only on a build that has the native module: `expo-widgets` resolves it
+ * eagerly and throws without it, which would take the app down with it. */
+const widgetsAvailable = Platform.OS === 'ios' && requireOptionalNativeModule('ExpoWidgets') != null;
+
+interface WidgetModules {
+  WorkoutActivity: LiveActivityFactory<WorkoutActivityProps>;
+  WeekWidget: Widget<WeekWidgetProps>;
+}
+
+let modules: WidgetModules | null = null;
+
+function load(): WidgetModules {
+  /* eslint-disable @typescript-eslint/no-require-imports -- deliberately lazy, see widgetsAvailable */
+  modules ??= {
+    WorkoutActivity: require('@/widgets/workout-activity').default,
+    WeekWidget: require('@/widgets/week-widget').default,
+  };
+  /* eslint-enable @typescript-eslint/no-require-imports */
+  return modules;
+}
+
+/** The workout the running Live Activity belongs to, so a different
+ * session gets a fresh activity (with its own deep link) rather than the
+ * old one's content swapped out. Null after a relaunch: the existing
+ * activity is adopted. */
+let activityWorkoutId: string | null = null;
+
+function syncLiveActivity(workoutId: string | null, props: WorkoutActivityProps | null) {
+  const { WorkoutActivity } = load();
+  try {
+    const [current, ...extras] = WorkoutActivity.getInstances();
+    for (const extra of extras) void extra.end('immediate');
+
+    if (workoutId == null || props == null) {
+      // Finished or discarded: the clock would keep ticking on a session
+      // that's over, so it goes straight away.
+      if (current) void current.end('immediate');
+      activityWorkoutId = null;
+      return;
+    }
+    if (current && (activityWorkoutId == null || activityWorkoutId === workoutId)) {
+      void current.update(props);
+    } else {
+      if (current) void current.end('immediate');
+      WorkoutActivity.start(props, `pullup://workout/${workoutId}`);
+    }
+    activityWorkoutId = workoutId;
+  } catch (e) {
+    // ActivityKit refuses when Live Activities are off in Settings, or the
+    // app isn't in the foreground. Neither should break logging.
+    console.warn('Live Activity sync failed', e);
+  }
+}
+
+/**
+ * Keeps the app's surfaces outside the app in step with the store: the
+ * workout Live Activity (Lock Screen and Dynamic Island) and the week
+ * widget. Renders nothing.
+ */
+export function WidgetSync() {
+  return widgetsAvailable ? <Sync /> : null;
+}
+
+function Sync() {
+  // Serialised so effects fire only when what's shown actually changes —
+  // not on every keystroke into a weight field.
+  const activityJson = use$(() => {
+    const workout = activeWorkout(workouts$.get() ?? {});
+    if (!workout) return JSON.stringify({ id: null, props: null });
+    const props = workoutActivityProps(workout, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}, restTimer$.get());
+    return JSON.stringify({ id: workout.id, props });
+  });
+
+  useEffect(() => {
+    const { id, props } = JSON.parse(activityJson) as { id: string | null; props: WorkoutActivityProps | null };
+    syncLiveActivity(id, props);
+  }, [activityJson]);
+
+  const finished = useFinishedWorkouts();
+  const active = useActiveProgram();
+  const program = useProgram(active.data?.programId ?? '');
+  const timeline = weekWidgetTimeline(new Date(), {
+    finished: finished.map((f) => f.workout),
+    programName: program.data?.name ?? null,
+    weeks: program.data?.weeks ?? [],
+    startDate: active.data?.startDate ?? null,
+  });
+  const timelineJson = JSON.stringify(timeline);
+
+  useEffect(() => {
+    const entries = (JSON.parse(timelineJson) as { date: string; props: WeekWidgetProps }[]).map((e) => ({
+      date: new Date(e.date),
+      props: e.props,
+    }));
+    try {
+      load().WeekWidget.updateTimeline(entries);
+    } catch (e) {
+      console.warn('Week widget update failed', e);
+    }
+  }, [timelineJson]);
+
+  return null;
+}

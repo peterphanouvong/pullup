@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { AuthGate, useSession } from '@/lib/auth';
 import { initWorkoutStore } from '@/features/workouts/store';
+import { WidgetSync } from '@/features/widgets/widget-sync';
 
 // Pull Up is a dark-mode app. `userInterfaceStyle: "dark"` in app.json
 // covers real builds, but Expo Go ignores it — overriding the scheme at
@@ -24,7 +25,12 @@ const queryClient = new QueryClient();
 function WorkoutStoreGate({ children }: { children: ReactNode }) {
   const session = useSession();
   initWorkoutStore(session.user.id);
-  return <Fragment key={session.user.id}>{children}</Fragment>;
+  return (
+    <Fragment key={session.user.id}>
+      {children}
+      <WidgetSync />
+    </Fragment>
+  );
 }
 
 export default function RootLayout() {

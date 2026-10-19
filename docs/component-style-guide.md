@@ -263,6 +263,28 @@ space; things you *work in* do. Pushed screens reached from the hub carry a
   Leave live in the card's ••• action sheet.
 - Coming back to the tab refetches the week; pull to refresh does too.
 
+## Live Activity and widgets
+
+Built with `expo-widgets`: SwiftUI from `@expo/ui`, in `src/widgets/`.
+`WidgetSync` (mounted at the root) pushes the store into them.
+
+- **Workout Live Activity** (Lock Screen and Dynamic Island): starts with
+  the session and ends the moment it's finished or discarded, since its
+  clock would otherwise keep running. The compact island shows a dumbbell
+  and the session clock; while resting it switches to a timer icon and the
+  rest countdown in blue, because that's the number you glance at. Tapping
+  it opens the workout.
+- **Week widget** (small, medium, Lock Screen rectangle): sessions done out
+  of planned, a dot per day (trained is filled blue, today is a lighter
+  dot, missed is empty), and the next session. A timeline entry per local
+  midnight keeps today and the Monday reset moving while the app is closed.
+- Widget functions run in an isolated runtime: only `@expo/ui/swift-ui`
+  and props, colours written inline, no module constants or hooks. Give
+  them lower-case names so the React Compiler leaves them alone. Text uses
+  hierarchical styles so it works on light and dark home screens.
+- Both are only loaded when the build has the native module; on an older
+  build they're skipped rather than crashing at import.
+
 ## Calendar
 
 The Programme header's calendar button (leading side; settings has the trailing side) opens `/calendar`, a month grid
