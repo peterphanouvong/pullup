@@ -48,21 +48,33 @@ export function FillDownBar({ onReveal }: { onReveal: (keyboardTop: number) => v
   const [lift] = useState(() => new Animated.Value(0));
   const [keyboardTop, setKeyboardTop] = useState<number | null>(null);
 
-  const focused = use$(focusedSet$);
-  const set = use$(() => (focused ? workoutSets$[focused.setId].get() : null));
-  const siblings = use$(() => {
-    if (!set) return [];
-    return Object.values(workoutSets$.get() ?? {}).filter(
+  // One selector, one plain snapshot: everything the bar needs from the
+  // store in a single hook, so the hook sequence here never varies. (Two or
+  // three chained `use$` calls, one of them handed the observable itself,
+  // was how this component was first written; it's simpler to reason
+  // about as one read.)
+  const snapshot = use$(() => {
+    const focused = focusedSet$.get();
+    const all = workoutSets$?.get() ?? {};
+    const set = focused ? all[focused.setId] : undefined;
+    if (!focused || !set) return null;
+    const siblings = Object.values(all).filter(
       (s): s is WorkoutSet => !!s && s.workout_exercise_id === set.workout_exercise_id,
     );
+    const fields: FillField[] = focused.field === 'duration' ? ['duration'] : ['weight', 'reps'];
+    return {
+      key: `${focused.setId}:${focused.field}`,
+      targets: fillDownTargets(siblings, set.id),
+      // Only columns with something to copy: filling an empty value would
+      // just clear the rows below.
+      fillable: fields.filter((f) => valueOf(set, f) != null).map((f) => ({ field: f, value: valueOf(set, f) })),
+    };
   });
 
-  const targets = set ? fillDownTargets(siblings, set.id) : [];
-  const fields: FillField[] = focused?.field === 'duration' ? ['duration'] : ['weight', 'reps'];
-  // Only columns with something to copy: filling an empty value would just
-  // clear the rows below.
-  const fillable = set ? fields.filter((f) => valueOf(set, f) != null) : [];
-  const visible = keyboardTop != null && targets.length > 0 && fillable.length > 0;
+  const targets = snapshot?.targets ?? [];
+  // Nothing to offer on the last row: no buttons at all, not hidden ones.
+  const fillable = targets.length > 0 ? (snapshot?.fillable ?? []) : [];
+  const visible = keyboardTop != null && fillable.length > 0;
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', (e) => {
@@ -85,17 +97,17 @@ export function FillDownBar({ onReveal }: { onReveal: (keyboardTop: number) => v
 
   // Keep the focused input above the bar: once the keyboard has settled,
   // and again whenever focus moves to another input while it's up.
-  const focusKey = focused ? `${focused.setId}:${focused.field}` : null;
+  const focusKey = snapshot?.key ?? null;
   useEffect(() => {
     if (!visible || keyboardTop == null) return;
     const handle = setTimeout(() => onReveal(keyboardTop), 300);
     return () => clearTimeout(handle);
   }, [visible, keyboardTop, focusKey, onReveal]);
 
-  function fill(field: FillField) {
-    if (!set) return;
+  function fill(field: FillField, value: number | null) {
+    if (targets.length === 0) return;
     haptics.tap();
-    const patch = patchFor(field, valueOf(set, field));
+    const patch = patchFor(field, value);
     for (const id of targets) updateSet(id, patch);
   }
 
@@ -105,11 +117,11 @@ export function FillDownBar({ onReveal }: { onReveal: (keyboardTop: number) => v
       style={[styles.host, { opacity: visible ? 1 : 0, transform: [{ translateY: lift }] }]}
     >
       <View style={styles.bar}>
-        {fillable.map((field) => (
+        {fillable.map(({ field, value }) => (
           <Pressable
             key={field}
             style={({ pressed }) => [styles.fillButton, pressed && styles.fillButtonPressed]}
-            onPress={() => fill(field)}
+            onPress={() => fill(field, value)}
           >
             <SymbolView name="arrow.down.to.line" size={14} tintColor={theme.colors.onAccent} />
             <Text style={styles.fillLabel}>{`Fill ${FIELD_LABELS[field]}`}</Text>
