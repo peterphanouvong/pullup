@@ -1,13 +1,6 @@
 import { useState } from 'react';
 import { use$ } from '@legendapp/state/react';
-import {
-  InputAccessoryView,
-  Pressable as RNPressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 // Gesture-handler's Pressable: cancels its press when the row's delete
 // swipe activates instead of firing on release.
 import { Pressable } from 'react-native-gesture-handler';
@@ -20,7 +13,8 @@ import { previousSet } from '../selectors';
 import { workoutExercises$, workouts$, workoutSets$ } from '../store';
 import type { WorkoutSet } from '../types';
 import { haptics } from '@/lib/haptics';
-import { fillDownTargets, fillFromPrevious } from '../edit';
+import { fillFromPrevious } from '../edit';
+import { blurSetField, focusSetField, type FillField } from '../focused-set';
 import { startRestTimer } from '../rest-timer';
 import { completeSet, nextSetType, softDeleteSet, updateSet } from '../hooks';
 
@@ -53,11 +47,6 @@ export const SET_TABLE_COLUMNS = {
 
 /** One height for every control in a set row — set chip, inputs, checkbox. */
 const SET_CHIP_HEIGHT = 36;
-
-type FillField = 'weight' | 'reps' | 'duration';
-
-/** Names the column in the keyboard button's "Fill <column> down to N sets". */
-const FIELD_LABELS: Record<FillField, string> = { weight: 'kg', reps: 'reps', duration: 'time' };
 
 /** Warm-ups show "W", drops "D", failures "F"; working sets are numbered 1..n
  * among the exercise's *other working sets*, in position order — matching
@@ -132,64 +121,10 @@ export function SetRow({
   const [isEditing, setIsEditing] = useState(false);
 
   const isCompleted = set.completed_at != null;
-  // One accessory per FIELD, not per row: two inputs sharing a single
-  // nativeID left the second one (reps) with no accessory at all.
-  const accessoryId = (field: FillField) => `set-${set.id}-${field}`;
-  const fillTargetCount = fillDownTargets(siblingSets, set.id).length;
   const typeColor =
     set.set_type === 'warmup' ? theme.colors.comp : set.set_type === 'drop' || set.set_type === 'failure'
       ? theme.colors.danger
       : theme.colors.ink;
-
-  /** Copies the column being edited into every set below — a straight-sets
-   * block at one weight, or one rep count. Only that column is touched, so
-   * filling weight never overwrites reps already logged. */
-  function fillDown(field: FillField) {
-    const targets = fillDownTargets(siblingSets, set.id);
-    if (targets.length === 0) return;
-    const patch =
-      field === 'duration'
-        ? { duration_seconds: set.duration_seconds }
-        : field === 'reps'
-          ? { reps: set.reps }
-          : { weight_kg: set.weight_kg };
-    haptics.tap();
-    for (const id of targets) updateSet(id, patch);
-  }
-
-  /** Buttons floating above the keyboard while a numeric input has focus:
-   * one per fillable column, so you can fill either without first tapping
-   * into that column.
-   *
-   * Deliberately plain RN pills, not our SwiftUI NativeButton: an
-   * `InputAccessoryView` is hosted by the keyboard, outside the app's view
-   * hierarchy, and mounting a SwiftUI host there crashes. For the same
-   * reason the press handler is RN's Pressable, not gesture-handler's. */
-  function renderFillAccessory(field: FillField) {
-    // No accessory at all on the last row: rendering an empty one still
-    // mounts the accessory's own backdrop, which shows as a dark slab.
-    if (fillTargetCount === 0) return null;
-    const fields: FillField[] = isDuration ? ['duration'] : ['weight', 'reps'];
-    // No `backgroundColor` prop: left unset, the native content view stays
-    // nil-backed (clear). Passing "transparent" through the colour
-    // conversion came back as an opaque slab.
-    return (
-      <InputAccessoryView nativeID={accessoryId(field)} style={styles.accessoryHost}>
-        <View style={styles.accessory}>
-          {fields.map((target) => (
-            <RNPressable
-              key={target}
-              style={({ pressed }) => [styles.fillButton, pressed && styles.fillButtonPressed]}
-              onPress={() => fillDown(target)}
-            >
-              <SymbolView name="arrow.down.to.line" size={14} tintColor={theme.colors.onAccent} />
-              <Text style={styles.fillLabel}>{`Fill ${FIELD_LABELS[target]}`}</Text>
-            </RNPressable>
-          ))}
-        </View>
-      </InputAccessoryView>
-    );
-  }
 
   /** Runs this row's hold on the countdown bar already used for rest. */
   function startHold() {
@@ -199,7 +134,20 @@ export function SetRow({
     startRestTimer(seconds);
   }
 
+  function handleFocus(field: FillField) {
+    setIsEditing(true);
+    focusSetField(set.id, field);
+  }
+
+  function handleBlur(field: FillField) {
+    setIsEditing(false);
+    blurSetField(set.id, field);
+  }
+
   function handleComplete() {
+    // Ticking a set ends editing it: drop the keyboard so the row reads as
+    // done, not still being typed into.
+    Keyboard.dismiss();
     if (set.completed_at == null) {
       // Empty inputs log what their placeholders showed: last time's lift.
       const borrowed = fillFromPrevious(set, previous);
@@ -263,9 +211,8 @@ export function SetRow({
             isCompleted ? styles.inputDone : styles.inputPending,
             { width: SET_TABLE_COLUMNS.cell * 2 },
           ]}
-          inputAccessoryViewID={accessoryId('duration')}
-          onFocus={() => setIsEditing(true)}
-          onBlur={() => setIsEditing(false)}
+          onFocus={() => handleFocus('duration')}
+          onBlur={() => handleBlur('duration')}
           selectTextOnFocus
           keyboardType="number-pad"
           placeholder={previous?.duration_seconds != null ? String(previous.duration_seconds) : 'sec'}
@@ -281,9 +228,8 @@ export function SetRow({
               isCompleted ? styles.inputDone : styles.inputPending,
               { width: SET_TABLE_COLUMNS.cell },
             ]}
-            inputAccessoryViewID={accessoryId('weight')}
-            onFocus={() => setIsEditing(true)}
-            onBlur={() => setIsEditing(false)}
+            onFocus={() => handleFocus('weight')}
+            onBlur={() => handleBlur('weight')}
             selectTextOnFocus
             keyboardType="decimal-pad"
             placeholder={previous?.weight_kg != null ? String(previous.weight_kg) : 'kg'}
@@ -297,9 +243,8 @@ export function SetRow({
               isCompleted ? styles.inputDone : styles.inputPending,
               { width: SET_TABLE_COLUMNS.cell },
             ]}
-            inputAccessoryViewID={accessoryId('reps')}
-            onFocus={() => setIsEditing(true)}
-            onBlur={() => setIsEditing(false)}
+            onFocus={() => handleFocus('reps')}
+            onBlur={() => handleBlur('reps')}
             selectTextOnFocus
             keyboardType="number-pad"
             placeholder={previous?.reps != null ? String(previous.reps) : 'reps'}
@@ -328,14 +273,6 @@ export function SetRow({
       </Pressable>
     </View>
     </SwipeToDelete>
-    {isDuration ? (
-      renderFillAccessory('duration')
-    ) : (
-      <>
-        {renderFillAccessory('weight')}
-        {renderFillAccessory('reps')}
-      </>
-    )}
     </>
   );
 }
@@ -389,31 +326,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Buttons floating above the keyboard — no toolbar bar behind them, and
-  // sized to their labels rather than stretched across the screen.
-  accessoryHost: { backgroundColor: 'transparent' },
-  accessory: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.sm,
-    // Explicitly clear: the accessory's own backdrop is otherwise an opaque
-    // slab behind the pills.
-    backgroundColor: 'transparent',
-  },
-  fillButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    backgroundColor: theme.colors.accent,
-    borderRadius: theme.radii.pill,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-    ...theme.shadow.float,
-  },
-  fillButtonPressed: { opacity: 0.8 },
-  fillLabel: { ...theme.type.caption, fontWeight: '700', color: theme.colors.onAccent },
   setNumber: { ...theme.type.heading },
   ghost: { ...theme.type.body, color: theme.colors.inkMuted },
   input: {

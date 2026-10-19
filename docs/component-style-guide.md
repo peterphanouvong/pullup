@@ -203,13 +203,22 @@ SwiftUI rows inside a SwiftUI `List`, and our set rows are React Native
 
 ## Keyboard accessories
 
-Attach **one accessory per input**. Two inputs sharing a `nativeID` leaves
-the second one with no accessory at all.
+Don't use `InputAccessoryView` for anything that has to be reliable. React
+Native links an accessory to its input once, by searching the window when
+the accessory mounts, and never re-links it — fill-down quietly stopped
+appearing that way.
 
-Leave `backgroundColor` unset — the native content view is nil-backed
-(clear), whereas passing `"transparent"` through the colour conversion comes
-back opaque. And return `null` for the whole component when there's nothing
-to show: rendering `null` *inside* an accessory still mounts its backdrop.
+Instead, one bar per screen follows the keyboard itself
+(`FillDownBar`, driven by `keyboardWillShow`/`Hide`) and reads which input
+has focus from a small store (`focusedSet$`). Because the ScrollView's
+automatic keyboard inset doesn't know about the bar, the screen scrolls the
+focused input clear of it (`FILL_BAR_CLEARANCE`).
+
+The bar only shows when there's something to do: a row below to fill, and a
+value in the column to copy.
+
+Ticking a set dismisses the keyboard: the row is done, not still being
+typed into.
 
 ## Navigation shape
 

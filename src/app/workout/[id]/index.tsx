@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +15,7 @@ import type { Theme } from '@/styles/theme';
 import { ExerciseCard } from '@/features/workouts/components/exercise-card';
 import { openExercisePicker, openStartRestSheet } from '@/features/workouts/components/exercise-menu';
 import { RestTimerBar } from '@/features/workouts/components/rest-timer-bar';
+import { FILL_BAR_CLEARANCE, FillDownBar } from '@/features/workouts/components/fill-down-bar';
 import {
   HEADER_CHEVRON_SIZE,
   HeaderIconButton,
@@ -48,6 +50,19 @@ export default function WorkoutScreen() {
   // compete for the same frames, which read as a stall between tapping
   // Start and seeing the screen. Render a skeleton first and mount the real
   // (SwiftUI-hosting) cards once the transition has finished.
+
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollY = useRef(0);
+
+  /** Scrolls the focused set input up until it clears the fill-down bar.
+   * The ScrollView's automatic keyboard inset only knows about the
+   * keyboard, so on its own it parks the input right under the bar. */
+  const revealFocusedInput = useCallback((keyboardTop: number) => {
+    TextInput.State.currentlyFocusedInput()?.measureInWindow((_x, y, _w, height) => {
+      const overlap = y + height + FILL_BAR_CLEARANCE - keyboardTop;
+      if (overlap > 0) scrollRef.current?.scrollTo({ y: scrollY.current + overlap, animated: true });
+    });
+  }, []);
 
   const [contentReady, setContentReady] = useState(false);
   useEffect(() => {
@@ -163,6 +178,11 @@ export default function WorkoutScreen() {
       {/* First subview: see the header note above. */}
       {contentReady ? (
         <ScrollView
+          ref={scrollRef}
+          onScroll={(e) => {
+            scrollY.current = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
           style={styles.scroll}
           // Insets for the transparent header and the keyboard come from
           // the native scroll view, replacing the old padded wrapper and
@@ -195,6 +215,7 @@ export default function WorkoutScreen() {
       )}
 
       <RestTimerBar />
+      <FillDownBar onReveal={revealFocusedInput} />
     </>
   );
 }
