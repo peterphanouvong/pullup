@@ -79,6 +79,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "owner": "peterphanouvong",
+    "extra": {
+      "eas": {
+        "projectId": "c42c7aa4-e4a0-45bf-806d-35f162220aa3"
+      }
     }
   }
 }
