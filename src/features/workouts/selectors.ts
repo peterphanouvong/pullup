@@ -37,7 +37,11 @@ export function elapsedSeconds(workout: Workout, now: Date): number {
 }
 
 export interface PreviousSetArgs {
-  exerciseId: string;
+  /** Library id; null for an exercise that never matched the library. */
+  exerciseId: string | null;
+  /** Also matched on, case-insensitively, so an exercise without a library
+   * id (or logged once with and once without) still finds its history. */
+  exerciseName: string;
   /** 0-based order of the set among its exercise's live sets. */
   setIndex: number;
   currentWorkoutId: string;
@@ -49,7 +53,7 @@ export interface PreviousSetArgs {
 /**
  * What you lifted last time for this set: the set at the same place in the
  * order (`setIndex`, 0-based among the exercise's live sets) from the most
- * recent *finished* workout containing `exerciseId`, excluding the current
+ * recent *finished* workout with this exercise, excluding the current
  * one.
  *
  * Only completed sets count. Program workouts prefill reps but leave weight
@@ -58,11 +62,15 @@ export interface PreviousSetArgs {
  * are matched by order, not stored `position`, because positions keep gaps
  * after a set is deleted.
  *
- * A session with fewer completed sets than `setIndex` is skipped in favour
- * of the next most recent one.
+ * The most recent session always wins: it's the weight you're working
+ * from. If you're doing more sets than it had, the extra ones show its
+ * last completed set rather than an older session's numbers.
  */
 export function previousSet(args: PreviousSetArgs): WorkoutSet | null {
-  const { exerciseId, setIndex, currentWorkoutId, workouts, workoutExercises, sets } = args;
+  const { exerciseId, exerciseName, setIndex, currentWorkoutId, workouts, workoutExercises, sets } = args;
+  const nameKey = exerciseName.trim().toLowerCase();
+  const isSameExercise = (we: WorkoutExercise) =>
+    (exerciseId != null && we.exercise_id === exerciseId) || we.exercise_name.trim().toLowerCase() === nameKey;
 
   const candidateWorkouts = Object.values(workouts)
     .filter((w) => !w.deleted && w.finished_at != null && w.id !== currentWorkoutId)
@@ -71,7 +79,7 @@ export function previousSet(args: PreviousSetArgs): WorkoutSet | null {
   for (const w of candidateWorkouts) {
     const matchingExerciseIds = new Set(
       Object.values(workoutExercises)
-        .filter((we) => !we.deleted && we.workout_id === w.id && we.exercise_id === exerciseId)
+        .filter((we) => !we.deleted && we.workout_id === w.id && isSameExercise(we))
         .map((we) => we.id),
     );
     if (matchingExerciseIds.size === 0) continue;
@@ -79,8 +87,8 @@ export function previousSet(args: PreviousSetArgs): WorkoutSet | null {
     const completed = Object.values(sets)
       .filter((s) => !s.deleted && s.completed_at != null && matchingExerciseIds.has(s.workout_exercise_id))
       .sort((a, b) => a.position - b.position);
-    const match = completed[setIndex];
-    if (match) return match;
+    if (completed.length === 0) continue;
+    return completed[setIndex] ?? completed[completed.length - 1];
   }
 
   return null;

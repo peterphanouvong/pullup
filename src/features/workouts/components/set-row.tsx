@@ -86,12 +86,14 @@ export function SetRow({
   set,
   siblingSets,
   exerciseId,
+  exerciseName,
   workoutId,
   isDuration,
 }: {
   set: WorkoutSet;
   siblingSets: WorkoutSet[];
   exerciseId: string | null;
+  exerciseName: string;
   workoutId: string;
   isDuration: boolean;
 }) {
@@ -103,9 +105,10 @@ export function SetRow({
   const setIndex = siblingSets.findIndex((s) => s.id === set.id);
 
   const previous = use$(() => {
-    if (!exerciseId || setIndex < 0) return null;
+    if (setIndex < 0) return null;
     return previousSet({
       exerciseId,
+      exerciseName,
       setIndex,
       currentWorkoutId: workoutId,
       workouts: workouts$.get() ?? {},

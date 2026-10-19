@@ -119,6 +119,7 @@ export function ExerciseCard({
           set={set}
           siblingSets={exercise.sets}
           exerciseId={exercise.exercise_id}
+          exerciseName={exercise.exercise_name}
           workoutId={workoutId}
           isDuration={isDuration}
         />
