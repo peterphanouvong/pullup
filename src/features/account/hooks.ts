@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
-import { fetchProfile, saveDisplayName } from './api';
+import { fetchProfile, saveDisplayName, saveWeeklyTarget } from './api';
 import type { SignInProvider } from './sign-in';
 
 export function useProfile() {
@@ -28,4 +28,18 @@ export function useSignInProvider(): SignInProvider | null {
   if (session.user.is_anonymous) return null;
   const identity = session.user.identities?.find((i) => i.provider === 'apple' || i.provider === 'google');
   return (identity?.provider as SignInProvider | undefined) ?? null;
+}
+
+export function useSaveWeeklyTarget() {
+  const session = useSession();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (weeklyTarget: number) => saveWeeklyTarget(session.user.id, weeklyTarget),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['profile', session.user.id] }),
+        // Crewmates' rows show the target too.
+        queryClient.invalidateQueries({ queryKey: ['crew-week'] }),
+      ]),
+  });
 }

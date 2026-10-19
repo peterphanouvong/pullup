@@ -6,6 +6,7 @@ import { Stack } from 'expo-router';
 import { AuthGate, useSession } from '@/lib/auth';
 import { initWorkoutStore } from '@/features/workouts/store';
 import { WidgetSync } from '@/features/widgets/widget-sync';
+import { PushGate } from '@/features/notifications/push-gate';
 
 // Pull Up is a dark-mode app. `userInterfaceStyle: "dark"` in app.json
 // covers real builds, but Expo Go ignores it — overriding the scheme at
@@ -29,6 +30,7 @@ function WorkoutStoreGate({ children }: { children: ReactNode }) {
     <Fragment key={session.user.id}>
       {children}
       <WidgetSync />
+      <PushGate />
     </Fragment>
   );
 }

@@ -8,6 +8,7 @@ import { restTimer$ } from '@/features/workouts/rest-timer';
 import { activeWorkout } from '@/features/workouts/selectors';
 import { workoutExercises$, workouts$, workoutSets$ } from '@/features/workouts/store';
 import { useFinishedWorkouts } from '@/features/workouts/hooks';
+import { useProfile } from '@/features/account/hooks';
 import type { WorkoutActivityProps } from '@/widgets/workout-activity';
 import type { WeekWidgetProps } from '@/widgets/week-widget';
 import { weekWidgetTimeline, workoutActivityProps } from './props';
@@ -93,7 +94,9 @@ function Sync() {
   const finished = useFinishedWorkouts();
   const active = useActiveProgram();
   const program = useProgram(active.data?.programId ?? '');
+  const profile = useProfile();
   const timeline = weekWidgetTimeline(new Date(), {
+    weeklyTarget: profile.data?.weeklyTarget,
     finished: finished.map((f) => f.workout),
     programName: program.data?.name ?? null,
     weeks: program.data?.weeks ?? [],

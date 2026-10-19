@@ -27,6 +27,9 @@ export interface CrewMemberWeek {
   /** Local days (YYYY-MM-DD) with at least one finished session. */
   trainedDays: Set<string>;
   sessionCount: number;
+  weeklyTarget: number;
+  /** Consecutive weeks on target, this one included once it's met. */
+  streak: number;
 }
 
 export interface RawCrewWeekRow {
@@ -34,6 +37,8 @@ export interface RawCrewWeekRow {
   display_name: string;
   joined_at: string;
   session_starts: string[];
+  weekly_target: number;
+  streak: number;
 }
 
 export function toMemberWeek(row: RawCrewWeekRow): CrewMemberWeek {
@@ -43,6 +48,8 @@ export function toMemberWeek(row: RawCrewWeekRow): CrewMemberWeek {
     joinedAt: row.joined_at,
     trainedDays: new Set(row.session_starts.map(localDayOf)),
     sessionCount: row.session_starts.length,
+    weeklyTarget: row.weekly_target,
+    streak: row.streak,
   };
 }
 

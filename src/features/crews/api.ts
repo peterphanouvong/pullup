@@ -70,3 +70,27 @@ export async function setReaction(workoutId: string, emoji: Reaction | null): Pr
   const { error } = await supabase.rpc('set_reaction', { p_workout_id: workoutId, p_emoji: emoji });
   if (error) throw error;
 }
+
+export interface Poke {
+  id: string;
+  crewId: string;
+  fromUser: string;
+  toUser: string;
+  createdAt: string;
+}
+
+/** Pokes you've sent or received since `sinceIso`. */
+export async function fetchPokes(sinceIso: string): Promise<Poke[]> {
+  const { data, error } = await supabase
+    .from('pokes')
+    .select('id, crew_id, from_user, to_user, created_at')
+    .gte('created_at', sinceIso)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data.map((p) => ({ id: p.id, crewId: p.crew_id, fromUser: p.from_user, toUser: p.to_user, createdAt: p.created_at }));
+}
+
+export async function pokeCrewmate(crewId: string, userId: string): Promise<void> {
+  const { error } = await supabase.rpc('poke_crewmate', { p_crew_id: crewId, p_user_id: userId });
+  if (error) throw error;
+}

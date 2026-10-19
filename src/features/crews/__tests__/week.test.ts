@@ -25,6 +25,8 @@ describe('toMemberWeek', () => {
       display_name: 'Sam',
       joined_at: '2026-10-01T00:00:00Z',
       session_starts: [morning, evening],
+      weekly_target: 3,
+      streak: 2,
     });
     expect([...member.trainedDays]).toEqual(['2026-10-20']);
     expect(member.sessionCount).toBe(2);
@@ -38,6 +40,8 @@ describe('orderMembers', () => {
     joinedAt,
     trainedDays: new Set(),
     sessionCount,
+    weeklyTarget: 3,
+    streak: 0,
   });
 
   it('puts you first, then most sessions, then earliest joiner', () => {

@@ -3,6 +3,7 @@ import * as Crypto from 'expo-crypto';
 import { TurboModuleRegistry } from 'react-native';
 import type { SignInWithIdTokenCredentials } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { unregisterPush } from '@/features/notifications/push';
 
 /**
  * Upgrading a guest to a real account.
@@ -125,6 +126,8 @@ export async function signInWith(provider: SignInProvider): Promise<SignInResult
 /** Back to a fresh guest. The auth gate sees the session end and signs in
  * anonymously; the account's workouts stay with the account. */
 export async function signOut(): Promise<void> {
+  // This phone must stop receiving the account's pushes first.
+  await unregisterPush().catch(() => {});
   if (googleConfigured) await loadGoogle().GoogleSignin.signOut().catch(() => {});
   const { error } = await supabase.auth.signOut();
   if (error) throw error;

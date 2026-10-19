@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
-import { createCrew, fetchCrewFeed, fetchCrewWeek, fetchMyCrews, joinCrew, leaveCrew, setReaction } from './api';
+import { createCrew, fetchCrewFeed, fetchCrewWeek, fetchMyCrews, fetchPokes, joinCrew, leaveCrew, pokeCrewmate, setReaction } from './api';
 import { withMyReaction, type Checkin, type Reaction } from './feed';
 import { useProfile } from '@/features/account/hooks';
 import type { CrewWeekRange } from './week';
@@ -60,4 +60,20 @@ export function useSetReaction() {
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['crew-feed'] }),
   });
+}
+
+/** The last day's pokes, both ways: who nudged you, and who you've nudged. */
+export function usePokes() {
+  const session = useSession();
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: ['pokes', session.user.id],
+    queryFn: () => fetchPokes(new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+    enabled: !session.user.is_anonymous,
+  });
+  const poke = useMutation({
+    mutationFn: ({ crewId, userId }: { crewId: string; userId: string }) => pokeCrewmate(crewId, userId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pokes', session.user.id] }),
+  });
+  return { ...query, poke };
 }

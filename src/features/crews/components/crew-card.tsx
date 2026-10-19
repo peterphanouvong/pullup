@@ -1,4 +1,4 @@
-import { ActionSheetIOS, ActivityIndicator, Alert, Share, StyleSheet, Text, View } from 'react-native';
+import { ActionSheetIOS, ActivityIndicator, Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { IconCircle } from '@/components/ui/icon-circle';
 import { useSession } from '@/lib/auth';
@@ -6,7 +6,7 @@ import { haptics } from '@/lib/haptics';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { CREW_MAX_MEMBERS, type Crew } from '../api';
-import { useCrewFeed, useCrewWeek, useLeaveCrew } from '../hooks';
+import { useCrewFeed, useCrewWeek, useLeaveCrew, usePokes } from '../hooks';
 import { feedRange } from '../feed';
 import { CheckinRow } from './checkin-row';
 import { orderMembers, type CrewWeekRange } from '../week';
@@ -36,6 +36,34 @@ export function CrewCard({ crew, range, todayKey, now }: { crew: Crew; range: Cr
   const week = useCrewWeek(crew.id, range);
   const feed = useCrewFeed(crew.id, feedRange(now));
   const leave = useLeaveCrew();
+  const pokes = usePokes();
+
+  const pokedMeToday = (pokes.data ?? []).filter((p) => p.crewId === crew.id && p.toUser === session.user.id);
+  const pokedByMeToday = new Set((pokes.data ?? []).filter((p) => p.fromUser === session.user.id).map((p) => p.toUser));
+
+  /** A crewmate's row: one nudge a day, nothing else — no profile, no
+   * message. "You training today?" is the whole vocabulary. */
+  function openMember(member: { userId: string; displayName: string }) {
+    haptics.tap();
+    const already = pokedByMeToday.has(member.userId);
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        title: member.displayName,
+        message: already ? 'You’ve poked them today. Once a day is plenty.' : undefined,
+        options: [already ? 'Poked today 👋' : `Poke ${member.displayName} 👋`, 'Cancel'],
+        cancelButtonIndex: 1,
+        disabledButtonIndices: already ? [0] : [],
+      },
+      (index) => {
+        if (index !== 0 || already) return;
+        haptics.commit();
+        pokes.poke.mutate(
+          { crewId: crew.id, userId: member.userId },
+          { onError: (e) => Alert.alert('Couldn’t poke', e.message) },
+        );
+      },
+    );
+  }
 
   const members = orderMembers(week.data ?? [], session.user.id);
 
@@ -106,9 +134,15 @@ export function CrewCard({ crew, range, todayKey, now }: { crew: Crew; range: Cr
         members.map((member) => {
           const isMe = member.userId === session.user.id;
           return (
-            <View key={member.userId} style={styles.row}>
+            <Pressable
+              key={member.userId}
+              disabled={isMe}
+              onPress={() => openMember(member)}
+              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+            >
               <Text style={[styles.memberName, isMe && styles.memberMe]} numberOfLines={1}>
                 {isMe ? 'You' : member.displayName}
+                {member.streak >= 2 && <Text style={styles.streak}>{`  🔥${member.streak}`}</Text>}
               </Text>
               {range.days.map((day) => (
                 <View key={day} style={styles.dotCell}>
@@ -121,10 +155,19 @@ export function CrewCard({ crew, range, todayKey, now }: { crew: Crew; range: Cr
                   />
                 </View>
               ))}
-              <Text style={styles.count}>{member.sessionCount}</Text>
-            </View>
+              <Text style={[styles.count, member.sessionCount >= member.weeklyTarget && styles.countMet]}>
+                {member.sessionCount}
+                <Text style={styles.countOf}>{`/${member.weeklyTarget}`}</Text>
+              </Text>
+            </Pressable>
           );
         })
+      )}
+
+      {pokedMeToday.length > 0 && (
+        <Text style={styles.poked}>
+          {`👋 ${pokedMeToday.map((p) => members.find((m) => m.userId === p.fromUser)?.displayName ?? 'A crewmate').join(', ')} poked you. You training today?`}
+        </Text>
       )}
 
       {crew.memberCount <= 1 && !week.isPending && (
@@ -154,6 +197,9 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   name: { ...theme.type.heading, color: theme.colors.ink },
   meta: { ...theme.type.caption, color: theme.colors.inkMuted, fontVariant: ['tabular-nums'] },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: 28 },
+  rowPressed: { opacity: 0.7 },
+  streak: { ...theme.type.caption, color: theme.colors.inkMuted },
+  poked: { ...theme.type.caption, color: theme.colors.ink, marginTop: theme.spacing.xs },
   nameCell: { flex: 1 },
   memberName: { ...theme.type.body, flex: 1, color: theme.colors.ink, paddingRight: theme.spacing.sm },
   memberMe: { fontWeight: '700' },
@@ -171,10 +217,12 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   },
   dotTrained: { backgroundColor: theme.colors.done, ...theme.shadow.glow, shadowRadius: 6 },
   dotToday: { borderColor: theme.colors.done },
-  countCell: { width: 24 },
+  countCell: { width: 40 },
+  countOf: { ...theme.type.caption, fontWeight: '400', color: theme.colors.inkMuted },
+  countMet: { color: theme.colors.done },
   count: {
     ...theme.type.body,
-    width: 24,
+    width: 40,
     textAlign: 'right',
     color: theme.colors.ink,
     fontWeight: '700',

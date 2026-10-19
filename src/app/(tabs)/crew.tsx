@@ -17,6 +17,9 @@ import { dateKey } from '@/features/programs/calendar';
 import { CrewCard, shareInvite } from '@/features/crews/components/crew-card';
 import { useCreateCrew, useJoinCrew, useMyCrews } from '@/features/crews/hooks';
 import { crewWeekRange, normaliseInviteCode } from '@/features/crews/week';
+import { YourWeekCard } from '@/features/crews/components/your-week-card';
+import { NotificationsNudge } from '@/features/notifications/components/notifications-nudge';
+import { registerPush, requestPushPermission } from '@/features/notifications/push';
 
 /** Server errors are written for people ("that crew is full"); give them a
  * capital and show them as they are. */
@@ -49,6 +52,14 @@ export default function CrewScreen() {
     }, [queryClient]),
   );
 
+  /** The first crew is when pushes start meaning something, so that's
+   * when we ask. */
+  function offerPush() {
+    void requestPushPermission().then((ok) => {
+      if (ok) return registerPush(session.user.id);
+    });
+  }
+
   async function refresh() {
     setRefreshing(true);
     haptics.select();
@@ -56,6 +67,7 @@ export default function CrewScreen() {
       queryClient.invalidateQueries({ queryKey: ['crews'] }),
       queryClient.invalidateQueries({ queryKey: ['crew-week'] }),
       queryClient.invalidateQueries({ queryKey: ['crew-feed'] }),
+      queryClient.invalidateQueries({ queryKey: ['pokes'] }),
     ]);
     setRefreshing(false);
   }
@@ -72,6 +84,7 @@ export default function CrewScreen() {
           createCrew.mutate(name, {
             onSuccess: (crew) => {
               haptics.success();
+              offerPush();
               // The crew is only worth something with people in it.
               shareInvite(crew.name, crew.inviteCode);
             },
@@ -95,7 +108,10 @@ export default function CrewScreen() {
             return;
           }
           joinCrew.mutate(code, {
-            onSuccess: () => haptics.success(),
+            onSuccess: () => {
+              haptics.success();
+              offerPush();
+            },
             onError: (e) => Alert.alert('Couldn’t join', errorText(e)),
           });
         },
@@ -155,7 +171,13 @@ export default function CrewScreen() {
             <NativeButton label="Join with a code" onPress={promptJoin} />
           </Card>
         ) : (
-          list.map((crew) => <CrewCard key={crew.id} crew={crew} range={range} todayKey={todayKey} now={now} />)
+          <>
+            <YourWeekCard range={range} todayKey={todayKey} now={now} />
+            <NotificationsNudge />
+            {list.map((crew) => (
+              <CrewCard key={crew.id} crew={crew} range={range} todayKey={todayKey} now={now} />
+            ))}
+          </>
         )}
       </ScrollView>
     </Screen>

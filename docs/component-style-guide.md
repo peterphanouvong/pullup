@@ -273,6 +273,21 @@ space; things you *work in* do. Pushed screens reached from the hub carry a
   emoji. They update optimistically, then refetch. No free text anywhere
   in the crew: that's what keeps it safe for under-16s and out of the
   moderation requirements.
+- **Your week** sits above the crews: sessions done against your weekly
+  target (1–7, tap the card to change it), a dot per day, and the streak.
+  A streak is whole weeks on target; this week joins it once met and can't
+  break it before it's over (`weekStreak`, mirrored by `week_streak()` on
+  the server). Crew rows show `done/target` (blue when met) and `🔥N`
+  from two weeks up.
+- **Pokes**: tap a crewmate's row for "Poke Bea 👋" — one a day per
+  person, preset text, and the recipient sees "👋 Alex poked you" on the
+  card as well as the push. No messages, no replies.
+- **Pushes** (`docs/push-setup.md`): a crewmate finishing, a reaction on
+  your session, a poke, and the Sunday 6pm recap (local time). Permission
+  is asked when you create or join your first crew; until granted, a
+  "Hear from your crew" row sits under Your week. A device's token is
+  removed on sign-out so the next guest never gets the last account's
+  crew.
 
 ## Live Activity and widgets
 

@@ -38,6 +38,8 @@ export interface WeekWidgetInput {
   weeks: ProgramWeek[];
   /** The programme's Monday anchor, or null with no programme. */
   startDate: string | null;
+  /** Your weekly target: what "planned" means when there's no programme. */
+  weeklyTarget?: number;
 }
 
 /** The home screen widget's content as of `now`. */
@@ -51,7 +53,7 @@ export function weekWidgetProps(now: Date, input: WeekWidgetInput): WeekWidgetPr
 
   const plan = days.map((d) => (input.startDate ? plannedDayOn(d, input.startDate, input.weeks) : null));
   const lifting = plan.map((p) => p?.kind === 'lifting');
-  const planned = lifting.filter(Boolean).length;
+  const planned = input.startDate ? lifting.filter(Boolean).length : (input.weeklyTarget ?? 0);
 
   // The next lifting day from today on that you haven't trained on.
   const nextIndex = plan.findIndex((p, i) => i >= todayIndex && lifting[i] && !trained[i]);
