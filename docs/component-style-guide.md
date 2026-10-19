@@ -248,6 +248,21 @@ space; things you *work in* do. Pushed screens reached from the hub carry a
   each behind a confirm. Delete is the danger colour. Neither appears for a
   guest.
 
+## Crew
+
+- The Crew tab is a grid per crew: a row per member, a dot per day of this
+  week (Monday first, local calendar), filled `done` with the glow where
+  they trained. You're always the top row, labelled "You"; then most
+  sessions, then who joined first. Today's column has a thin ring.
+- Empty days and missed days look the same: no crosses, no red.
+- Crewmates see only *whether* you trained each day. `crew_week()` never
+  returns titles, weights or notes.
+- Guests see the pitch and the sign-in card: crews need an account.
+- Create and Join use `Alert.prompt`; creating goes straight to the share
+  sheet, since a crew is only worth something with people in it. Invite and
+  Leave live in the card's ••• action sheet.
+- Coming back to the tab refetches the week; pull to refresh does too.
+
 ## Calendar
 
 The Programme header's calendar button (leading side; settings has the trailing side) opens `/calendar`, a month grid
