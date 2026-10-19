@@ -6,7 +6,9 @@ import { haptics } from '@/lib/haptics';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { CREW_MAX_MEMBERS, type Crew } from '../api';
-import { useCrewWeek, useLeaveCrew } from '../hooks';
+import { useCrewFeed, useCrewWeek, useLeaveCrew } from '../hooks';
+import { feedRange } from '../feed';
+import { CheckinRow } from './checkin-row';
 import { orderMembers, type CrewWeekRange } from '../week';
 
 const WEEKDAY_INITIALS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -28,10 +30,11 @@ export function shareInvite(name: string, code: string) {
  * Days nobody has reached yet stay empty, the same as a missed day: no
  * crosses, no red. A gap is a fact, not a scolding.
  */
-export function CrewCard({ crew, range, todayKey }: { crew: Crew; range: CrewWeekRange; todayKey: string }) {
+export function CrewCard({ crew, range, todayKey, now }: { crew: Crew; range: CrewWeekRange; todayKey: string; now: Date }) {
   const session = useSession();
   const styles = useThemedStyles(createStyles);
   const week = useCrewWeek(crew.id, range);
+  const feed = useCrewFeed(crew.id, feedRange(now));
   const leave = useLeaveCrew();
 
   const members = orderMembers(week.data ?? [], session.user.id);
@@ -127,6 +130,17 @@ export function CrewCard({ crew, range, todayKey }: { crew: Crew; range: CrewWee
       {crew.memberCount <= 1 && !week.isPending && (
         <Text style={styles.meta}>Just you so far. Invite your mates from the ••• menu.</Text>
       )}
+
+      {/* The last seven days' sessions, newest first. Each is a check-in
+          the crew can react to; the whole point is that someone notices. */}
+      {feed.data != null && feed.data.length > 0 && (
+        <View style={styles.feed}>
+          <Text style={styles.feedLabel}>RECENT</Text>
+          {feed.data.map((checkin) => (
+            <CheckinRow key={checkin.workoutId} checkin={checkin} now={now} />
+          ))}
+        </View>
+      )}
     </Card>
   );
 }
@@ -167,4 +181,11 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   loading: { paddingVertical: theme.spacing.lg },
+  feed: {
+    marginTop: theme.spacing.sm,
+    paddingTop: theme.spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.glassBorder,
+  },
+  feedLabel: { ...theme.type.label, color: theme.colors.inkMuted, marginBottom: theme.spacing.xs },
 });

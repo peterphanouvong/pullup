@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { toCheckin, type Checkin, type RawCheckinRow, type Reaction } from './feed';
 import { toMemberWeek, type CrewMemberWeek, type RawCrewWeekRow } from './week';
 
 export interface Crew {
@@ -55,5 +56,17 @@ export async function joinCrew(code: string): Promise<void> {
 
 export async function leaveCrew(crewId: string): Promise<void> {
   const { error } = await supabase.rpc('leave_crew', { p_crew_id: crewId });
+  if (error) throw error;
+}
+
+export async function fetchCrewFeed(crewId: string, fromIso: string, toIso: string): Promise<Checkin[]> {
+  const { data, error } = await supabase.rpc('crew_feed', { p_crew_id: crewId, p_from: fromIso, p_to: toIso });
+  if (error) throw error;
+  return (data as RawCheckinRow[]).map(toCheckin);
+}
+
+/** Sets your reaction on a crewmate's session; null takes it back. */
+export async function setReaction(workoutId: string, emoji: Reaction | null): Promise<void> {
+  const { error } = await supabase.rpc('set_reaction', { p_workout_id: workoutId, p_emoji: emoji });
   if (error) throw error;
 }

@@ -12,6 +12,7 @@ import type { Theme } from '@/styles/theme';
 import { celebrationCopy, formatCountdown } from '@/features/workouts/celebration';
 import { ShareCard } from '@/features/workouts/components/share-card';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
+import { useMyCrews } from '@/features/crews/hooks';
 import { currentProgramPosition, nextCompDay } from '@/features/programs/schedule';
 import { useWeekCompletion, useWorkout } from '@/features/workouts/hooks';
 import { formatWorkoutDuration, workoutSummary } from '@/features/workouts/selectors';
@@ -51,6 +52,7 @@ function formatDateLabel(iso: string): string {
 export default function WorkoutSummaryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { workout, exercises } = useWorkout(id);
+  const crewCount = useMyCrews().data?.length ?? 0;
   const styles = useThemedStyles(createStyles);
   const active = useActiveProgram();
   const program = useProgram(active.data?.programId ?? '');
@@ -155,6 +157,13 @@ export default function WorkoutSummaryScreen() {
           <View style={styles.copy}>
             <Text style={styles.headline}>{copy.headline}</Text>
             <Text style={styles.detail}>{copy.detail}</Text>
+            {/* The check-in is automatic; say so, once, so it's never a
+                surprise what the crew can see. */}
+            {crewCount > 0 && (
+              <Text style={styles.detail}>
+                {crewCount === 1 ? 'Your crew can see you trained today.' : 'Your crews can see you trained today.'}
+              </Text>
+            )}
           </View>
 
           <View style={styles.cardWrap}>

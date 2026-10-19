@@ -45,6 +45,7 @@ export default function CrewScreen() {
   useFocusEffect(
     useCallback(() => {
       void queryClient.invalidateQueries({ queryKey: ['crew-week'] });
+      void queryClient.invalidateQueries({ queryKey: ['crew-feed'] });
     }, [queryClient]),
   );
 
@@ -54,6 +55,7 @@ export default function CrewScreen() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['crews'] }),
       queryClient.invalidateQueries({ queryKey: ['crew-week'] }),
+      queryClient.invalidateQueries({ queryKey: ['crew-feed'] }),
     ]);
     setRefreshing(false);
   }
@@ -153,7 +155,7 @@ export default function CrewScreen() {
             <NativeButton label="Join with a code" onPress={promptJoin} />
           </Card>
         ) : (
-          list.map((crew) => <CrewCard key={crew.id} crew={crew} range={range} todayKey={todayKey} />)
+          list.map((crew) => <CrewCard key={crew.id} crew={crew} range={range} todayKey={todayKey} now={now} />)
         )}
       </ScrollView>
     </Screen>

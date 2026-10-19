@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
-import { createCrew, fetchCrewWeek, fetchMyCrews, joinCrew, leaveCrew } from './api';
+import { createCrew, fetchCrewFeed, fetchCrewWeek, fetchMyCrews, joinCrew, leaveCrew, setReaction } from './api';
+import { withMyReaction, type Checkin, type Reaction } from './feed';
+import { useProfile } from '@/features/account/hooks';
 import type { CrewWeekRange } from './week';
 
 export function useMyCrews() {
@@ -32,3 +34,30 @@ function useCrewMutation<T, R>(fn: (arg: T) => Promise<R>) {
 export const useCreateCrew = () => useCrewMutation(createCrew);
 export const useJoinCrew = () => useCrewMutation(joinCrew);
 export const useLeaveCrew = () => useCrewMutation(leaveCrew);
+
+export function useCrewFeed(crewId: string, range: { fromIso: string; toIso: string }) {
+  return useQuery({
+    queryKey: ['crew-feed', crewId, range.fromIso],
+    queryFn: () => fetchCrewFeed(crewId, range.fromIso, range.toIso),
+  });
+}
+
+/** Toggles a reaction, showing it at once: the tap should land like a tap,
+ * not a request. Every crew's feed that lists the workout is patched, and
+ * all are refetched when the server answers either way. */
+export function useSetReaction() {
+  const session = useSession();
+  const profile = useProfile();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workoutId, emoji }: { workoutId: string; emoji: Reaction | null }) => setReaction(workoutId, emoji),
+    onMutate: async ({ workoutId, emoji }) => {
+      await queryClient.cancelQueries({ queryKey: ['crew-feed'] });
+      const myName = profile.data?.displayName ?? 'You';
+      queryClient.setQueriesData<Checkin[]>({ queryKey: ['crew-feed'] }, (feed) =>
+        feed ? withMyReaction(feed, workoutId, session.user.id, myName, emoji) : feed,
+      );
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['crew-feed'] }),
+  });
+}

@@ -262,6 +262,17 @@ space; things you *work in* do. Pushed screens reached from the hub carry a
   sheet, since a crew is only worth something with people in it. Invite and
   Leave live in the card's ••• action sheet.
 - Coming back to the tab refetches the week; pull to refresh does too.
+- **Check-ins** are automatic: a finished workout appears under the grid as
+  "Bea finished Upper A · Today · 48 min · 14 sets". The name is the
+  programme day's; a session off the plan is "a workout". Titles, weights
+  and notes never leave the server (`crew_feed()`), and the summary screen
+  says once that the crew can see it.
+- **Reactions** are three preset chips (🔥 💪 👏), one per person per
+  check-in: tap to set, tap again to take back, tap another to swap. Your
+  own is the filled `doneChip` with a `done` edge; counts sit beside the
+  emoji. They update optimistically, then refetch. No free text anywhere
+  in the crew: that's what keeps it safe for under-16s and out of the
+  moderation requirements.
 
 ## Live Activity and widgets
 
