@@ -5,9 +5,11 @@ Applied to Peter's own instance of the 8-Week Peak by
 `docs/programs/8-week-peak.md` is unchanged; this doc records how the instance
 differs from it.
 
-**Replaces** the Monday/Tuesday/Thursday/Friday split from 26 October onward.
-The week of 19 Oct finishes as planned: it's the deload, the cheapest possible
-moment to change structure.
+**Replaces** the Monday/Tuesday/Thursday/Friday split on every week
+(`20261021130000_high_low_all_weeks.sql` laid weeks 1–2 out the same way, so the
+programme reads as one structure end to end). Week 1 keeps its Sun 18 Oct comp;
+week 2 is the deload at deload loads: main lifts 3 × 3 @ 70% TM, cleans 3 × 2
+@ 65%, accessories 2 sets.
 
 **The change in one line:** fatigue gets concentrated into three hard days
 instead of smeared across six, and volleyball is counted as training rather
