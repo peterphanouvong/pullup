@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector } from '@legendapp/state/react';
 import { Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 // Gesture-handler's Pressable: cancels its press when the row's delete
@@ -16,6 +16,7 @@ import { haptics } from '@/lib/haptics';
 import { fillFromPrevious } from '../edit';
 import { blurSetField, focusSetField, type FillField } from '../focused-set';
 import { startRestTimer } from '../rest-timer';
+import { elapsedStopwatchSeconds, setStopwatch$, startSetStopwatch, stopSetStopwatch } from '../set-stopwatch';
 import { completeSet, nextSetType, softDeleteSet, updateSet } from '../hooks';
 
 /** Fixed column widths shared with ExerciseCard's header row, Hevy-style, so
@@ -126,12 +127,45 @@ export function SetRow({
       ? theme.colors.danger
       : theme.colors.ink;
 
-  /** Runs this row's hold on the countdown bar already used for rest. */
-  function startHold() {
+  // This row's stopwatch, if it's the one running. The clock is real state
+  // (see the React Compiler note in the style guide) and only ticks while
+  // this row is being timed, so idle rows cost nothing.
+  const stopwatch = useSelector(() => {
+    const current = setStopwatch$.get();
+    return current?.setId === set.id ? current : null;
+  });
+  // A stale `now` from before the start just clamps to 1s until the first
+  // tick, which is what a fresh stopwatch should read anyway.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    if (!stopwatch) return;
+    const interval = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, [stopwatch]);
+  const isTiming = stopwatch != null;
+
+  /** The play button beside a TIME cell. With a duration entered it runs
+   * that hold as a countdown on the bar already used for rest. With the
+   * cell empty it starts a stopwatch in the cell instead, and the same
+   * button stops it and logs what it measured. */
+  function handlePlay() {
+    if (isTiming) {
+      const measured = stopSetStopwatch();
+      if (!measured) return;
+      haptics.complete();
+      updateSet(measured.setId, { duration_seconds: measured.seconds });
+      return;
+    }
     const seconds = set.duration_seconds;
-    if (seconds == null || seconds <= 0) return;
     haptics.commit();
-    startRestTimer(seconds);
+    if (seconds != null && seconds > 0) {
+      startRestTimer(seconds);
+      return;
+    }
+    // Another row's stopwatch gives way, keeping what it measured.
+    const previousRun = stopSetStopwatch();
+    if (previousRun) updateSet(previousRun.setId, { duration_seconds: previousRun.seconds });
+    startSetStopwatch(set.id);
   }
 
   function handleFocus(field: FillField) {
@@ -173,18 +207,7 @@ export function SetRow({
 
   return (
     <>
-    <SwipeToDelete
-      onDelete={() => softDeleteSet(set.id)}
-      // Timed work (ISO holds, planks) is the one case where the number in
-      // the row is a thing to *run*, not just record — so a swipe starts it
-      // from the duration already entered.
-      leadingAction={
-        isDuration && (set.duration_seconds ?? 0) > 0
-          ? { label: 'Start', icon: 'play.fill', onPress: startHold }
-          : undefined
-      }
-      childStyle={styles.swipeChild}
-    >
+    <SwipeToDelete onDelete={() => softDeleteSet(set.id)} childStyle={styles.swipeChild}>
     <View style={[styles.row, isCompleted && styles.rowCompleted, isEditing && styles.rowEditing]}>
       <Pressable
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
@@ -205,21 +228,40 @@ export function SetRow({
       </Pressable>
 
       {isDuration ? (
-        <TextInput
-          style={[
-            styles.input,
-            isCompleted ? styles.inputDone : styles.inputPending,
-            { width: SET_TABLE_COLUMNS.cell * 2 },
-          ]}
-          onFocus={() => handleFocus('duration')}
-          onBlur={() => handleBlur('duration')}
-          selectTextOnFocus
-          keyboardType="number-pad"
-          placeholder={previous?.duration_seconds != null ? String(previous.duration_seconds) : 'sec'}
-          placeholderTextColor={theme.colors.inkMuted}
-          value={durationField.text}
-          onChangeText={durationField.onChangeText}
-        />
+        <>
+          {/* Timed work (ISO holds, planks) is the one case where the number
+              in the row is a thing to *run*, not just record, so the cell
+              carries a play button. While the stopwatch runs the cell shows
+              the live count and can't be typed into. */}
+          <TextInput
+            style={[
+              styles.input,
+              styles.durationInput,
+              isCompleted ? styles.inputDone : styles.inputPending,
+              isTiming && styles.inputTiming,
+            ]}
+            onFocus={() => handleFocus('duration')}
+            onBlur={() => handleBlur('duration')}
+            selectTextOnFocus
+            editable={!isTiming}
+            keyboardType="number-pad"
+            placeholder={previous?.duration_seconds != null ? String(previous.duration_seconds) : 'sec'}
+            placeholderTextColor={theme.colors.inkMuted}
+            value={isTiming ? String(elapsedStopwatchSeconds(stopwatch, now)) : durationField.text}
+            onChangeText={durationField.onChangeText}
+          />
+          <Pressable
+            style={[styles.playChip, isTiming && styles.playChipTiming]}
+            onPress={handlePlay}
+            accessibilityLabel={isTiming ? 'Stop timing' : 'Start timer'}
+          >
+            <SymbolView
+              name={isTiming ? 'stop.fill' : 'play.fill'}
+              size={14}
+              tintColor={isTiming ? theme.colors.onGradient : theme.colors.ink}
+            />
+          </Pressable>
+        </>
       ) : (
         <>
           <TextInput
@@ -342,6 +384,20 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   // the row's done wash. Fill only, no border, so nothing reflows.
   inputPending: { backgroundColor: theme.colors.glassSolid },
   inputDone: { backgroundColor: 'transparent', fontWeight: '700' },
+  // The TIME cell and its play chip together span the two weighted columns,
+  // so the header's TIME label still sits over them.
+  durationInput: { width: SET_TABLE_COLUMNS.cell * 2 - SET_CHIP_HEIGHT - theme.spacing.xs },
+  // A running count reads in the accent so it's clearly live, not logged.
+  inputTiming: { color: theme.colors.accent, fontWeight: '700' },
+  playChip: {
+    width: SET_CHIP_HEIGHT,
+    height: SET_CHIP_HEIGHT,
+    borderRadius: theme.radii.md,
+    backgroundColor: theme.colors.glassSolid,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playChipTiming: { backgroundColor: theme.colors.accent },
   // Always shows a checkmark: muted on the chip when pending, filled blue
   // when done. A completed set used to be signalled by tinting the whole
   // row, which read as a stray coloured rectangle.
