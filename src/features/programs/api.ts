@@ -14,10 +14,13 @@ const PROGRAM_SELECT = `
   )
 `;
 
+/** The catalogue: templates only. A user's own instances are reached
+ * through their active programme, not listed here. */
 export async function fetchPrograms(): Promise<ProgramSummary[]> {
   const { data, error } = await supabase
     .from('programs')
     .select('id, slug, name, summary')
+    .is('owner_id', null)
     .order('name');
   if (error) throw error;
   return data;
@@ -36,25 +39,26 @@ export async function fetchProgram(id: string): Promise<Program> {
 export async function fetchActiveProgram(userId: string): Promise<ActiveProgram | null> {
   const { data, error } = await supabase
     .from('user_programs')
-    .select('program_id, start_date')
+    .select('program_id, start_date, programs ( template_id )')
     .eq('user_id', userId)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
-  return { programId: data.program_id, startDate: data.start_date };
+  // PostgREST returns the to-one join as an object; typed loosely since the
+  // client is untyped.
+  const program = data.programs as unknown as { template_id: string | null } | null;
+  return { programId: data.program_id, startDate: data.start_date, templateId: program?.template_id ?? null };
 }
 
-export async function selectProgram(userId: string, programId: string): Promise<void> {
-  const { error } = await supabase
-    .from('user_programs')
-    .upsert(
-      {
-        user_id: userId,
-        program_id: programId,
-        selected_at: new Date().toISOString(),
-        start_date: mondayOf(new Date()),
-      },
-      { onConflict: 'user_id' },
-    );
+/** Selecting a template copies it into a private instance owned by the
+ * caller and makes that the active programme (the `select_program` RPC);
+ * edits later land on the instance, never the template. Returns the
+ * instance id. */
+export async function selectProgram(templateId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('select_program', {
+    p_template_id: templateId,
+    p_start_date: mondayOf(new Date()),
+  });
   if (error) throw error;
+  return data as string;
 }

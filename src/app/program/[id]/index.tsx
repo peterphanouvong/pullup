@@ -30,7 +30,9 @@ export default function ProgramOverviewScreen() {
   }
 
   const data = program.data;
-  const isActive = active.data?.programId === data.id;
+  // Active whether you're looking at your instance or the template it came
+  // from: either way, selecting again would only start a fresh copy.
+  const isActive = active.data?.programId === data.id || active.data?.templateId === data.id;
 
   return (
     <Screen>

@@ -26,7 +26,11 @@ export function useSelectProgram() {
   const session = useSession();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ programId }: { programId: string }) => selectProgram(session.user.id, programId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['active-program', session.user.id] }),
+    mutationFn: ({ programId }: { programId: string }) => selectProgram(programId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['active-program', session.user.id] });
+      // The new instance is a new programme id; make sure it's not served stale.
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+    },
   });
 }

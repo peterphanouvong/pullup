@@ -43,7 +43,10 @@ export interface Program extends ProgramSummary {
 
 /** The user's currently-selected programme, with its "Today" anchor date. */
 export interface ActiveProgram {
+  /** The user's own instance (see docs/ai-programming.md, "Templates and instances"). */
   programId: string;
+  /** The template the instance was copied from, so the catalogue can mark it. */
+  templateId: string | null;
   startDate: string; // YYYY-MM-DD, Monday of the selection week
 }
 
