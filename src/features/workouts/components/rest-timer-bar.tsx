@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { use$ } from '@legendapp/state/react';
+import { useSelector } from '@legendapp/state/react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { haptics } from '@/lib/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -36,7 +36,7 @@ export function RestTimerBar() {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
-  const timer = use$(() => restTimer$.get());
+  const timer = useSelector(() => restTimer$.get());
   // The clock is real state: React Compiler memoizes render expressions by
   // their dependencies, so deriving `remaining` from a bare re-render tick
   // froze the countdown — `now` as state makes each tick a real dependency.

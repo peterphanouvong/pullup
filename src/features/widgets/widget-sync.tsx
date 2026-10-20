@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
-import { use$ } from '@legendapp/state/react';
+import { useSelector } from '@legendapp/state/react';
 import type { LiveActivityFactory, Widget } from 'expo-widgets';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
 import { restTimer$ } from '@/features/workouts/rest-timer';
@@ -79,7 +79,7 @@ export function WidgetSync() {
 function Sync() {
   // Serialised so effects fire only when what's shown actually changes —
   // not on every keystroke into a weight field.
-  const activityJson = use$(() => {
+  const activityJson = useSelector(() => {
     const workout = activeWorkout(workouts$.get() ?? {});
     if (!workout) return JSON.stringify({ id: null, props: null });
     const props = workoutActivityProps(workout, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}, restTimer$.get());

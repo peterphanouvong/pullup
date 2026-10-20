@@ -53,9 +53,9 @@ function freshUser(): string {
   return `user-hooks-${userCounter}`;
 }
 
-/** `useWorkout` is `use$(() => selectWorkoutView(id, ...observables.get()))`
+/** `useWorkout` is `useSelector(() => selectWorkoutView(id, ...observables.get()))`
  * — a thin reactive wrapper with no logic of its own, over Task 2's already
- * store-shape-tested `use$`/`get()` primitives. These tests exercise
+ * store-shape-tested `useSelector`/`get()` primitives. These tests exercise
  * `selectWorkoutView` directly against the real store's plain `.get()`
  * snapshots, so they don't need a React render (no
  * `@testing-library/react-native` dependency, not installed in this repo). */

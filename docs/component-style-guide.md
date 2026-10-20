@@ -368,6 +368,15 @@ with an interval — because deriving elapsed time from a bare re-render tick
 gets memoised and freezes. Keep the value timestamp-derived (`endsAt - now`)
 so backgrounding can't drift it.
 
+**Hooks must look like hooks to it.** The compiler recognises a hook by name
+(`use` + capital letter or digit), so Legend-State's `use$` reads as a plain
+function: compiled output calls it once and caches the result, the hook is
+skipped on the next render, and React's hook order shifts. Dev mode mostly
+shrugs; a release build dies on launch with "Cannot read property 'length'
+of undefined" from inside `useEffect`. Always import `useSelector` (the same
+function) — a lint rule enforces it. Any other `use$`-style helper gets a
+properly named wrapper with `'use no memo'`.
+
 ## Dates
 
 All day maths is local-calendar maths: parse `YYYY-MM-DD` into a local

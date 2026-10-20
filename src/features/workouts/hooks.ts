@@ -5,14 +5,14 @@
  * `discardWorkout`) are plain functions — they mutate the Legend-State
  * observables directly and return synchronously, they are not React hooks and
  * carry no hook-naming prefix. `useWorkout` is the one reactive hook here,
- * built on `use$` (Task 2's installed alias for `@legendapp/state/react`'s
+ * built on `useSelector` (Task 2's installed alias for `@legendapp/state/react`'s
  * `useSelector`): it tracks whichever observable `.get()` calls happen inside
  * its selector, so completing/uncompleting a set, editing notes, etc. all
  * re-render any screen reading `useWorkout` live.
  */
 
 import { haptics } from '@/lib/haptics';
-import { use$ } from '@legendapp/state/react';
+import { useSelector } from '@legendapp/state/react';
 import type { ProgramDay } from '@/features/programs/types';
 import { buildAddedExercise, buildReplacement, moveExercise } from './edit';
 import { skipRestTimer, startRestTimer } from './rest-timer';
@@ -320,7 +320,7 @@ export interface UseWorkoutResult {
  * (whatever `.get()` on the three observables returns at a point in time),
  * returns the workout plus its live exercises/sets, sorted by position. Split
  * out from `useWorkout` so this logic is unit-testable against plain fixture
- * objects, with no React render / `use$` plumbing required in tests. */
+ * objects, with no React render / `useSelector` plumbing required in tests. */
 export function selectWorkoutView(
   id: string,
   workouts: Record<string, Workout>,
@@ -349,7 +349,7 @@ export function selectWorkoutView(
  * store write. `workout` is `null` when the id doesn't exist (or the store
  * hasn't loaded it yet). */
 export function useWorkout(id: string): UseWorkoutResult {
-  return use$(() =>
+  return useSelector(() =>
     selectWorkoutView(id, workouts$.get() ?? {}, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}),
   );
 }
@@ -358,14 +358,14 @@ export function useWorkout(id: string): UseWorkoutResult {
  * new-workout guard), or `null` when none is in progress. Re-renders on any
  * workout write. */
 export function useActiveWorkout(): Workout | null {
-  return use$(() => activeWorkout(workouts$.get() ?? {}));
+  return useSelector(() => activeWorkout(workouts$.get() ?? {}));
 }
 
 /** Whether a finished (non-deleted) workout exists for `programDayId` — the
  * Today day-card's completed checkmark. `null` (no day selected) is always
  * `false`. */
 export function useHasFinishedWorkoutForDay(programDayId: string | null): boolean {
-  return use$(() =>
+  return useSelector(() =>
     programDayId != null ? hasFinishedWorkoutForDay(workouts$.get() ?? {}, programDayId) : false,
   );
 }
@@ -373,20 +373,20 @@ export function useHasFinishedWorkoutForDay(programDayId: string | null): boolea
 /** Which of the given programme days already have a finished workout — the
  * Today week checklist's checkmarks and progress segments. */
 export function useWeekCompletion(dayIds: string[]): Record<string, boolean> {
-  return use$(() => weekCompletion(workouts$.get() ?? {}, dayIds));
+  return useSelector(() => weekCompletion(workouts$.get() ?? {}, dayIds));
 }
 
 /** Finished workouts newest-first, each with its `workoutSummary` — the
  * Activities tab's feed. */
 export function useFinishedWorkouts(): FinishedWorkoutSummary[] {
-  return use$(() =>
+  return useSelector(() =>
     finishedWorkoutSummaries(workouts$.get() ?? {}, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}),
   );
 }
 
 /** The minimized-workout bar's subtitle: the exercise the lifter is on. */
 export function useCurrentExerciseName(workoutId: string): string | null {
-  return use$(() =>
+  return useSelector(() =>
     currentExerciseName(workoutId, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}),
   );
 }
@@ -394,14 +394,14 @@ export function useCurrentExerciseName(workoutId: string): string | null {
 /** Exercise-picker search: name contains `query`, optionally narrowed to
  * `group` — a thin reactive wrapper over `searchExercises`. */
 export function useExerciseSearch(query: string, group: string | null): Exercise[] {
-  return use$(() => searchExercises(exercises$.get() ?? {}, query, group));
+  return useSelector(() => searchExercises(exercises$.get() ?? {}, query, group));
 }
 
 /** Exercise-picker "Recent" section: up to 8 distinct exercises from the
  * user's finished workouts, newest-first, resolved to their library rows
  * (skipping any id that no longer resolves to a live `Exercise`). */
 export function useRecentExercises(): Exercise[] {
-  return use$(() => {
+  return useSelector(() => {
     const ids = recentExerciseIds(workouts$.get() ?? {}, workoutExercises$.get() ?? {}, 8);
     const exercisesRecord = exercises$.get() ?? {};
     return ids

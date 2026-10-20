@@ -15,6 +15,17 @@ module.exports = defineConfig([
     files: ["**/*.ts", "**/*.tsx"],
     rules: {
       "@typescript-eslint/no-empty-object-type": ["warn", { allowInterfaces: "with-single-extends" }],
+      // The React Compiler only treats `use` + capital/digit as a hook, so
+      // `use$` gets memoised like a plain call and skipped on re-render:
+      // hook order shifts and release builds crash. `useSelector` is the
+      // same function under a name the compiler recognises.
+      "no-restricted-imports": ["error", {
+        paths: [{
+          name: "@legendapp/state/react",
+          importNames: ["use$"],
+          message: "Import useSelector instead: the React Compiler does not see use$ as a hook.",
+        }],
+      }],
     },
   },
 ]);

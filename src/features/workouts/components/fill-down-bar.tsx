@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Animated, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
-import { use$ } from '@legendapp/state/react';
+import { useSelector } from '@legendapp/state/react';
 import { haptics } from '@/lib/haptics';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
@@ -50,10 +50,10 @@ export function FillDownBar({ onReveal }: { onReveal: (keyboardTop: number) => v
 
   // One selector, one plain snapshot: everything the bar needs from the
   // store in a single hook, so the hook sequence here never varies. (Two or
-  // three chained `use$` calls, one of them handed the observable itself,
+  // three chained `useSelector` calls, one of them handed the observable itself,
   // was how this component was first written; it's simpler to reason
   // about as one read.)
-  const snapshot = use$(() => {
+  const snapshot = useSelector(() => {
     const focused = focusedSet$.get();
     const all = workoutSets$?.get() ?? {};
     const set = focused ? all[focused.setId] : undefined;

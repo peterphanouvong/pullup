@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { use$ } from '@legendapp/state/react';
+import { useSelector } from '@legendapp/state/react';
 import { Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 // Gesture-handler's Pressable: cancels its press when the row's delete
 // swipe activates instead of firing on release.
@@ -93,7 +93,7 @@ export function SetRow({
   // time" is matched on (stored positions keep gaps after deletes).
   const setIndex = siblingSets.findIndex((s) => s.id === set.id);
 
-  const previous = use$(() => {
+  const previous = useSelector(() => {
     if (setIndex < 0) return null;
     return previousSet({
       exerciseId,
