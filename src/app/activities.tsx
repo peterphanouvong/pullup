@@ -3,8 +3,6 @@ import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
-import { Screen } from '@/components/ui/screen';
-import { BackRow } from '@/components/ui/back-row';
 import { NumeralRow } from '@/components/ui/numeral-row';
 import { SwipeToDelete } from '@/components/ui/swipe-to-delete';
 import { discardWorkout, useFinishedWorkouts } from '@/features/workouts/hooks';
@@ -25,48 +23,50 @@ export default function ActivitiesScreen() {
   const styles = useThemedStyles(createStyles);
   const items = useFinishedWorkouts();
 
+  // No wrapper view: the bar is transparent, and UIKit only finds the
+  // ScrollView to draw its scroll-edge effect over when that view is the
+  // screen's first subview.
   return (
-    <Screen>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        <BackRow title="Activity" />
-        {items.length === 0 ? (
-          <View style={styles.empty}>
-            <SymbolView
-              name="clock.arrow.circlepath"
-              size={40}
-              tintColor={theme.colors.inkMuted}
-              fallback={<Text style={styles.emptyIconFallback}>⏱</Text>}
-            />
-            <Text style={styles.emptyText}>No workouts yet — your first session will show up here.</Text>
-          </View>
-        ) : (
-          <View>
-            {items.map(({ workout, summary }) => {
-              const { day, month } = activityDateLabel(workout.finished_at as string);
-              return (
-                <SwipeToDelete key={workout.id} onDelete={() => confirmDelete(workout.id, workout.title)}>
-                  <NumeralRow
-                    numeral={day}
-                    caption={month}
-                    title={workout.title}
-                    subtitle={activityMetaLabel(summary.durationSeconds, summary.volumeKg, summary.completedCount)}
-                    onPress={() => router.push(`/workout/${workout.id}/summary`)}
-                  />
-                </SwipeToDelete>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
-    </Screen>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="automatic"
+    >
+      {items.length === 0 ? (
+        <View style={styles.empty}>
+          <SymbolView
+            name="clock.arrow.circlepath"
+            size={40}
+            tintColor={theme.colors.inkMuted}
+            fallback={<Text style={styles.emptyIconFallback}>⏱</Text>}
+          />
+          <Text style={styles.emptyText}>No workouts yet — your first session will show up here.</Text>
+        </View>
+      ) : (
+        <View>
+          {items.map(({ workout, summary }) => {
+            const { day, month } = activityDateLabel(workout.finished_at as string);
+            return (
+              <SwipeToDelete key={workout.id} onDelete={() => confirmDelete(workout.id, workout.title)}>
+                <NumeralRow
+                  numeral={day}
+                  caption={month}
+                  title={workout.title}
+                  subtitle={activityMetaLabel(summary.durationSeconds, summary.volumeKg, summary.completedCount)}
+                  onPress={() => router.push(`/workout/${workout.id}/summary`)}
+                />
+              </SwipeToDelete>
+            );
+          })}
+        </View>
+      )}
+    </ScrollView>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: theme.spacing.xl, flexGrow: 1 },
   empty: {
     flex: 1,

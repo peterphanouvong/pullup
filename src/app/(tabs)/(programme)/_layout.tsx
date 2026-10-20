@@ -1,25 +1,16 @@
-import { useTheme } from "@/styles/use-theme";
 import { Stack } from "expo-router";
+import { nativeHeader } from "@/styles/header";
+import { useThemedStyles } from "@/styles/use-theme";
 
-/** The Programme tab is its own native stack for the Apple-native header: a
- * compact title sharing the bar row with the gear button. (Large
- * title deliberately not used — its collapse behaviour wasn't worth the
- * trouble.)
- *
- * The bar is translucent: a blur effect (which implies headerTransparent)
- * rather than a solid fill, so content blurs under it as it scrolls. The
- * Dark variant is explicit because without one the bar falls back to the
- * light material and the title disappears into a white strip. */
+const INDEX_OPTIONS = { title: "Programme" } as const;
+
+/** The Programme tab is its own native stack so it gets the app's header
+ * (see `styles/header.ts`) — a tab screen on its own can't have one. */
 export default function TodayStackLayout() {
-  const theme = useTheme();
+  const header = useThemedStyles(nativeHeader);
   return (
-    <Stack
-      screenOptions={{
-        title: "Programme",
-        headerShadowVisible: false,
-        headerTransparent: true,
-        headerTintColor: theme.colors.ink,
-      }}
-    />
+    <Stack screenOptions={header}>
+      <Stack.Screen name="index" options={INDEX_OPTIONS} />
+    </Stack>
   );
 }

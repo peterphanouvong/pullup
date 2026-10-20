@@ -1,14 +1,16 @@
-import { StyleSheet, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { IconCircle } from '@/components/ui/icon-circle';
-import { Screen } from '@/components/ui/screen';
-import { ScreenTitle } from '@/components/ui/screen-title';
-import { useThemedStyles } from '@/styles/use-theme';
-import type { Theme } from '@/styles/theme';
+import { useTheme } from '@/styles/use-theme';
 import { ExercisePicker } from '@/features/workouts/components/exercise-picker';
 import { addExerciseToWorkout, replaceExercise } from '@/features/workouts/hooks';
 import type { Exercise } from '@/features/workouts/types';
+import { haptics } from '@/lib/haptics';
 import { useSession } from '@/lib/auth';
+
+// Module-level so the identity is stable: an inline literal would re-run
+// setOptions on every render. The bar itself is the app's (see
+// `styles/header.ts`); a sheet needs its own way out, which is the toolbar
+// button below.
+const SCREEN_OPTIONS = { presentation: 'modal' } as const;
 
 /**
  * Modal route hosting the exercise picker, reused by both the "+ Add
@@ -23,7 +25,7 @@ export default function PickerScreen() {
     workoutExerciseId?: string;
   }>();
   const session = useSession();
-  const styles = useThemedStyles(createStyles);
+  const theme = useTheme();
 
   function handlePick(exercise: Exercise) {
     if (mode === 'replace' && workoutExerciseId) {
@@ -35,18 +37,22 @@ export default function PickerScreen() {
   }
 
   return (
-    <Screen>
-      <Stack.Screen options={{ presentation: 'modal', headerShown: false }} />
-      <View style={styles.header}>
-        <ScreenTitle title={mode === 'replace' ? 'Replace Exercise' : 'Add Exercise'}>
-          <IconCircle name="xmark" fallback="✕" onPress={() => router.back()} />
-        </ScreenTitle>
-      </View>
+    <>
+      <Stack.Screen options={SCREEN_OPTIONS} />
+      <Stack.Title>{mode === 'replace' ? 'Replace Exercise' : 'Add Exercise'}</Stack.Title>
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          icon="xmark"
+          accessibilityLabel="Close"
+          hidesSharedBackground
+          tintColor={theme.colors.ink}
+          onPress={() => {
+            haptics.tap();
+            router.back();
+          }}
+        />
+      </Stack.Toolbar>
       <ExercisePicker onPick={handlePick} />
-    </Screen>
+    </>
   );
 }
-
-const createStyles = (theme: Theme) => StyleSheet.create({
-  header: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.md },
-});

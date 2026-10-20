@@ -1,8 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { Screen } from '@/components/ui/screen';
-import { ScreenTitle } from '@/components/ui/screen-title';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
@@ -25,39 +23,39 @@ export default function ProfileScreen() {
   const programName = program.data?.name ?? 'No programme selected';
   const sessionCount = finished.length;
 
+  // No wrapper view: the bar is transparent, and UIKit only finds the
+  // ScrollView to draw its scroll-edge effect over when that view is the
+  // screen's first subview.
   return (
-    <Screen>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        <ScreenTitle title="Profile" />
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="automatic"
+    >
+      <AccountCard />
 
-        <AccountCard />
+      <View style={styles.rows}>
+        <HubRow
+          icon="list.bullet.rectangle"
+          title="Plan"
+          detail={programName}
+          onPress={() => router.push('/plan')}
+        />
+        <HubRow
+          icon="clock.arrow.circlepath"
+          title="Activity"
+          detail={
+            sessionCount === 0
+              ? 'No sessions logged yet'
+              : `${sessionCount} session${sessionCount === 1 ? '' : 's'} logged`
+          }
+          onPress={() => router.push('/activities')}
+        />
+      </View>
 
-        <View style={styles.rows}>
-          <HubRow
-            icon="list.bullet.rectangle"
-            title="Plan"
-            detail={programName}
-            onPress={() => router.push('/plan')}
-          />
-          <HubRow
-            icon="clock.arrow.circlepath"
-            title="Activity"
-            detail={
-              sessionCount === 0
-                ? 'No sessions logged yet'
-                : `${sessionCount} session${sessionCount === 1 ? '' : 's'} logged`
-            }
-            onPress={() => router.push('/activities')}
-          />
-        </View>
-
-        <AccountActions />
-      </ScrollView>
-    </Screen>
+      <AccountActions />
+    </ScrollView>
   );
 }
 
@@ -91,6 +89,7 @@ function HubRow({
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
   rows: { gap: theme.spacing.sm },
   row: {

@@ -3,8 +3,6 @@ import { router } from 'expo-router';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
-import { Screen } from '@/components/ui/screen';
-import { BackRow } from '@/components/ui/back-row';
 import { SectionLabel } from '@/components/ui/section-label';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, useProgram, usePrograms } from '@/features/programs/hooks';
@@ -41,34 +39,35 @@ export default function PlanScreen() {
     </Card>
   );
 
+  // No wrapper view: the bar is transparent, and UIKit only finds the
+  // ScrollView to draw its scroll-edge effect over when that view is the
+  // screen's first subview.
   return (
-    <Screen>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        <BackRow title="Plan" />
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="automatic"
+    >
+      {activeProgram.data != null && (
+        <>
+          <SectionLabel>Your programme</SectionLabel>
+          {renderCard(activeProgram.data, true)}
+        </>
+      )}
 
-        {activeProgram.data != null && (
-          <>
-            <SectionLabel>Your programme</SectionLabel>
-            {renderCard(activeProgram.data, true)}
-          </>
-        )}
-
-        {rest.length > 0 && (
-          <>
-            <SectionLabel>Programmes</SectionLabel>
-            {rest.map((program) => renderCard(program, false))}
-          </>
-        )}
-      </ScrollView>
-    </Screen>
+      {rest.length > 0 && (
+        <>
+          <SectionLabel>Programmes</SectionLabel>
+          {rest.map((program) => renderCard(program, false))}
+        </>
+      )}
+    </ScrollView>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, gap: theme.spacing.sm, paddingBottom: theme.spacing.xl },
   card: { gap: theme.spacing.xs },
   name: { ...theme.type.heading, color: theme.colors.ink },

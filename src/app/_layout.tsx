@@ -4,6 +4,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { AuthGate, useSession } from '@/lib/auth';
+import { nativeHeader } from '@/styles/header';
+import { useThemedStyles } from '@/styles/use-theme';
 import { initWorkoutStore } from '@/features/workouts/store';
 import { WidgetSync } from '@/features/widgets/widget-sync';
 import { PushGate } from '@/features/notifications/push-gate';
@@ -35,15 +37,30 @@ function WorkoutStoreGate({ children }: { children: ReactNode }) {
   );
 }
 
+// Module-level so their identity is stable: expo-router calls setOptions
+// whenever an `options` prop changes identity, which re-configures the
+// native bar.
+const TABS_OPTIONS = { headerShown: false } as const;
+const PLAN_OPTIONS = { title: 'Plan' } as const;
+const ACTIVITIES_OPTIONS = { title: 'Activity' } as const;
+
 export default function RootLayout() {
+  const header = useThemedStyles(nativeHeader);
   return (
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>
       <QueryClientProvider client={queryClient}>
         <AuthGate>
           <WorkoutStoreGate>
-            {/* All screens draw their own chrome (ScreenTitle/BackRow) — the
-                default navigation header (raw route names) is never wanted. */}
-            <Stack screenOptions={{ headerShown: false }} />
+            {/* One header style for the whole app (see `styles/header.ts`);
+                a screen only names itself. Titles for the simple pushed
+                screens are declared here so they're right even while the
+                screen is still loading its data. */}
+            <Stack screenOptions={header}>
+              {/* Each tab runs its own stack, and owns its own bar. */}
+              <Stack.Screen name="(tabs)" options={TABS_OPTIONS} />
+              <Stack.Screen name="plan" options={PLAN_OPTIONS} />
+              <Stack.Screen name="activities" options={ACTIVITIES_OPTIONS} />
+            </Stack>
           </WorkoutStoreGate>
         </AuthGate>
       </QueryClientProvider>

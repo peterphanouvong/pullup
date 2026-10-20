@@ -1,11 +1,9 @@
 import { ScrollView, StyleSheet, Text } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import { BackRow } from '@/components/ui/back-row';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { Card } from '@/components/ui/card';
 import { PrimaryButton } from '@/components/ui/primary-button';
-import { Screen } from '@/components/ui/screen';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Markdown } from '@/features/programs/components/markdown';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
@@ -34,10 +32,22 @@ export default function ProgramOverviewScreen() {
   // from: either way, selecting again would only start a fresh copy.
   const isActive = active.data?.programId === data.id || active.data?.templateId === data.id;
 
+  // `Stack.Title` rather than an options object: the composition
+  // components memoize, so a title that changes with the data doesn't
+  // re-configure the bar on every render.
+  //
+  // No wrapper view either — the bar is transparent, and UIKit only finds
+  // the ScrollView to draw its scroll-edge effect over when that view is
+  // the screen's first subview.
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <BackRow title={data.name} />
+    <>
+      <Stack.Title>{data.name}</Stack.Title>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.summary}>{data.summary}</Text>
 
         <PrimaryButton
@@ -72,11 +82,12 @@ export default function ProgramOverviewScreen() {
         <SectionLabel>About this programme</SectionLabel>
         <Markdown>{data.description}</Markdown>
       </ScrollView>
-    </Screen>
+    </>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   summary: { ...theme.type.body, color: theme.colors.ink },
   error: { ...theme.type.body, color: theme.colors.danger },

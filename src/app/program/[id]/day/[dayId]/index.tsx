@@ -15,11 +15,9 @@ import { haptics } from '@/lib/haptics';
 import { startWorkoutFromDay, useActiveWorkout } from '@/features/workouts/hooks';
 import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
 
-// Module-level so the identity is stable: an inline `options` literal would
-// re-run setOptions on every render and reset the native header mid-scroll.
-// A bare chevron, no previous-screen title: the bar stays "Workout" and
-// nothing else, like the Programme tab's.
-const SCREEN_OPTIONS = { headerShown: true, title: 'Workout', headerBackButtonDisplayMode: 'minimal' } as const;
+// The bar is the app's (see `styles/header.ts`); only the fallback title
+// is set here, for the states that have no day to name yet.
+const SCREEN_OPTIONS = { title: 'Workout' } as const;
 
 /**
  * The workout preview: what a programme day asks for, before you commit to
@@ -73,21 +71,17 @@ export default function DayScreen() {
 
   return (
     <>
-      <Stack.Screen options={SCREEN_OPTIONS} />
-      {/* Transparent bar, same as the Programme tab: iOS draws its soft
-          scroll-edge effect as content passes under. That needs the
-          ScrollView to be the screen's first subview, hence no wrapper. */}
-      <Stack.Header transparent style={{ color: theme.colors.ink, shadowColor: 'transparent' }} />
+      {/* The day names the bar. `Stack.Title` rather than an options
+          object: the composition components memoize, so a data-driven
+          title doesn't re-configure the bar on every render. */}
+      <Stack.Title>{day.name}</Stack.Title>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>{day.name}</Text>
-          <Text style={styles.subtitle}>{`${program.data.name} · ${week.name}`}</Text>
-        </View>
+        <Text style={styles.subtitle}>{`${program.data.name} · ${week.name}`}</Text>
 
         {day.kind === 'lifting' && isActiveProgram && (
           <NativeButton variant="primary" label="Start workout" onPress={handleStart} />
@@ -105,17 +99,22 @@ export default function DayScreen() {
 
         <View style={styles.exercisesHeader}>
           <SectionLabel>Exercises</SectionLabel>
-          {/* Editing a programme day isn't built yet; the button marks where
-              it will live. */}
-          <NativeButton
-            variant="ghost"
-            size="small"
-            fullWidth={false}
-            systemImage="pencil"
-            label="Edit workout"
-            labelColor={theme.colors.accent}
-            onPress={() => haptics.tap()}
-          />
+          {/* Only your own copy of a programme is editable — a catalogue
+              template is read-only, and RLS enforces that anyway. */}
+          {isActiveProgram && (
+            <NativeButton
+              variant="ghost"
+              size="small"
+              fullWidth={false}
+              systemImage="pencil"
+              label="Edit workout"
+              labelColor={theme.colors.accent}
+              onPress={() => {
+                haptics.tap();
+                router.push(`/program/${id}/day/${dayId}/edit`);
+              }}
+            />
+          )}
         </View>
         <View style={styles.exercises}>
           {day.exercises.map((exercise) => (
@@ -130,8 +129,6 @@ export default function DayScreen() {
 const createStyles = (theme: Theme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
-  titleBlock: { gap: theme.spacing.xs },
-  title: { ...theme.type.display, color: theme.colors.ink },
   subtitle: { ...theme.type.body, color: theme.colors.inkMuted },
   statsCard: { alignItems: 'center', gap: theme.spacing.sm, paddingVertical: theme.spacing.xxl },
   statsTitle: { ...theme.type.heading, color: theme.colors.inkMuted },

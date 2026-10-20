@@ -132,9 +132,18 @@ mid-swipe.
 
 ## Navigation and headers
 
-- Screens draw their own chrome; the root stack sets `headerShown: false`.
-  Screens that want a native bar opt in (the Today tab has its own stack
-  purely for this).
+- **One header style, set once.** `styles/header.ts`'s `nativeHeader(theme)`
+  is the app's bar — compact title, transparent, no hairline, minimal back
+  button — and it's the root stack's `screenOptions`. A screen supplies a
+  `title` and nothing else. Pass it through `useThemedStyles` so its
+  identity is stable.
+  No large titles: the collapse behaviour was fought with and abandoned.
+- A tab screen can't have a native bar on its own, so each tab is a stack of
+  one (`(programme)/`, `profile/`, `crew/`) whose layout applies the same
+  options. That's the only reason those directories exist.
+- Titles that don't depend on loaded data are declared in the layout
+  (`<Stack.Screen name="plan" options={PLAN_OPTIONS} />`), so they're right
+  while the screen is still loading. Data-driven titles use `<Stack.Title>`.
 - **Header options belong in the layout's `screenOptions`, or in expo-router's
   composition components** (`Stack.Title`, `Stack.Header`, `Stack.Toolbar`),
   which memoise. An inline `options={{…}}` object on a page changes identity
@@ -222,10 +231,10 @@ typed into.
 
 ## Navigation shape
 
-Two tabs: **Programme** (the week you're running) and **Profile** (the hub
-for Plan and Activity). Things you *visit* don't earn permanent tab-bar
-space; things you *work in* do. Pushed screens reached from the hub carry a
-`BackRow` rather than a native header, matching the rest of the app.
+Three tabs: **Programme** (the week you're running), **Crew**, and
+**Profile** (the hub for Plan and Activity). Things you *visit* don't earn
+permanent tab-bar space; things you *work in* do. Every pushed screen uses
+the native bar — there's no hand-rolled back row.
 
 ## Account
 

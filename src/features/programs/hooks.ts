@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
-import { fetchActiveProgram, fetchProgram, fetchPrograms, selectProgram } from './api';
+import {
+  fetchActiveProgram,
+  fetchProgram,
+  fetchPrograms,
+  saveDayExercises,
+  selectProgram,
+  type DayExerciseDraft,
+} from './api';
 
 export function usePrograms() {
   return useQuery({ queryKey: ['programs'], queryFn: fetchPrograms });
@@ -19,6 +26,25 @@ export function useActiveProgram() {
   return useQuery({
     queryKey: ['active-program', session.user.id],
     queryFn: () => fetchActiveProgram(session.user.id),
+  });
+}
+
+/** Saves an edited programme day. The whole programme is refetched after:
+ * a day's exercises show up on the week list and the preview too, and
+ * one refetch is cheaper than keeping three caches honest. */
+export function useSaveDayExercises(programId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      dayId,
+      drafts,
+      removedIds,
+    }: {
+      dayId: string;
+      drafts: DayExerciseDraft[];
+      removedIds: string[];
+    }) => saveDayExercises(dayId, drafts, removedIds),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['programs', programId] }),
   });
 }
 

@@ -55,6 +55,12 @@ export function ExerciseCard({
   const isDuration = isDurationExercise(exercise);
   const doneCount = exercise.sets.filter((s) => s.completed_at != null).length;
   const notesRef = useRef<TextInput>(null);
+  // What the programme asked for — "4 × 2 @ 85%", or whatever its LOAD
+  // column said ("RPE 7", "moderate"). That's the thing you're deciding
+  // against when you pick a weight, so it reads at a glance above the
+  // table rather than sitting behind a tap. Sets added by hand carry no
+  // target, hence the search for the first that has one.
+  const prescription = exercise.sets.find((s) => s.target != null)?.target ?? null;
 
   return (
     <Card style={styles.card}>
@@ -79,6 +85,12 @@ export function ExerciseCard({
       {/* At-a-glance metrics, same language as the Today week cards: icon +
           number, with rest as a tappable chip rather than a prose line. */}
       <View style={styles.metrics}>
+        {prescription != null && (
+          <View style={styles.metric}>
+            <SymbolView name="target" size={12} tintColor={theme.colors.accent} />
+            <Text style={[styles.metricText, styles.prescription]}>{prescription}</Text>
+          </View>
+        )}
         <View style={styles.metric}>
           <SymbolView name="square.stack.3d.up.fill" size={12} tintColor={theme.colors.inkMuted} />
           <Text style={styles.metricText}>{`${doneCount}/${exercise.sets.length} sets`}</Text>
@@ -135,9 +147,12 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: theme.spacing.sm },
   name: { ...theme.type.heading, color: theme.colors.accent, flex: 1 },
   notes: { ...theme.type.body, color: theme.colors.ink, paddingVertical: theme.spacing.xs },
-  metrics: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md },
+  metrics: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: theme.spacing.md },
   metric: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
   metricText: { ...theme.type.caption, color: theme.colors.inkMuted, fontVariant: ['tabular-nums'] },
+  // The one metric that's an instruction rather than a reading, so it
+  // carries the accent the exercise name does.
+  prescription: { color: theme.colors.accent },
   header: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, marginTop: theme.spacing.xs },
   headerLabel: { ...theme.type.label, color: theme.colors.inkMuted },
   headerPrevious: { flex: 1 },

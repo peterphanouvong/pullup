@@ -37,7 +37,9 @@ export function ExercisePicker({ onPick }: { onPick: (exercise: Exercise) => voi
 
   return (
     <ScrollView
+      style={styles.scroll}
       contentContainerStyle={styles.content}
+      contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
@@ -118,6 +120,8 @@ function ExerciseRow({ exercise, onPress }: { exercise: Exercise; onPress: () =>
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  // The route it sits in is the whole screen, so it owns the canvas.
+  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, gap: theme.spacing.md, paddingBottom: theme.spacing.xxl },
   searchField: {
     flexDirection: 'row',

@@ -50,6 +50,69 @@ export async function fetchActiveProgram(userId: string): Promise<ActiveProgram 
   return { programId: data.program_id, startDate: data.start_date, templateId: program?.template_id ?? null };
 }
 
+/** One exercise as the day editor holds it. A `null` id is a row the user
+ * has just added and the database hasn't seen yet. */
+export interface DayExerciseDraft {
+  id: string | null;
+  exerciseName: string;
+  exerciseId: string | null;
+  sets: number | null;
+  reps: string | null;
+  load: string | null;
+  notes: string | null;
+}
+
+/**
+ * Writes a programme day's exercise list back, in the order given.
+ *
+ * Only ever called against the user's own instance — RLS rejects writes to
+ * a catalogue template, which is the point of instances (see
+ * `20261021110000_program_instances.sql`).
+ *
+ * Deletes go first so a row can be removed and its position reused in the
+ * same save without tripping the (day_id, position) ordering.
+ */
+export async function saveDayExercises(
+  dayId: string,
+  drafts: DayExerciseDraft[],
+  removedIds: string[],
+): Promise<void> {
+  if (removedIds.length > 0) {
+    const { error } = await supabase.from('day_exercises').delete().in('id', removedIds);
+    if (error) throw error;
+  }
+
+  const updates: Record<string, unknown>[] = [];
+  const inserts: Record<string, unknown>[] = [];
+  drafts.forEach((draft, index) => {
+    const row = {
+      day_id: dayId,
+      // Position is the list's own order, renumbered from 1 on every save.
+      position: index + 1,
+      exercise_name: draft.exerciseName,
+      exercise_id: draft.exerciseId,
+      sets: draft.sets,
+      reps: draft.reps,
+      load: draft.load,
+      notes: draft.notes,
+    };
+    if (draft.id != null) updates.push({ ...row, id: draft.id });
+    else inserts.push(row);
+  });
+
+  // Existing rows keep their ids (an upsert carrying the id), so anything
+  // pointing at them still does.
+  if (updates.length > 0) {
+    const { error } = await supabase.from('day_exercises').upsert(updates);
+    if (error) throw error;
+  }
+
+  if (inserts.length > 0) {
+    const { error } = await supabase.from('day_exercises').insert(inserts);
+    if (error) throw error;
+  }
+}
+
 /** Selecting a template copies it into a private instance owned by the
  * caller and makes that the active programme (the `select_program` RPC);
  * edits later land on the instance, never the template. Returns the

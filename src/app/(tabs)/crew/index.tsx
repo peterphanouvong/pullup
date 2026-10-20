@@ -1,15 +1,12 @@
 import { useCallback, useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
-import { IconCircle } from '@/components/ui/icon-circle';
 import { NativeButton } from '@/components/ui/native-button';
-import { Screen } from '@/components/ui/screen';
-import { ScreenTitle } from '@/components/ui/screen-title';
 import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
-import { useThemedStyles } from '@/styles/use-theme';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { AccountCard } from '@/features/account/components/account-card';
 import { cleanDisplayName } from '@/features/account/api';
@@ -33,6 +30,7 @@ function errorText(e: Error): string {
  */
 export default function CrewScreen() {
   const session = useSession();
+  const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   const queryClient = useQueryClient();
   const crews = useMyCrews();
@@ -134,19 +132,28 @@ export default function CrewScreen() {
   const list = crews.data ?? [];
 
   return (
-    <Screen>
+    <>
+      {/* Add-a-crew sits in the bar, next to the title it belongs to. It
+          only appears once you have a crew — with none, the empty state's
+          own two buttons are the way in. */}
+      {!isGuest && list.length > 0 && (
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Button
+            icon="plus"
+            accessibilityLabel="Add a crew"
+            hidesSharedBackground
+            tintColor={theme.colors.ink}
+            onPress={openAddMenu}
+          />
+        </Stack.Toolbar>
+      )}
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic"
         refreshControl={isGuest ? undefined : <RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       >
-        <ScreenTitle title="Crew">
-          {!isGuest && list.length > 0 && (
-            <IconCircle name="plus" fallback="+" onPress={openAddMenu} />
-          )}
-        </ScreenTitle>
-
         {isGuest ? (
           <>
             <Text style={styles.lede}>
@@ -180,11 +187,12 @@ export default function CrewScreen() {
           </>
         )}
       </ScrollView>
-    </Screen>
+    </>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
   lede: { ...theme.type.body, color: theme.colors.inkMuted },
   loading: { paddingVertical: theme.spacing.xl },
