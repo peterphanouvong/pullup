@@ -1,9 +1,11 @@
 import { act, create } from 'react-test-renderer';
+import { haptics } from '@/lib/haptics';
 import type { Observable } from '@legendapp/state';
 import type { WorkoutSet } from '../../types';
 
 import { FillDownBar } from '../fill-down-bar';
 import { focusSetField, focusedSet$ } from '../../focused-set';
+import { updateSet } from '../../hooks';
 import { workoutSets$ } from '../../store';
 
 // The real store needs Supabase; a bare observable is all the bar reads.
@@ -12,6 +14,7 @@ jest.mock('../../store', () => {
   return { workoutSets$: observable({}) };
 });
 jest.mock('../../hooks', () => ({ updateSet: jest.fn() }));
+jest.mock('@/lib/haptics', () => ({ haptics: { tap: jest.fn(), complete: jest.fn() } }));
 
 const sets$ = workoutSets$ as Observable<Record<string, WorkoutSet>>;
 
@@ -44,6 +47,35 @@ describe('FillDownBar', () => {
 
     act(() => focusedSet$.set(null));
     expect(labels(tree)).toEqual([]);
+  });
+
+  it('fills the rows below, knocks, and shows a tick for a beat', () => {
+    jest.useFakeTimers();
+    sets$.set({ s1: set('s1', 1, 60), s2: set('s2', 2, null), s3: set('s3', 3, null) });
+    let tree!: ReturnType<typeof create>;
+    act(() => {
+      tree = create(<FillDownBar onReveal={() => {}} />);
+    });
+    act(() => focusSetField('s1', 'weight'));
+
+    // Outermost node carrying the pill's label and its handler: the Pressable itself.
+    const kgPill = tree.root.findAll(
+      (n) => n.props.accessibilityLabel === 'Fill kg down' && typeof n.props.onPress === 'function',
+    )[0];
+    act(() => kgPill.props.onPress());
+
+    expect(updateSet).toHaveBeenCalledTimes(2);
+    expect(updateSet).toHaveBeenCalledWith('s2', { weight_kg: 60 });
+    expect(updateSet).toHaveBeenCalledWith('s3', { weight_kg: 60 });
+    expect(haptics.complete).toHaveBeenCalledTimes(1);
+    // The kg pill reads as done; the reps pill is untouched.
+    expect(labels(tree)).toEqual(['Filled', 'Fill reps']);
+
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(labels(tree)).toEqual(['Fill kg', 'Fill reps']);
+    jest.useRealTimers();
   });
 
   it('renders with nothing focused, then with a focused set', () => {

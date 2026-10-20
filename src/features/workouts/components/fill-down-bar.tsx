@@ -17,6 +17,9 @@ export const FILL_BAR_CLEARANCE = 56;
 
 const FIELD_LABELS: Record<FillField, string> = { weight: 'kg', reps: 'reps', duration: 'time' };
 
+/** How long the pill shows its tick after a fill. */
+const CONFIRM_MS = 1000;
+
 function valueOf(set: WorkoutSet, field: FillField): number | null {
   return field === 'duration' ? set.duration_seconds : field === 'reps' ? set.reps : set.weight_kg;
 }
@@ -47,6 +50,10 @@ export function FillDownBar({ onReveal }: { onReveal: (keyboardTop: number) => v
   const styles = useThemedStyles(createStyles);
   const [lift] = useState(() => new Animated.Value(0));
   const [keyboardTop, setKeyboardTop] = useState<number | null>(null);
+  // The column just filled: its pill shows a tick for a beat so the
+  // copy reads as done, since the rows it changed are under the keyboard.
+  const [confirmed, setConfirmed] = useState<FillField | null>(null);
+  const [pulse] = useState(() => new Animated.Value(1));
 
   // One selector, one plain snapshot: everything the bar needs from the
   // store in a single hook, so the hook sequence here never varies. (Two or
@@ -104,11 +111,24 @@ export function FillDownBar({ onReveal }: { onReveal: (keyboardTop: number) => v
     return () => clearTimeout(handle);
   }, [visible, keyboardTop, focusKey, onReveal]);
 
+  // Back to the arrow once the tick has had its moment; a second fill
+  // while it's up restarts the clock.
+  useEffect(() => {
+    if (confirmed == null) return;
+    const handle = setTimeout(() => setConfirmed(null), CONFIRM_MS);
+    return () => clearTimeout(handle);
+  }, [confirmed]);
+
   function fill(field: FillField, value: number | null) {
     if (targets.length === 0) return;
-    haptics.tap();
+    // Crisp rather than light: this is a batch of cells changing at once,
+    // felt through the keyboard, so it needs the same weight as a tick.
+    haptics.complete();
     const patch = patchFor(field, value);
     for (const id of targets) updateSet(id, patch);
+    setConfirmed(field);
+    pulse.setValue(0.9);
+    Animated.spring(pulse, { toValue: 1, speed: 24, bounciness: 10, useNativeDriver: true }).start();
   }
 
   return (
@@ -117,16 +137,26 @@ export function FillDownBar({ onReveal }: { onReveal: (keyboardTop: number) => v
       style={[styles.host, { opacity: visible ? 1 : 0, transform: [{ translateY: lift }] }]}
     >
       <View style={styles.bar}>
-        {fillable.map(({ field, value }) => (
-          <Pressable
-            key={field}
-            style={({ pressed }) => [styles.fillButton, pressed && styles.fillButtonPressed]}
-            onPress={() => fill(field, value)}
-          >
-            <SymbolView name="arrow.down.to.line" size={14} tintColor={theme.colors.onAccent} />
-            <Text style={styles.fillLabel}>{`Fill ${FIELD_LABELS[field]}`}</Text>
-          </Pressable>
-        ))}
+        {fillable.map(({ field, value }) => {
+          const done = confirmed === field;
+          return (
+            <Animated.View key={field} style={done ? { transform: [{ scale: pulse }] } : undefined}>
+              <Pressable
+                style={({ pressed }) => [styles.fillButton, pressed && styles.fillButtonPressed]}
+                onPress={() => fill(field, value)}
+                accessibilityLabel={done ? `Filled ${FIELD_LABELS[field]}` : `Fill ${FIELD_LABELS[field]} down`}
+              >
+                <SymbolView
+                  name={done ? 'checkmark' : 'arrow.down.to.line'}
+                  size={14}
+                  tintColor={theme.colors.onAccent}
+                  animationSpec={done ? { effect: { type: 'bounce' } } : undefined}
+                />
+                <Text style={styles.fillLabel}>{done ? 'Filled' : `Fill ${FIELD_LABELS[field]}`}</Text>
+              </Pressable>
+            </Animated.View>
+          );
+        })}
       </View>
     </Animated.View>
   );
