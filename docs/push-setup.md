@@ -52,3 +52,21 @@ npx expo run:ios --device`. Pushes only arrive on a real phone.
 ```sql
 select public.dispatch_push('checkin', '<a finished workout id>');
 ```
+
+## TestFlight
+
+Needs a paid Apple Developer Program membership (TestFlight is not available
+to free accounts). Then, from the repo:
+
+```sh
+npx eas build --platform ios --profile production   # say yes to Push Notifications setup
+npx eas submit --platform ios --latest
+```
+
+The first build logs in with your Apple ID and creates the two App IDs
+(app + widgets), the App Group, signing certificates and the App Store
+Connect record. `eas.json` carries the public Supabase URL and key for
+the build, since `.env.local` is gitignored and never uploaded.
+
+Then App Store Connect → the app → TestFlight → Internal Testing: add
+testers by Apple ID email. Apple requires TestFlight testers to be 13+.
