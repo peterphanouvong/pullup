@@ -339,7 +339,7 @@ email_optional = false
 # Native Google sign-in: the iOS client issues the ID token, the web client
 # is the server-side audience. iOS can't pass a raw nonce, so skip the check.
 [auth.external.google]
-enabled = true
+enabled = false  # Apple only for now; flip on with the Google client IDs when wanted
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 skip_nonce_check = true
