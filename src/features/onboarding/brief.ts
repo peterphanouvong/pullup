@@ -5,7 +5,9 @@ export type {
   Experience,
   Goal,
   Limitation,
+  Obstacle,
   Sacrifice,
+  Season,
   Sport,
   TrainingBrief,
 } from '../../../supabase/functions/_shared/brief';

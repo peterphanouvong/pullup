@@ -8,7 +8,7 @@ import type { Theme } from '@/styles/theme';
 import { BRIEF_NOTE_MAX } from '@/features/onboarding/brief';
 import { OptionCard } from '@/features/onboarding/components/option-card';
 import { StepFrame } from '@/features/onboarding/components/step-frame';
-import { isAnswered, noteFor, visibleQuestions } from '@/features/onboarding/questions';
+import { isAnswered, noteFor, titleFor, visibleQuestions } from '@/features/onboarding/questions';
 import { draft$ } from '@/features/onboarding/state';
 
 /**
@@ -118,7 +118,7 @@ export default function QuestionScreen() {
       </Stack.Toolbar>
       <StepFrame
         step={{ index: index + 1, total: questions.length }}
-        title={question.title}
+        title={titleFor(question, draft)}
         subtitle={question.subtitle}
         cta="Continue"
         onCta={next}

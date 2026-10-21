@@ -68,7 +68,7 @@ export default function BuildingScreen() {
     // Landed here without a finished interview (a deep link, a reload).
     return (
       <StepFrame step={null} title="Let’s start again" cta="Start" onCta={() => router.replace('/onboarding')}>
-        <Text style={styles.body}>Your answers didn’t make it. Ten questions and we’re back here.</Text>
+        <Text style={styles.body}>Your answers didn’t make it. A few questions and we’re back here.</Text>
       </StepFrame>
     );
   }

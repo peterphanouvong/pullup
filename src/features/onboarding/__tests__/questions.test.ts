@@ -1,10 +1,18 @@
-import { completeBrief, isAnswered, noteFor, visibleQuestions } from '../questions';
+import { completeBrief, isAnswered, noteFor, titleFor, visibleQuestions } from '../questions';
 
 describe('onboarding questions', () => {
   it('skips the court-days question for someone with no sport', () => {
     const keys = visibleQuestions({ sport: 'none' }).map((q) => q.key);
     expect(keys).not.toContain('courtDays');
     expect(visibleQuestions({ sport: 'basketball' }).map((q) => q.key)).toContain('courtDays');
+  });
+
+  it('skips the season for a comp goal, and personalises headings with a name', () => {
+    expect(visibleQuestions({ goal: 'comp' }).map((q) => q.key)).not.toContain('season');
+    expect(visibleQuestions({ goal: 'jump' }).map((q) => q.key)).toContain('season');
+    const goal = visibleQuestions({})[0];
+    expect(titleFor(goal, { name: 'Sam' })).toBe('What are you training for, Sam?');
+    expect(titleFor(goal, {})).toBe('What are you training for?');
   });
 
   it('asks weeks-to-comp instead of block length for a comp goal', () => {
@@ -21,7 +29,7 @@ describe('onboarding questions', () => {
   });
 
   it('builds a brief only once every visible question is answered', () => {
-    const partial = { goal: 'jump', sport: 'none', liftDays: 3 } as const;
+    const partial = { goal: 'jump' as const, sport: 'none' as const, season: 'off' as const, liftDays: 3, minimumMinutes: 15, obstacles: [] };
     expect(completeBrief(partial)).toBeNull();
     const brief = completeBrief({
       ...partial,
@@ -36,8 +44,11 @@ describe('onboarding questions', () => {
       goal: 'jump',
       sport: 'none',
       courtDays: 0,
+      season: 'off',
       liftDays: 3,
       sessionMinutes: 45,
+      minimumMinutes: 15,
+      obstacles: [],
       equipment: 'gym',
       experience: 'some',
       limitations: ['knee'],
@@ -51,7 +62,10 @@ describe('onboarding questions', () => {
     const draft = {
       goal: 'jump' as const,
       sport: 'none' as const,
+      season: 'in' as const,
       liftDays: 3,
+      minimumMinutes: 10,
+      obstacles: ['no_time' as const],
       sessionMinutes: 45,
       experience: 'some' as const,
       limitations: [],

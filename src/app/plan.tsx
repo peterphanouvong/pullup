@@ -67,7 +67,7 @@ export default function PlanScreen() {
         </View>
         <View style={styles.buildText}>
           <Text style={styles.name}>Build my program</Text>
-          <Text style={styles.summary}>Ten questions, then a block written for your week.</Text>
+          <Text style={styles.summary}>A few questions, then a block written for your week.</Text>
         </View>
         <SymbolView name="chevron.right" size={15} tintColor={theme.colors.inkMuted} />
       </Card>

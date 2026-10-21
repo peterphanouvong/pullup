@@ -198,7 +198,7 @@ export default function TodayScreen() {
           <Card style={styles.messageCard}>
             <Text style={styles.messageTitle}>No program yet</Text>
             <Text style={styles.messageBody}>
-              Answer ten questions and get a block written for your week, or
+              Answer a few questions and get a block written for your week, or
               pick one from the catalogue.
             </Text>
             <PrimaryButton

@@ -7,7 +7,7 @@ import type { Theme } from '@/styles/theme';
 import { SectionLabel } from '@/components/ui/section-label';
 import { StepFrame } from '@/features/onboarding/components/step-frame';
 import { WeekGlance } from '@/features/onboarding/components/week-glance';
-import { proposal$ } from '@/features/onboarding/state';
+import { draft$, proposal$ } from '@/features/onboarding/state';
 
 /**
  * The programme, revealed: its name, what it's for, and week one laid out
@@ -16,6 +16,7 @@ import { proposal$ } from '@/features/onboarding/state';
  */
 export default function RevealScreen() {
   const proposal = useSelector(proposal$);
+  const name = useSelector(() => draft$.name.get());
   const styles = useThemedStyles(createStyles);
 
   if (!proposal) {
@@ -50,7 +51,7 @@ export default function RevealScreen() {
       step={null}
       title={plan.name}
       subtitle={plan.summary}
-      cta="Start training"
+      cta={name ? `Let’s go, ${name}` : 'Start training'}
       onCta={() => {
         haptics.tap();
         router.push('/onboarding/crew');

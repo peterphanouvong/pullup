@@ -15,6 +15,8 @@ export interface Option {
 export interface Question {
   key: BriefKey;
   title: string;
+  /** The title with their name worked in, when we have one. */
+  named?: (name: string) => string;
   subtitle: string;
   kind: 'single' | 'multi';
   options: Option[];
@@ -24,7 +26,17 @@ export interface Question {
 
 /** Answers so far. Card values by key, plus `notes` for the ones written
  * out instead; a key has one or the other. */
-export type Draft = Partial<Omit<TrainingBrief, 'notes'>> & { notes?: TrainingBrief['notes'] };
+export type Draft = Partial<Omit<TrainingBrief, 'notes'>> & {
+  notes?: TrainingBrief['notes'];
+  /** First name, for headings and the crew. Never sent to the coach. */
+  name?: string;
+};
+
+/** The heading for a question, personalised when there's a name. */
+export function titleFor(question: Question, draft: Draft): string {
+  const name = draft.name?.trim();
+  return name && question.named ? question.named(name) : question.title;
+}
 
 /** The written answer for a question, if that's how it was answered. */
 export function noteFor(draft: Draft, key: BriefKey): string | null {
@@ -37,6 +49,7 @@ const WHY = 'This shapes the program we write for you.';
 const GOAL: Question = {
   key: 'goal',
   title: 'What are you training for?',
+  named: (name) => `What are you training for, ${name}?`,
   subtitle: WHY,
   kind: 'single',
   options: [
@@ -54,8 +67,9 @@ const SPORT: Question = {
   subtitle: 'Court and field sessions count as training. We lift around them.',
   kind: 'single',
   options: [
-    { value: 'basketball', label: 'Basketball' },
     { value: 'volleyball', label: 'Volleyball' },
+    { value: 'basketball', label: 'Basketball' },
+    { value: 'netball', label: 'Netball' },
     { value: 'football', label: 'Football' },
     { value: 'other', label: 'Something else' },
     { value: 'none', label: 'No sport', caption: 'Lifting is the training' },
@@ -75,9 +89,51 @@ const COURT_DAYS: Question = {
   ],
 };
 
+const SEASON: Question = {
+  key: 'season',
+  title: 'Where are you at in your season?',
+  subtitle: 'In season the gym backs up your games. Out of it, it’s where you build.',
+  kind: 'single',
+  options: [
+    { value: 'pre', label: 'Pre-season', caption: 'The season’s coming' },
+    { value: 'in', label: 'In season', caption: 'Games most weeks' },
+    { value: 'off', label: 'Off-season', caption: 'Time to build' },
+    { value: 'none', label: 'No season', caption: 'I train all year' },
+  ],
+};
+
+const MINIMUM: Question = {
+  key: 'minimumMinutes',
+  title: 'And on a flat day?',
+  subtitle: 'Every session gets a short version. Doing that still counts, and it keeps the streak alive.',
+  kind: 'single',
+  options: [
+    { value: 10, label: '10 minutes' },
+    { value: 15, label: '15 minutes' },
+    { value: 20, label: '20 minutes' },
+  ],
+};
+
+const OBSTACLES: Question = {
+  key: 'obstacles',
+  title: 'What usually gets in the way?',
+  named: (name) => `What usually gets in the way, ${name}?`,
+  subtitle: 'Be honest. We’ll build around it.',
+  kind: 'multi',
+  noneLabel: 'Nothing yet, I’m just starting',
+  options: [
+    { value: 'dont_know', label: 'Not sure what to do' },
+    { value: 'no_time', label: 'No time' },
+    { value: 'drop_off', label: 'I start strong, then drop off' },
+    { value: 'alone', label: 'Nobody to train with' },
+    { value: 'tired', label: 'Too tired after court' },
+  ],
+};
+
 const LIFT_DAYS: Question = {
   key: 'liftDays',
   title: 'How many days can you lift?',
+  named: (name) => `How many days can you lift, ${name}?`,
   subtitle: 'Be honest. A plan you can keep beats a plan you can’t.',
   kind: 'single',
   options: [
@@ -143,6 +199,7 @@ const LIMITATIONS: Question = {
 const SACRIFICES: Question = {
   key: 'sacrifices',
   title: 'What will you give up for it?',
+  named: (name) => `What will you give up for it, ${name}?`,
   subtitle: 'Sessions need a slot. Where does yours come from?',
   kind: 'multi',
   noneLabel: 'Nothing, I’ve got the time',
@@ -187,11 +244,15 @@ export function visibleQuestions(draft: Draft): Question[] {
     GOAL,
     SPORT,
     ...(draft.sport === 'none' ? [] : [COURT_DAYS]),
+    // A comp goal already says where the season is: building to it.
+    ...(draft.goal === 'comp' ? [] : [SEASON]),
     LIFT_DAYS,
     SESSION_MINUTES,
+    MINIMUM,
     EQUIPMENT,
     EXPERIENCE,
     LIMITATIONS,
+    OBSTACLES,
     SACRIFICES,
     draft.goal === 'comp' ? WEEKS_TO_COMP : WEEKS,
   ];
@@ -221,8 +282,11 @@ export function completeBrief(draft: Draft): TrainingBrief | null {
     goal: card('goal'),
     sport: card('sport'),
     courtDays: draft.sport === 'none' ? 0 : card('courtDays'),
+    season: draft.goal === 'comp' ? null : card('season'),
     liftDays: card('liftDays'),
     sessionMinutes: card('sessionMinutes'),
+    minimumMinutes: card('minimumMinutes'),
+    obstacles: notes.obstacles != null ? null : (draft.obstacles ?? []),
     equipment: card('equipment'),
     experience: card('experience'),
     limitations: notes.limitations != null ? null : (draft.limitations ?? []),

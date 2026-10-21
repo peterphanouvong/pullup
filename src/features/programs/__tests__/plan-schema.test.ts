@@ -50,8 +50,11 @@ describe('brief', () => {
     goal: 'comp' as const,
     sport: 'volleyball' as const,
     courtDays: 2,
+    season: null,
     liftDays: 4,
     sessionMinutes: 60,
+    minimumMinutes: 15,
+    obstacles: ['drop_off' as const],
     equipment: 'gym' as const,
     experience: 'years' as const,
     limitations: ['knee' as const],
@@ -82,5 +85,8 @@ describe('brief', () => {
     expect(prose).toContain('Court/field sessions a week: 2.');
     expect(prose).toContain('a knee to look after');
     expect(prose).toContain('late nights');
+    expect(prose).toContain('Season: building to the competition.');
+    expect(prose).toContain('about 15 minutes');
+    expect(prose).toContain('starting strong then dropping off');
   });
 });

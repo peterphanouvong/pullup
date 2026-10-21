@@ -17,8 +17,11 @@ const SAMPLE_BRIEF: TrainingBrief = {
   goal: 'jump',
   sport: 'volleyball',
   courtDays: 2,
+  season: 'in',
   liftDays: 3,
   sessionMinutes: 45,
+  minimumMinutes: 15,
+  obstacles: ['drop_off'],
   equipment: 'gym',
   experience: 'some',
   limitations: ['knee'],
@@ -55,13 +58,14 @@ export function DevPanel() {
 
   function useSampleBrief() {
     resetOnboarding();
-    draft$.set({ ...SAMPLE_BRIEF });
+    draft$.set({ ...SAMPLE_BRIEF, name: 'Sam' });
     haptics.success();
     Alert.alert('Sample brief loaded', 'Building and the last question now have answers to work from.');
   }
 
   const links: { label: string; href: Href }[] = [
     { label: 'Onboarding: welcome', href: '/onboarding' },
+    { label: 'Onboarding: name', href: '/onboarding/name' },
     { label: 'Onboarding: question 1', href: '/onboarding/1' },
     { label: 'Onboarding: building (needs a brief)', href: '/onboarding/building' },
     { label: 'Onboarding: save (sign in)', href: '/onboarding/save' },

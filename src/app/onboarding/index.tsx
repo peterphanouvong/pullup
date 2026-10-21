@@ -17,7 +17,7 @@ export default function WelcomeScreen() {
   function start() {
     haptics.tap();
     resetOnboarding();
-    router.push('/onboarding/1');
+    router.push('/onboarding/name');
   }
 
   async function browse() {
