@@ -9,7 +9,7 @@ export default function TabsLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="(programme)">
-        <NativeTabs.Trigger.Label>Programme</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Program</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="calendar" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="crew">

@@ -23,9 +23,9 @@ export default function SaveScreen() {
   return (
     <StepFrame
       step={null}
-      title="Save your programme"
+      title="Save your program"
       subtitle="Sign in so it’s yours on any phone, and so your mates can find you."
-      cta="Show me the programme"
+      cta="Show me the program"
       onCta={() => router.replace('/onboarding/reveal')}
     >
       <AccountCard />

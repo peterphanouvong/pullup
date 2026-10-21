@@ -50,7 +50,7 @@ export function DevPanel() {
     queryClient.setQueryData(['onboarding-done', session.user.id], false);
     resetOnboarding();
     haptics.success();
-    Alert.alert('Forgotten', 'The Programme tab will push onboarding again next time it has no programme to show.');
+    Alert.alert('Forgotten', 'The Program tab will push onboarding again next time it has no program to show.');
   }
 
   function useSampleBrief() {
@@ -71,14 +71,14 @@ export function DevPanel() {
     { label: 'Calendar', href: '/calendar' },
     { label: 'Activity', href: '/activities' },
     { label: 'Exercise picker', href: '/workout/picker' },
-    ...(programId ? [{ label: 'Active programme overview', href: `/program/${programId}` as Href }] : []),
+    ...(programId ? [{ label: 'Active program overview', href: `/program/${programId}` as Href }] : []),
   ];
 
   return (
     <View style={styles.panel}>
       <SectionLabel>Dev</SectionLabel>
       <Text style={styles.note}>
-        {`User ${session.user.id.slice(0, 8)}… · ${session.user.is_anonymous ? 'guest' : 'signed in'} · ${programId ? 'has a programme' : 'no programme'}`}
+        {`User ${session.user.id.slice(0, 8)}… · ${session.user.is_anonymous ? 'guest' : 'signed in'} · ${programId ? 'has a program' : 'no program'}`}
       </Text>
       <View style={styles.rows}>
         <Row label="Forget onboarding (replay first launch)" onPress={() => void forgetOnboarding()} />

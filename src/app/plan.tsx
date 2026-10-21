@@ -23,7 +23,7 @@ export default function PlanScreen() {
     return (
       <QueryFallback
         isError={programs.isError || active.isError}
-        message="Couldn't load programmes."
+        message="Couldn't load programs."
         onRetry={() => {
           programs.refetch();
           active.refetch();
@@ -66,7 +66,7 @@ export default function PlanScreen() {
           <SymbolView name="sparkles" size={18} tintColor={theme.colors.onAccent} />
         </View>
         <View style={styles.buildText}>
-          <Text style={styles.name}>Build my programme</Text>
+          <Text style={styles.name}>Build my program</Text>
           <Text style={styles.summary}>Ten questions, then a block written for your week.</Text>
         </View>
         <SymbolView name="chevron.right" size={15} tintColor={theme.colors.inkMuted} />
@@ -74,14 +74,14 @@ export default function PlanScreen() {
 
       {activeProgram.data != null && (
         <>
-          <SectionLabel>Your programme</SectionLabel>
+          <SectionLabel>Your program</SectionLabel>
           {renderCard(activeProgram.data, true)}
         </>
       )}
 
       {rest.length > 0 && (
         <>
-          <SectionLabel>Programmes</SectionLabel>
+          <SectionLabel>Programs</SectionLabel>
           {rest.map((program) => renderCard(program, false))}
         </>
       )}

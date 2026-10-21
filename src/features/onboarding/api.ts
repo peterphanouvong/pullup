@@ -24,7 +24,7 @@ export async function buildPlan(brief: TrainingBrief, note: string | null, progr
   const body = data as { plan?: unknown; error?: string } | null;
   if (body?.error) throw new Error(body.error);
   const check = validatePlan(body?.plan);
-  if (!check.ok) throw new Error(`The programme came back malformed (${check.reason}).`);
+  if (!check.ok) throw new Error(`The program came back malformed (${check.reason}).`);
   return check.plan;
 }
 

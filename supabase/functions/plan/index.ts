@@ -112,16 +112,16 @@ Deno.serve(async (req) => {
   const today = new Date().toISOString().slice(0, 10);
 
   const parts = [
-    `Today is ${today}. The programme starts on the Monday of this week.`,
+    `Today is ${today}. The program starts on the Monday of this week.`,
     `## The athlete\n${briefToProse(body.brief)}`,
   ];
   if (current.data) {
-    parts.push(`## Their current programme\n${compactProgram(current.data as Row)}`);
+    parts.push(`## Their current program\n${compactProgram(current.data as Row)}`);
   }
   if (note) {
     parts.push(
       current.data
-        ? `## What they want changed\n${note}\n\nKeep everything they didn't mention. Rewrite the whole programme with the change applied.`
+        ? `## What they want changed\n${note}\n\nKeep everything they didn't mention. Rewrite the whole program with the change applied.`
         : `## Something they asked for\n${note}`,
     );
   }
@@ -150,19 +150,19 @@ Deno.serve(async (req) => {
       throw new Error('Couldn’t reach the coach. Try again in a moment.');
     }
 
-    if (message.stop_reason === 'refusal') throw new Error('The coach declined to write that programme.');
-    if (message.stop_reason === 'max_tokens') throw new Error('The programme came back incomplete. Try a shorter block.');
+    if (message.stop_reason === 'refusal') throw new Error('The coach declined to write that program.');
+    if (message.stop_reason === 'max_tokens') throw new Error('The program came back incomplete. Try a shorter block.');
     const text = message.content.find((b) => b.type === 'text')?.text ?? '';
     let parsed: unknown;
     try {
       parsed = JSON.parse(text);
     } catch {
-      throw new Error('The programme came back malformed. Try again.');
+      throw new Error('The program came back malformed. Try again.');
     }
     const check = validatePlan(parsed);
     if (!check.ok) {
       console.error('plan: invalid plan', check.reason);
-      throw new Error(`The programme came back malformed (${check.reason}). Try again.`);
+      throw new Error(`The program came back malformed (${check.reason}). Try again.`);
     }
     console.log('plan: ok', { user: user.id, weeks: check.plan.weeks.length, usage: message.usage });
     return { plan: check.plan };

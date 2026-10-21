@@ -98,7 +98,7 @@ export default function BuildingScreen() {
   return (
     <StepFrame
       step={null}
-      title={note ? 'Reworking your programme' : 'Writing your programme'}
+      title={note ? 'Reworking your program' : 'Writing your program'}
       subtitle="Usually under a minute. Hang on."
       cta="Writing…"
       onCta={() => {}}

@@ -34,7 +34,7 @@ describe('celebrationCopy', () => {
   it('still says something for an unplanned workout', () => {
     expect(celebrationCopy({ sessionsDone: 1, sessionsPlanned: 0, daysToComp: null })).toEqual({
       headline: 'Session logged',
-      detail: 'Off-programme, still counts.',
+      detail: 'Off-program, still counts.',
     });
     expect(celebrationCopy({ sessionsDone: 1, sessionsPlanned: 0, daysToComp: 2 })).toEqual({
       headline: 'Session logged',

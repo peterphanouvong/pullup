@@ -179,7 +179,7 @@ export default function TodayScreen() {
     return (
       <QueryFallback
         isError
-        message="Couldn't load your programme."
+        message="Couldn't load your program."
         onRetry={() => active.refetch()}
       />
     );
@@ -196,20 +196,20 @@ export default function TodayScreen() {
           contentInsetAdjustmentBehavior="automatic"
         >
           <Card style={styles.messageCard}>
-            <Text style={styles.messageTitle}>No programme yet</Text>
+            <Text style={styles.messageTitle}>No program yet</Text>
             <Text style={styles.messageBody}>
               Answer ten questions and get a block written for your week, or
               pick one from the catalogue.
             </Text>
             <PrimaryButton
-              title="Build my programme"
+              title="Build my program"
               onPress={() => {
                 haptics.tap();
                 router.push("/onboarding/1");
               }}
             />
             <NativeButton
-              label="Browse programmes"
+              label="Browse programs"
               onPress={() => {
                 void markOnboarded();
                 router.push("/plan");
@@ -276,12 +276,12 @@ export default function TodayScreen() {
       >
         {position.finished ? (
           <Card style={styles.messageCard}>
-            <Text style={styles.messageTitle}>Programme finished</Text>
+            <Text style={styles.messageTitle}>Program finished</Text>
             <Text style={styles.messageBody}>
               {`You completed ${data.name}. Head to Plan to pick what's next.`}
             </Text>
             <PrimaryButton
-              title="Browse programmes"
+              title="Browse programs"
               onPress={() => router.push("/plan")}
             />
           </Card>

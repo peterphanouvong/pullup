@@ -21,7 +21,7 @@ export default function ProfileScreen() {
   const program = useProgram(active.data?.programId ?? '');
   const finished = useFinishedWorkouts();
 
-  const programName = program.data?.name ?? 'No programme selected';
+  const programName = program.data?.name ?? 'No program selected';
   const sessionCount = finished.length;
 
   // No wrapper view: the bar is transparent, and UIKit only finds the

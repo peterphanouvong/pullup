@@ -32,7 +32,7 @@ export function noteFor(draft: Draft, key: BriefKey): string | null {
   return note ? note : null;
 }
 
-const WHY = 'This shapes the programme we write for you.';
+const WHY = 'This shapes the program we write for you.';
 
 const GOAL: Question = {
   key: 'goal',
@@ -169,7 +169,7 @@ const WEEKS: Question = {
 const WEEKS_TO_COMP: Question = {
   key: 'weeks',
   title: 'How far away is the comp?',
-  subtitle: 'The programme ends on that weekend, tapered and ready.',
+  subtitle: 'The program ends on that weekend, tapered and ready.',
   kind: 'single',
   options: [
     { value: 2, label: '2 weeks' },

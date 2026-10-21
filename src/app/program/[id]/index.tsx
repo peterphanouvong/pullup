@@ -21,7 +21,7 @@ export default function ProgramOverviewScreen() {
     return (
       <QueryFallback
         isError={program.isError}
-        message="Couldn't load this programme."
+        message="Couldn't load this program."
         onRetry={() => program.refetch()}
       />
     );
@@ -51,7 +51,7 @@ export default function ProgramOverviewScreen() {
         <Text style={styles.summary}>{data.summary}</Text>
 
         <PrimaryButton
-          title={isActive ? '✓ Your programme' : select.isPending ? 'Selecting…' : 'Make this my programme'}
+          title={isActive ? '✓ Your program' : select.isPending ? 'Selecting…' : 'Make this my program'}
           disabled={isActive}
           loading={select.isPending}
           onPress={() => select.mutate({ programId: data.id })}
@@ -79,7 +79,7 @@ export default function ProgramOverviewScreen() {
           </Card>
         ))}
 
-        <SectionLabel>About this programme</SectionLabel>
+        <SectionLabel>About this program</SectionLabel>
         <Markdown>{data.description}</Markdown>
       </ScrollView>
     </>

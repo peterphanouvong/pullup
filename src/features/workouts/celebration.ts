@@ -52,7 +52,7 @@ export function celebrationCopy(context: CelebrationContext): CelebrationCopy {
 
   return {
     headline,
-    detail: daysToComp != null ? formatCountdown(daysToComp) : 'Off-programme, still counts.',
+    detail: daysToComp != null ? formatCountdown(daysToComp) : 'Off-program, still counts.',
   };
 }
 
