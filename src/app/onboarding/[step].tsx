@@ -73,8 +73,16 @@ export default function QuestionScreen() {
     draft$.assign({ [question.key]: [] });
   }
 
+  /** The card becomes the text box, and the other answers let go: one
+   * answer per question, whichever kind. */
   function openWriting() {
     setWriting(true);
+    draft$.assign({ [question.key]: undefined });
+  }
+
+  /** Nothing typed and focus gone: back to the card. */
+  function closeWritingIfEmpty() {
+    if (noteFor(draft$.peek(), question.key) == null) setWriting(false);
   }
 
   function write(text: string) {
@@ -138,29 +146,31 @@ export default function QuestionScreen() {
               onPress={chooseNone}
             />
           )}
-          <OptionCard
-            label="Something else"
-            caption={writing || pills ? undefined : 'Answer in your own words'}
-            selected={writing || note != null}
-            pill={pills}
-            onPress={openWriting}
-          />
-        </View>
-        {writing && (
+          {writing ? (
             <TextInput
-              style={styles.input}
+              style={pills ? styles.pillInput : styles.input}
               value={draft.notes?.[question.key] ?? ''}
               onChangeText={write}
+              onBlur={closeWritingIfEmpty}
               placeholder="Type your answer"
               placeholderTextColor={theme.colors.inkMuted}
               maxLength={BRIEF_NOTE_MAX}
               autoFocus
-              multiline
+              multiline={!pills}
               returnKeyType="done"
               submitBehavior="blurAndSubmit"
               accessibilityLabel="Your own answer"
             />
-        )}
+          ) : (
+            <OptionCard
+              label={note ?? 'Something else'}
+              caption={pills ? undefined : note != null ? 'Your own words' : 'Answer in your own words'}
+              selected={note != null}
+              pill={pills}
+              onPress={openWriting}
+            />
+          )}
+        </View>
       </StepFrame>
     </>
   );
@@ -169,16 +179,31 @@ export default function QuestionScreen() {
 const createStyles = (theme: Theme) => StyleSheet.create({
   options: { gap: theme.spacing.sm },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+  // The "Something else" card, as a text box: same shape, ink edge.
   input: {
-    ...theme.type.body,
+    ...theme.type.heading,
     color: theme.colors.ink,
     minHeight: 64,
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.lg,
     borderRadius: theme.radii.xl,
     backgroundColor: theme.colors.glass,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: theme.colors.ink,
-    textAlignVertical: 'top',
+    textAlignVertical: 'center',
+  },
+  // The chip, as a text box: hugs its row, grows with the words.
+  pillInput: {
+    ...theme.type.body,
+    fontWeight: '600',
+    color: theme.colors.ink,
+    minWidth: 160,
+    flexGrow: 1,
+    paddingVertical: theme.spacing.sm + 2,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.radii.pill,
+    backgroundColor: theme.colors.glass,
+    borderWidth: 1,
+    borderColor: theme.colors.ink,
   },
 });

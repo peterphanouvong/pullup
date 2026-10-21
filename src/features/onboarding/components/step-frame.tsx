@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Host, ProgressView } from '@expo/ui/swift-ui';
+import { tint } from '@expo/ui/swift-ui/modifiers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeButton } from '@/components/ui/native-button';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
@@ -10,10 +12,9 @@ const FOOTER_CLEARANCE = 120;
 
 /**
  * One onboarding screen under the app's native bar: the system back
- * chevron up top, then (Joi's shape) a quiet "Step 3 of 10" eyebrow, the
- * question, a line on why we're asking, and the answers, all sitting low
- * on the screen near the thumb, with the continue button pinned under
- * them. The frame carries the chrome so every step reads the same and
+ * chevron up top, a thin system progress bar, the question, a line on why
+ * we're asking, and the answers, with the continue button pinned to the
+ * bottom. The frame carries the chrome so every step reads the same and
  * only the question changes.
  *
  * No wrapper view: the bar is transparent, and UIKit only draws its
@@ -31,7 +32,8 @@ export function StepFrame({
   secondary,
   onSecondary,
 }: {
-  /** "Step 3 of 10"; null for screens that aren't a question. */
+  /** Which question this is, for the progress bar; null for screens that
+   * aren't a question. */
   step: { index: number; total: number } | null;
   title: string;
   subtitle?: string;
@@ -56,8 +58,12 @@ export function StepFrame({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {step != null && (
+          <Host style={styles.progress}>
+            <ProgressView value={Math.min(1, step.index / step.total)} modifiers={[tint(theme.colors.ink)]} />
+          </Host>
+        )}
         <View style={styles.heading}>
-          {step != null && <Text style={styles.eyebrow}>{`Step ${step.index} of ${step.total}`}</Text>}
           <Text style={styles.title}>{title}</Text>
           {subtitle != null && <Text style={styles.subtitle}>{subtitle}</Text>}
         </View>
@@ -76,17 +82,9 @@ export function StepFrame({
 
 const createStyles = (theme: Theme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.canvas },
-  // Grows to the screen and packs to the bottom: a short question sits
-  // just above the button, a long one fills up and scrolls.
-  content: {
-    flexGrow: 1,
-    justifyContent: 'flex-end',
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.sm,
-    gap: theme.spacing.xl,
-  },
+  content: { paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm, gap: theme.spacing.xl },
+  progress: { height: 8 },
   heading: { gap: theme.spacing.sm },
-  eyebrow: { ...theme.type.caption, color: theme.colors.inkMuted },
   // Quieter than the app's display type: a question, not a headline.
   title: { fontSize: 28, fontWeight: '600', letterSpacing: -0.3, color: theme.colors.ink },
   subtitle: { ...theme.type.body, color: theme.colors.inkMuted },
