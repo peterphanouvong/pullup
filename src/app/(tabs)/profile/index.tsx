@@ -6,6 +6,7 @@ import type { Theme } from '@/styles/theme';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
 import { useFinishedWorkouts } from '@/features/workouts/hooks';
 import { AccountActions, AccountCard } from '@/features/account/components/account-card';
+import { DevPanel } from '@/features/dev/dev-panel';
 
 /**
  * The hub for everything that isn't this week's training: who you are,
@@ -55,6 +56,8 @@ export default function ProfileScreen() {
       </View>
 
       <AccountActions />
+      {/* Jump links for trying flows that gate themselves; dev builds only. */}
+      {__DEV__ && <DevPanel />}
     </ScrollView>
   );
 }
