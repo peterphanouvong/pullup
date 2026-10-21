@@ -5,9 +5,10 @@ import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 
 /**
- * One answer. Big enough to hit with a thumb, with the chosen one filled
- * in the accent so the state reads from across the room; a multi-select
- * adds a tick so "several" is obviously allowed.
+ * One answer. Big enough to hit with a thumb. The chosen one inverts to
+ * ink on canvas, Cal AI style, so the state reads from across the room
+ * without borrowing the accent, which the Continue button owns on these
+ * screens. A multi-select adds a tick so "several" is obviously allowed.
  */
 export function OptionCard({
   label,
@@ -35,14 +36,14 @@ export function OptionCard({
       style={({ pressed }) => [styles.card, selected && styles.cardSelected, pressed && styles.pressed]}
     >
       <View style={styles.text}>
-        <Text style={[styles.label, selected && styles.onSelected]}>{label}</Text>
+        <Text style={[styles.label, selected && styles.labelSelected]}>{label}</Text>
         {caption != null && <Text style={[styles.caption, selected && styles.captionSelected]}>{caption}</Text>}
       </View>
       {multi && (
         <SymbolView
           name={selected ? 'checkmark.circle.fill' : 'circle'}
           size={22}
-          tintColor={selected ? theme.colors.onAccent : theme.colors.inkMuted}
+          tintColor={selected ? theme.colors.canvas : theme.colors.inkMuted}
         />
       )}
     </Pressable>
@@ -62,11 +63,13 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.glassBorder,
   },
-  cardSelected: { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
+  // Inverted: ink fill, canvas text. White on black in the dark theme,
+  // black on white in the light one.
+  cardSelected: { backgroundColor: theme.colors.ink, borderColor: theme.colors.ink },
   pressed: { opacity: 0.85 },
   text: { flex: 1, gap: 2 },
   label: { ...theme.type.heading, color: theme.colors.ink },
   caption: { ...theme.type.caption, color: theme.colors.inkMuted },
-  onSelected: { color: theme.colors.onAccent },
-  captionSelected: { color: theme.colors.onAccent, opacity: 0.8 },
+  labelSelected: { color: theme.colors.canvas },
+  captionSelected: { color: theme.colors.canvas, opacity: 0.7 },
 });

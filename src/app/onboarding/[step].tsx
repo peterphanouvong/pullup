@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useSelector } from '@legendapp/state/react';
 import { haptics } from '@/lib/haptics';
-import { useThemedStyles } from '@/styles/use-theme';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { OptionCard } from '@/features/onboarding/components/option-card';
 import { StepFrame } from '@/features/onboarding/components/step-frame';
@@ -17,7 +17,12 @@ import { draft$ } from '@/features/onboarding/state';
 export default function QuestionScreen() {
   const { step } = useLocalSearchParams<{ step: string }>();
   const index = Math.max(1, Number.parseInt(step ?? '1', 10) || 1) - 1;
-  const draft = useSelector(draft$);
+  // A fresh object on every change, not the observable's own: the store
+  // mutates in place, and the React Compiler memoises everything derived
+  // from `draft` by identity, so the same reference would never re-derive
+  // which card is selected.
+  const draft = useSelector(() => ({ ...draft$.get() }));
+  const theme = useTheme();
   const styles = useThemedStyles(createStyles);
 
   const questions = visibleQuestions(draft);
@@ -54,15 +59,29 @@ export default function QuestionScreen() {
   }
 
   return (
-    <StepFrame
-      progress={(index + 1) / questions.length}
-      title={question.title}
-      subtitle={question.subtitle}
-      cta="Continue"
-      onCta={next}
-      ctaDisabled={!answered}
-      onBack={() => router.back()}
-    >
+    <>
+      {/* Opened from Plan there's no welcome screen behind step 1, so the
+          bar carries a close as well as the system back. */}
+      <Stack.Toolbar placement="right">
+        <Stack.Toolbar.Button
+          icon="xmark"
+          accessibilityLabel="Close"
+          hidesSharedBackground
+          tintColor={theme.colors.ink}
+          onPress={() => {
+            haptics.tap();
+            router.dismissAll();
+          }}
+        />
+      </Stack.Toolbar>
+      <StepFrame
+        progress={(index + 1) / questions.length}
+        title={question.title}
+        subtitle={question.subtitle}
+        cta="Continue"
+        onCta={next}
+        ctaDisabled={!answered}
+      >
       <View style={styles.options}>
         {question.options.map((option) => (
           <OptionCard
@@ -78,7 +97,8 @@ export default function QuestionScreen() {
           <OptionCard label={question.noneLabel} selected={Array.isArray(value) && value.length === 0} onPress={chooseNone} />
         )}
       </View>
-    </StepFrame>
+      </StepFrame>
+    </>
   );
 }
 

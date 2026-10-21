@@ -1,7 +1,7 @@
 import type { StyleProp, ViewStyle } from 'react-native';
 import type { SFSymbol } from 'expo-symbols';
 import { Button, Host, HStack, Image, Text } from '@expo/ui/swift-ui';
-import { buttonStyle, controlSize, foregroundColor, frame, tint } from '@expo/ui/swift-ui/modifiers';
+import { buttonStyle, controlSize, disabled as disabledModifier, foregroundColor, frame, tint } from '@expo/ui/swift-ui/modifiers';
 import { useTheme } from '@/styles/use-theme';
 
 export type NativeButtonSize = 'small' | 'regular' | 'large';
@@ -65,6 +65,7 @@ export function NativeButton({
   fullWidth = true,
   tint: tintColor,
   labelColor: labelColorProp,
+  disabled = false,
   style,
 }: {
   label: string;
@@ -79,6 +80,8 @@ export function NativeButton({
   tint?: string;
   /** Label and symbol colour. */
   labelColor?: string;
+  /** SwiftUI's own disabled state: no taps, dimmed. */
+  disabled?: boolean;
   /** Layout for the hosting view (flex, margins, alignment). */
   style?: StyleProp<ViewStyle>;
 }) {
@@ -98,7 +101,7 @@ export function NativeButton({
     // our colour rather than painting itself system blue. A hugging button
     // sizes its host to the label horizontally.
     <Host
-      style={[{ height }, style]}
+      style={[{ height }, disabled && { opacity: 0.5 }, style]}
       seedColor={fill}
       matchContents={fullWidth ? undefined : { horizontal: true }}
     >
@@ -108,6 +111,7 @@ export function NativeButton({
           buttonStyle(BUTTON_STYLES[variant]),
           controlSize(control),
           ...(applyTint ? [tint(fill)] : []),
+          ...(disabled ? [disabledModifier(true)] : []),
         ]}
       >
         {/* The frame goes on the LABEL, not the button: glass button styles

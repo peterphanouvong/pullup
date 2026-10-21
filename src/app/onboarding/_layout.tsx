@@ -1,9 +1,11 @@
 import { Stack } from 'expo-router';
+import { nativeHeader } from '@/styles/header';
+import { useThemedStyles } from '@/styles/use-theme';
 
-const OPTIONS = { headerShown: false } as const;
-
-/** The interview runs in its own stack with no native bar: each step
- * draws its own chevron and progress (see StepFrame). */
+/** The interview runs in its own stack under the app's one native bar:
+ * the system back chevron is the way back, and screens that can't be
+ * backed out of (building) say so themselves. */
 export default function OnboardingLayout() {
-  return <Stack screenOptions={OPTIONS} />;
+  const header = useThemedStyles(nativeHeader);
+  return <Stack screenOptions={header} />;
 }

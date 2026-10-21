@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
@@ -10,6 +10,11 @@ import { StepFrame } from '@/features/onboarding/components/step-frame';
 import { useBuildProgram } from '@/features/onboarding/hooks';
 import { completeBrief } from '@/features/onboarding/questions';
 import { draft$, proposal$ } from '@/features/onboarding/state';
+
+/** No back while the coach is writing: leaving mid-build would strand a
+ * half-applied programme. The error state restores it. */
+const WRITING_OPTIONS = { headerBackVisible: false, gestureEnabled: false } as const;
+const DONE_OPTIONS = { headerBackVisible: true, gestureEnabled: true } as const;
 
 const STAGES = ['Reading your answers', 'Choosing a structure', 'Writing the weeks'];
 /** How long each early stage shows before ticking on to the next; the
@@ -83,8 +88,8 @@ export default function BuildingScreen() {
             },
           });
         }}
-        onBack={() => router.back()}
       >
+        <Stack.Screen options={DONE_OPTIONS} />
         <Text style={styles.body}>{build.error.message}</Text>
       </StepFrame>
     );
@@ -97,8 +102,9 @@ export default function BuildingScreen() {
       subtitle="Usually under a minute. Hang on."
       cta="Writing…"
       onCta={() => {}}
-      ctaLoading
+      ctaDisabled
     >
+      <Stack.Screen options={WRITING_OPTIONS} />
       <View style={styles.stages}>
         {STAGES.map((label, i) => {
           const done = i < stage;

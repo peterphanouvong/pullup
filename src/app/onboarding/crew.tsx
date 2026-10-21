@@ -41,8 +41,7 @@ export default function CrewStepScreen() {
       }
       cta={isGuest ? 'Start training' : 'Done'}
       onCta={() => void finish()}
-      ctaLoading={prompts.busy}
-      onBack={() => router.back()}
+      ctaDisabled={prompts.busy}
     >
       {!isGuest && (
         <View style={styles.actions}>
