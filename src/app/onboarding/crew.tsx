@@ -32,7 +32,7 @@ export default function CrewStepScreen() {
 
   return (
     <StepFrame
-      progress={null}
+      step={null}
       title="Train with your mates"
       subtitle={
         isGuest

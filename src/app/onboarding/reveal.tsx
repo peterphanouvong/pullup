@@ -47,7 +47,7 @@ export default function RevealScreen() {
 
   return (
     <StepFrame
-      progress={null}
+      step={null}
       title={plan.name}
       subtitle={plan.summary}
       cta="Start training"

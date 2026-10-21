@@ -47,6 +47,8 @@ Structure:
 - Equipment is a hard constraint. Bodyweight means no bands, no bench.
 - Keep text tight. The description is markdown a lifter reads once: an overview paragraph, a table of weeks and phases, and the weekly rules. No motivational filler.
 
+Where the athlete answered in their own words, those words win over any assumption the card options would have made: read them for the sport, the days, the kit, the injury or the deadline they describe, and if they name a length or a date, size the programme to it (never more than 8 weeks).
+
 If a catalogue template suits the athlete's goal and sport, start from it and adapt it to their days, minutes, equipment and length rather than writing from nothing. Otherwise write from scratch.
 
 Return only the JSON programme in the required shape.`;

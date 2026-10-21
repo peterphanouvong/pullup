@@ -24,6 +24,7 @@ const SAMPLE_BRIEF: TrainingBrief = {
   limitations: ['knee'],
   sacrifices: ['late_nights'],
   weeks: 4,
+  notes: {},
 };
 
 /**

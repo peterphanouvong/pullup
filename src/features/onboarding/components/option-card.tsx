@@ -15,16 +15,35 @@ export function OptionCard({
   caption,
   selected,
   multi = false,
+  pill = false,
   onPress,
 }: {
   label: string;
   caption?: string;
   selected: boolean;
   multi?: boolean;
+  /** A hugging chip for wrapping rows of short answers (Joi's habit
+   * picker), instead of a full-width card. */
+  pill?: boolean;
   onPress: () => void;
 }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
+  if (pill) {
+    return (
+      <Pressable
+        onPress={() => {
+          haptics.select();
+          onPress();
+        }}
+        accessibilityRole={multi ? 'checkbox' : 'radio'}
+        accessibilityState={{ selected, checked: multi ? selected : undefined }}
+        style={({ pressed }) => [styles.pill, selected && styles.cardSelected, pressed && styles.pressed]}
+      >
+        <Text style={[styles.pillLabel, selected && styles.labelSelected]}>{label}</Text>
+      </Pressable>
+    );
+  }
   return (
     <Pressable
       onPress={() => {
@@ -71,5 +90,14 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   label: { ...theme.type.heading, color: theme.colors.ink },
   caption: { ...theme.type.caption, color: theme.colors.inkMuted },
   labelSelected: { color: theme.colors.canvas },
+  pill: {
+    paddingVertical: theme.spacing.sm + 2,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.radii.pill,
+    backgroundColor: theme.colors.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: theme.colors.glassBorder,
+  },
+  pillLabel: { ...theme.type.body, fontWeight: '600', color: theme.colors.ink },
   captionSelected: { color: theme.colors.canvas, opacity: 0.7 },
 });

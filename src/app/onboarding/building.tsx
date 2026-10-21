@@ -67,7 +67,7 @@ export default function BuildingScreen() {
   if (brief == null) {
     // Landed here without a finished interview (a deep link, a reload).
     return (
-      <StepFrame progress={null} title="Let’s start again" cta="Start" onCta={() => router.replace('/onboarding')}>
+      <StepFrame step={null} title="Let’s start again" cta="Start" onCta={() => router.replace('/onboarding')}>
         <Text style={styles.body}>Your answers didn’t make it. Ten questions and we’re back here.</Text>
       </StepFrame>
     );
@@ -76,7 +76,7 @@ export default function BuildingScreen() {
   if (build.isError) {
     return (
       <StepFrame
-        progress={null}
+        step={null}
         title="That didn’t work"
         cta="Try again"
         onCta={() => {
@@ -97,7 +97,7 @@ export default function BuildingScreen() {
 
   return (
     <StepFrame
-      progress={null}
+      step={null}
       title={note ? 'Reworking your programme' : 'Writing your programme'}
       subtitle="Usually under a minute. Hang on."
       cta="Writing…"

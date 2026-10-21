@@ -1,4 +1,4 @@
-import type { TrainingBrief } from './brief';
+import type { BriefKey, TrainingBrief } from './brief';
 
 /**
  * The interview, one question per screen, Cal AI style: a heading, a line
@@ -13,7 +13,7 @@ export interface Option {
 }
 
 export interface Question {
-  key: keyof TrainingBrief;
+  key: BriefKey;
   title: string;
   subtitle: string;
   kind: 'single' | 'multi';
@@ -22,7 +22,15 @@ export interface Question {
   noneLabel?: string;
 }
 
-export type Draft = Partial<TrainingBrief>;
+/** Answers so far. Card values by key, plus `notes` for the ones written
+ * out instead; a key has one or the other. */
+export type Draft = Partial<Omit<TrainingBrief, 'notes'>> & { notes?: TrainingBrief['notes'] };
+
+/** The written answer for a question, if that's how it was answered. */
+export function noteFor(draft: Draft, key: BriefKey): string | null {
+  const note = draft.notes?.[key]?.trim();
+  return note ? note : null;
+}
 
 const WHY = 'This shapes the programme we write for you.';
 
@@ -189,27 +197,37 @@ export function visibleQuestions(draft: Draft): Question[] {
   ];
 }
 
-/** Whether a question has an answer. A multi-select counts as answered
- * once it has been touched, including "none", which stores []. */
+/** Whether a question has an answer: a card, or a written note. A
+ * multi-select counts as answered once touched, including "none" ([]). */
 export function isAnswered(question: Question, draft: Draft): boolean {
+  if (noteFor(draft, question.key) != null) return true;
   const value = draft[question.key];
   return question.kind === 'multi' ? Array.isArray(value) : value != null;
 }
 
-/** The brief, if every visible question is answered; null otherwise. */
+/** The brief, if every visible question is answered; null otherwise.
+ * A question answered in writing sends null for its card value. */
 export function completeBrief(draft: Draft): TrainingBrief | null {
   const questions = visibleQuestions(draft);
   if (!questions.every((q) => isAnswered(q, draft))) return null;
+  const notes: TrainingBrief['notes'] = {};
+  for (const q of questions) {
+    const note = noteFor(draft, q.key);
+    if (note != null) notes[q.key] = note;
+  }
+  const card = <K extends BriefKey>(key: K): TrainingBrief[K] =>
+    (notes[key] != null ? null : (draft[key] ?? null)) as TrainingBrief[K];
   return {
-    goal: draft.goal!,
-    sport: draft.sport!,
-    courtDays: draft.sport === 'none' ? 0 : draft.courtDays!,
-    liftDays: draft.liftDays!,
-    sessionMinutes: draft.sessionMinutes!,
-    equipment: draft.equipment!,
-    experience: draft.experience!,
-    limitations: draft.limitations ?? [],
-    sacrifices: draft.sacrifices ?? [],
-    weeks: draft.weeks!,
+    goal: card('goal'),
+    sport: card('sport'),
+    courtDays: draft.sport === 'none' ? 0 : card('courtDays'),
+    liftDays: card('liftDays'),
+    sessionMinutes: card('sessionMinutes'),
+    equipment: card('equipment'),
+    experience: card('experience'),
+    limitations: notes.limitations != null ? null : (draft.limitations ?? []),
+    sacrifices: notes.sacrifices != null ? null : (draft.sacrifices ?? []),
+    weeks: card('weeks'),
+    notes,
   };
 }

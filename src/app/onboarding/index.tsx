@@ -33,7 +33,7 @@ export default function WelcomeScreen() {
 
   return (
     <StepFrame
-      progress={null}
+      step={null}
       title="A programme written for you"
       subtitle="Ten quick questions about your goal, your week and your gym. Then a block you can actually keep."
       cta="Build my programme"

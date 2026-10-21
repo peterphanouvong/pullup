@@ -57,6 +57,7 @@ describe('brief', () => {
     limitations: ['knee' as const],
     sacrifices: ['late_nights' as const],
     weeks: 6,
+    notes: {},
   };
 
   it('validates the shape the app sends', () => {
@@ -65,10 +66,20 @@ describe('brief', () => {
     expect(isBrief({ ...brief, limitations: ['elbow'] })).toBe(false);
   });
 
+  it('accepts a written answer in place of a card value, but not a blank', () => {
+    expect(isBrief({ ...brief, equipment: null, notes: { equipment: 'a rack in the garage' } })).toBe(true);
+    expect(isBrief({ ...brief, equipment: null })).toBe(false);
+    expect(isBrief({ ...brief, equipment: null, notes: { equipment: '   ' } })).toBe(false);
+    expect(briefToProse({ ...brief, equipment: null, notes: { equipment: 'a rack in the garage' } })).toContain(
+      'Equipment, in their own words: "a rack in the garage"',
+    );
+  });
+
   it('reads back as prose the coach can use', () => {
     const prose = briefToProse(brief);
-    expect(prose).toContain('peak for a competition in 6 weeks');
-    expect(prose).toContain('volleyball, 2 court/field sessions a week');
+    expect(prose).toContain('peak for a competition, competing in 6 weeks');
+    expect(prose).toContain('Sport: volleyball.');
+    expect(prose).toContain('Court/field sessions a week: 2.');
     expect(prose).toContain('a knee to look after');
     expect(prose).toContain('late nights');
   });

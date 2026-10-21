@@ -1,4 +1,4 @@
-import { completeBrief, isAnswered, visibleQuestions } from '../questions';
+import { completeBrief, isAnswered, noteFor, visibleQuestions } from '../questions';
 
 describe('onboarding questions', () => {
   it('skips the court-days question for someone with no sport', () => {
@@ -43,6 +43,25 @@ describe('onboarding questions', () => {
       limitations: ['knee'],
       sacrifices: [],
       weeks: 6,
+      notes: {},
     });
+  });
+
+  it('takes a written answer in place of a card, and sends null for the card', () => {
+    const draft = {
+      goal: 'jump' as const,
+      sport: 'none' as const,
+      liftDays: 3,
+      sessionMinutes: 45,
+      experience: 'some' as const,
+      limitations: [],
+      sacrifices: [],
+      weeks: 6,
+      notes: { equipment: 'a squat rack in the garage, no cables' },
+    };
+    const equipment = visibleQuestions(draft).find((q) => q.key === 'equipment')!;
+    expect(noteFor(draft, 'equipment')).toBe('a squat rack in the garage, no cables');
+    expect(isAnswered(equipment, draft)).toBe(true);
+    expect(completeBrief(draft)).toMatchObject({ equipment: null, notes: { equipment: 'a squat rack in the garage, no cables' } });
   });
 });

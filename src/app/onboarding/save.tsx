@@ -22,7 +22,7 @@ export default function SaveScreen() {
 
   return (
     <StepFrame
-      progress={null}
+      step={null}
       title="Save your programme"
       subtitle="Sign in so it’s yours on any phone, and so your mates can find you."
       cta="Show me the programme"

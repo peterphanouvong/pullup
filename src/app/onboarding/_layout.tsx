@@ -6,6 +6,10 @@ import { useThemedStyles } from '@/styles/use-theme';
  * the system back chevron is the way back, and screens that can't be
  * backed out of (building) say so themselves. */
 export default function OnboardingLayout() {
-  const header = useThemedStyles(nativeHeader);
-  return <Stack screenOptions={header} />;
+  // No titles: the question is the title, and the bar shouldn't repeat it
+  // (or, worse, show the route's file name).
+  const options = useThemedStyles(untitled);
+  return <Stack screenOptions={options} />;
 }
+
+const untitled = (theme: Parameters<typeof nativeHeader>[0]) => ({ ...nativeHeader(theme), title: '' });

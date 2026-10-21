@@ -1,5 +1,6 @@
 /** The interview answers, shared with the `plan` edge function. */
 export type {
+  BriefKey,
   Equipment,
   Experience,
   Goal,
@@ -8,4 +9,4 @@ export type {
   Sport,
   TrainingBrief,
 } from '../../../supabase/functions/_shared/brief';
-export { briefToProse, isBrief } from '../../../supabase/functions/_shared/brief';
+export { BRIEF_KEYS, BRIEF_NOTE_MAX, briefToProse, isBrief } from '../../../supabase/functions/_shared/brief';
