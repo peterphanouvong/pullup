@@ -43,6 +43,9 @@ function WorkoutStoreGate({ children }: { children: ReactNode }) {
 const TABS_OPTIONS = { headerShown: false } as const;
 const PLAN_OPTIONS = { title: 'Plan' } as const;
 const ACTIVITIES_OPTIONS = { title: 'Activity' } as const;
+// The interview covers the app and can't be swiped away half-done; it
+// draws its own chrome (see features/onboarding/components/step-frame).
+const ONBOARDING_OPTIONS = { headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false } as const;
 
 export default function RootLayout() {
   const header = useThemedStyles(nativeHeader);
@@ -60,6 +63,7 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={TABS_OPTIONS} />
               <Stack.Screen name="plan" options={PLAN_OPTIONS} />
               <Stack.Screen name="activities" options={ACTIVITIES_OPTIONS} />
+              <Stack.Screen name="onboarding" options={ONBOARDING_OPTIONS} />
             </Stack>
           </WorkoutStoreGate>
         </AuthGate>

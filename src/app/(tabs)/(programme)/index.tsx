@@ -19,12 +19,17 @@ import {
 } from "@/features/workouts/hooks";
 import { startWorkoutOrPrompt } from "@/features/workouts/start-guard";
 import { dayMetrics, dayState } from "@/features/workouts/today-state";
+import { NativeButton } from "@/components/ui/native-button";
+import {
+  useMarkOnboarded,
+  useOnboardingDone,
+} from "@/features/onboarding/gate";
 import { useSession } from "@/lib/auth";
 import { haptics } from "@/lib/haptics";
 import type { Theme } from "@/styles/theme";
 import { useThemedStyles, useTheme } from "@/styles/use-theme";
 import { router, Stack } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
 
 const WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
@@ -132,6 +137,16 @@ export default function TodayScreen() {
   })();
   const completion = useWeekCompletion(viewedWeek?.days.map((d) => d.id) ?? []);
 
+  // First launch: a user with no programme who hasn't seen the interview
+  // gets it, over the top of this tab. Finishing it, or choosing to browse
+  // instead, marks it done so it never comes back on its own.
+  const onboarded = useOnboardingDone(session.user.id);
+  const markOnboarded = useMarkOnboarded(session.user.id);
+  const needsOnboarding = active.data === null && onboarded.data === false;
+  useEffect(() => {
+    if (needsOnboarding) router.push("/onboarding");
+  }, [needsOnboarding]);
+
   function guardedStart(startFn: () => void) {
     startWorkoutOrPrompt(activeWorkout, startFn);
   }
@@ -181,13 +196,24 @@ export default function TodayScreen() {
           contentInsetAdjustmentBehavior="automatic"
         >
           <Card style={styles.messageCard}>
-            <Text style={styles.messageTitle}>No active programme</Text>
+            <Text style={styles.messageTitle}>No programme yet</Text>
             <Text style={styles.messageBody}>
-              Pick a programme from Plan to see today&apos;s session.
+              Answer ten questions and get a block written for your week, or
+              pick one from the catalogue.
             </Text>
             <PrimaryButton
-              title="Browse programmes"
-              onPress={() => router.push("/plan")}
+              title="Build my programme"
+              onPress={() => {
+                haptics.tap();
+                router.push("/onboarding/1");
+              }}
+            />
+            <NativeButton
+              label="Browse programmes"
+              onPress={() => {
+                void markOnboarded();
+                router.push("/plan");
+              }}
             />
           </Card>
         </ScrollView>

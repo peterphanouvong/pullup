@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActionSheetIOS, ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useFocusEffect } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
@@ -9,20 +9,13 @@ import { haptics } from '@/lib/haptics';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { AccountCard } from '@/features/account/components/account-card';
-import { cleanDisplayName } from '@/features/account/api';
 import { dateKey } from '@/features/programs/calendar';
-import { CrewCard, shareInvite } from '@/features/crews/components/crew-card';
-import { useCreateCrew, useJoinCrew, useMyCrews } from '@/features/crews/hooks';
-import { crewWeekRange, normaliseInviteCode } from '@/features/crews/week';
+import { CrewCard } from '@/features/crews/components/crew-card';
+import { useMyCrews } from '@/features/crews/hooks';
+import { useCrewPrompts } from '@/features/crews/use-crew-prompts';
+import { crewWeekRange } from '@/features/crews/week';
 import { YourWeekCard } from '@/features/crews/components/your-week-card';
 import { NotificationsNudge } from '@/features/notifications/components/notifications-nudge';
-import { registerPush, requestPushPermission } from '@/features/notifications/push';
-
-/** Server errors are written for people ("that crew is full"); give them a
- * capital and show them as they are. */
-function errorText(e: Error): string {
-  return e.message.charAt(0).toUpperCase() + e.message.slice(1) + '.';
-}
 
 /**
  * Your crews: small private groups of mates who can see who's trained this
@@ -34,8 +27,8 @@ export default function CrewScreen() {
   const styles = useThemedStyles(createStyles);
   const queryClient = useQueryClient();
   const crews = useMyCrews();
-  const createCrew = useCreateCrew();
-  const joinCrew = useJoinCrew();
+  // Create and join are shared with onboarding's last step.
+  const { promptCreate, promptJoin } = useCrewPrompts();
   const [refreshing, setRefreshing] = useState(false);
 
   const now = new Date();
@@ -50,14 +43,6 @@ export default function CrewScreen() {
     }, [queryClient]),
   );
 
-  /** The first crew is when pushes start meaning something, so that's
-   * when we ask. */
-  function offerPush() {
-    void requestPushPermission().then((ok) => {
-      if (ok) return registerPush(session.user.id);
-    });
-  }
-
   async function refresh() {
     setRefreshing(true);
     haptics.select();
@@ -68,53 +53,6 @@ export default function CrewScreen() {
       queryClient.invalidateQueries({ queryKey: ['pokes'] }),
     ]);
     setRefreshing(false);
-  }
-
-  function promptCreate() {
-    haptics.tap();
-    Alert.prompt('Name your crew', 'Your mates will see this.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Create',
-        onPress: (value?: string) => {
-          const name = cleanDisplayName(value ?? '');
-          if (name == null) return;
-          createCrew.mutate(name, {
-            onSuccess: (crew) => {
-              haptics.success();
-              offerPush();
-              // The crew is only worth something with people in it.
-              shareInvite(crew.name, crew.inviteCode);
-            },
-            onError: (e) => Alert.alert('Couldn’t create the crew', errorText(e)),
-          });
-        },
-      },
-    ]);
-  }
-
-  function promptJoin() {
-    haptics.tap();
-    Alert.prompt('Join a crew', 'Enter the 6-character code from your mate.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Join',
-        onPress: (value?: string) => {
-          const code = normaliseInviteCode(value ?? '');
-          if (code == null) {
-            Alert.alert('That’s not a crew code', 'Codes are 6 letters and numbers, like K7Q2MX.');
-            return;
-          }
-          joinCrew.mutate(code, {
-            onSuccess: () => {
-              haptics.success();
-              offerPush();
-            },
-            onError: (e) => Alert.alert('Couldn’t join', errorText(e)),
-          });
-        },
-      },
-    ]);
   }
 
   function openAddMenu() {
@@ -174,8 +112,8 @@ export default function CrewScreen() {
                 weights, just whether you showed up.
               </Text>
             </View>
-            <NativeButton label="Create a crew" variant="primary" systemImage="plus" onPress={promptCreate} />
-            <NativeButton label="Join with a code" onPress={promptJoin} />
+            <NativeButton label="Create a crew" variant="primary" systemImage="plus" onPress={() => promptCreate()} />
+            <NativeButton label="Join with a code" onPress={() => promptJoin()} />
           </Card>
         ) : (
           <>

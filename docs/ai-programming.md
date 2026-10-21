@@ -106,17 +106,41 @@ Same apply path, no model:
   description.
 - The preview screen's Edit workout button opens the day editor.
 
+## Onboarding: a programme from an interview
+
+The same agent, pointed at a new user instead of an existing instance.
+Design: `docs/superpowers/specs/2026-10-22-onboarding-design.md`.
+
+- Ten one-question screens (goal, sport and court days, lifting days,
+  session length, equipment, experience, limitations, what they'll give up,
+  block length) produce a `TrainingBrief`
+  (`supabase/functions/_shared/brief.ts`).
+- The `plan` function in build mode takes the brief, the catalogue and the
+  exercise library, and returns a `ProgramPlan`
+  (`supabase/functions/_shared/plan-schema.ts`): a template adapted when one
+  suits, written from scratch otherwise. Structured output, validated on
+  both sides.
+- `apply_program_plan(null, plan)` creates the instance and makes it
+  active. The brief is stored on the instance (`programs.brief`) so a later
+  rework has it.
+- "Change something" on the reveal re-runs build with a note and the
+  current instance as context, and applies to the same id.
+- Sign-in is asked right before the reveal and is skippable; the crew step
+  is last. The interview is re-runnable from Plan.
+
 ## Phases
 
 1. ✅ Templates and instances (schema, RLS, `select_program`, backfill).
-2. `apply_program_plan` RPC with tests against a local database.
-3. Day editor (manual) on the preview screen, using the RPC.
-4. `plan` edge function + chat and review screens.
+2. ✅ `apply_program_plan` RPC (`20261022000000_program_plans.sql`).
+3. ✅ Day editor (manual) on the preview screen.
+4. ✅ `plan` edge function in build mode + onboarding (interview, reveal,
+   change-something). Still to do: the chat for reworking an existing
+   programme by conversation, with `ask_user` questions.
 5. Week editor; "reset to template".
 
 ## Interim
 
-Until phase 4 exists, big restructures are done as a migration against one
-user's instance, the way the high/low change was
-(`20261021120000_high_low_peak.sql`, documented in
-`docs/programs/8-week-peak-high-low.md`).
+Until the chat exists, big restructures of an existing instance are either
+a "change something" note on a rebuild, or a migration against one user's
+instance, the way the high/low change was (`20261021120000_high_low_peak.sql`,
+documented in `docs/programs/8-week-peak-high-low.md`).
