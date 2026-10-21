@@ -35,6 +35,8 @@ export function WeekDayCard({
   onPress,
   onStart,
   startLabel = 'Start workout',
+  onStartShort,
+  shortLabel = 'Short',
 }: {
   day: ProgramDay;
   state: TodayDayState;
@@ -49,6 +51,10 @@ export function WeekDayCard({
   /** When provided, the card shows its own primary start button. */
   onStart?: () => void;
   startLabel?: string;
+  /** The flat-day version: a second, quieter button beside Start. */
+  onStartShort?: () => void;
+  /** Its label, e.g. "15 min". */
+  shortLabel?: string;
 }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -107,7 +113,20 @@ export function WeekDayCard({
       <GlassSurface cornerRadius={theme.radii.xl} />
       {done && <View style={styles.doneWash} pointerEvents="none" />}
       {body}
-      {onStart != null && <NativeButton label={startLabel} systemImage="play.fill" onPress={onStart} variant="primary" />}
+      {onStart != null && (
+        <View style={styles.startRow}>
+          <NativeButton label={startLabel} systemImage="play.fill" onPress={onStart} variant="primary" style={styles.startMain} />
+          {onStartShort != null && (
+            <NativeButton
+              label={shortLabel}
+              systemImage="timer"
+              onPress={onStartShort}
+              variant="secondary"
+              fullWidth={false}
+            />
+          )}
+        </View>
+      )}
     </>
   );
 
@@ -127,6 +146,8 @@ export function WeekDayCard({
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  startRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  startMain: { flex: 1 },
   card: {
     backgroundColor: theme.colors.glass,
     borderRadius: theme.radii.xl,

@@ -12,7 +12,8 @@ import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
 import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
-import { startWorkoutFromDay, useActiveWorkout } from '@/features/workouts/hooks';
+import { startShortWorkoutFromDay, startWorkoutFromDay, useActiveWorkout } from '@/features/workouts/hooks';
+import { shortVersionOf } from '@/features/workouts/short-version';
 import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
 
 // The bar is the app's (see `styles/header.ts`); only the fallback title
@@ -61,11 +62,19 @@ export default function DayScreen() {
   }
 
   const isActiveProgram = active.data?.programId === id;
+  const short = day.kind === 'lifting' ? shortVersionOf(day) : null;
 
   function handleStart() {
     startWorkoutOrPrompt(activeWorkout, () => {
       const workoutId = startWorkoutFromDay(day!, dayId, session.user.id);
       router.push(`/workout/${workoutId}`);
+    });
+  }
+
+  function handleStartShort() {
+    startWorkoutOrPrompt(activeWorkout, () => {
+      const workoutId = startShortWorkoutFromDay(day!, dayId, session.user.id);
+      if (workoutId) router.push(`/workout/${workoutId}`);
     });
   }
 
@@ -84,7 +93,19 @@ export default function DayScreen() {
         <Text style={styles.subtitle}>{`${program.data.name} · ${week.name}`}</Text>
 
         {day.kind === 'lifting' && isActiveProgram && (
-          <NativeButton variant="primary" label="Start workout" onPress={handleStart} />
+          <View style={styles.start}>
+            <NativeButton variant="primary" label="Start workout" onPress={handleStart} />
+            {/* The minimum viable workout: for a flat day, and it still
+                counts for the week. */}
+            {short != null && (
+              <NativeButton
+                variant="secondary"
+                systemImage="timer"
+                label={`Short on time? ${short.minutes}-min version`}
+                onPress={handleStartShort}
+              />
+            )}
+          </View>
         )}
 
         {/* Placeholder for the session's history (volume, reps, duration
@@ -130,6 +151,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
   subtitle: { ...theme.type.body, color: theme.colors.inkMuted },
+  start: { gap: theme.spacing.sm },
   statsCard: { alignItems: 'center', gap: theme.spacing.sm, paddingVertical: theme.spacing.xxl },
   statsTitle: { ...theme.type.heading, color: theme.colors.inkMuted },
   statsBody: { ...theme.type.caption, color: theme.colors.inkMuted, textAlign: 'center' },

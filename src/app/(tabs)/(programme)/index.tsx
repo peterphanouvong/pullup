@@ -13,10 +13,12 @@ import {
 } from "@/features/workouts/components/minimized-workout-bar";
 import {
   startEmptyWorkout,
+  startShortWorkoutFromDay,
   startWorkoutFromDay,
   useActiveWorkout,
   useWeekCompletion,
 } from "@/features/workouts/hooks";
+import { shortVersionOf } from "@/features/workouts/short-version";
 import { startWorkoutOrPrompt } from "@/features/workouts/start-guard";
 import { dayMetrics, dayState } from "@/features/workouts/today-state";
 import { NativeButton } from "@/components/ui/native-button";
@@ -306,6 +308,7 @@ export default function TodayScreen() {
                 completion[d.id] === true,
               );
               const isToday = isCurrentWeek && d.position === position.day;
+              const short = d.kind === "lifting" ? shortVersionOf(d) : null;
               return (
                 <Pressable key={d.id}>
                   <WeekDayCard
@@ -335,6 +338,21 @@ export default function TodayScreen() {
                             })
                         : undefined
                     }
+                    // The flat-day cut, beside Start: still counts.
+                    onStartShort={
+                      isToday && state === "upcoming" && short != null
+                        ? () =>
+                            guardedStart(() => {
+                              const workoutId = startShortWorkoutFromDay(
+                                d,
+                                d.id,
+                                session.user.id,
+                              );
+                              if (workoutId) router.push(`/workout/${workoutId}`);
+                            })
+                        : undefined
+                    }
+                    shortLabel={short != null ? `${short.minutes} min` : undefined}
                   />
                 </Pressable>
               );

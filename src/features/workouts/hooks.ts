@@ -28,6 +28,7 @@ import {
 } from './selectors';
 import { buildWorkoutFromDay } from './start';
 import { weekCompletion } from './today-state';
+import { shortVersionOf } from './short-version';
 import { exercises$, generateId, workoutExercises$, workoutSets$, workouts$ } from './store';
 import type { Exercise, SetType, Workout, WorkoutExercise, WorkoutSet } from './types';
 
@@ -52,6 +53,15 @@ export function startWorkoutFromDay(day: ProgramDay, programDayId: string, userI
   for (const set of sets) workoutSets$[set.id].set(set);
 
   return workout.id;
+}
+
+/** Starts the flat-day cut of a programme day (see `short-version.ts`).
+ * Logged against the same day, so it completes the day and counts for the
+ * week and the crew: the habit matters more than the full session. */
+export function startShortWorkoutFromDay(day: ProgramDay, programDayId: string, userId: string): string | null {
+  const short = shortVersionOf(day);
+  if (!short) return null;
+  return startWorkoutFromDay({ ...short.day, name: `${day.name} · ${short.minutes} min` }, programDayId, userId);
 }
 
 /** Creates a bare workout with no exercises (the "Start empty workout"
