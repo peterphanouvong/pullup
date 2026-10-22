@@ -29,6 +29,19 @@ export function useActiveProgram() {
   });
 }
 
+/** A day of the active programme by id, or null while loading or when the
+ * day belongs to another programme (an old workout, say). */
+export function useActiveProgramDay(dayId: string | null) {
+  const active = useActiveProgram();
+  const program = useProgram(dayId != null ? (active.data?.programId ?? '') : '');
+  if (dayId == null || program.data == null) return null;
+  for (const week of program.data.weeks) {
+    const day = week.days.find((d) => d.id === dayId);
+    if (day) return day;
+  }
+  return null;
+}
+
 /** Saves an edited programme day. The whole programme is refetched after:
  * a day's exercises show up on the week list and the preview too, and
  * one refetch is cheaper than keeping three caches honest. */

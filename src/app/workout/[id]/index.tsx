@@ -25,7 +25,9 @@ import { WorkoutHeaderTitle } from '@/features/workouts/components/workout-heade
 import { WorkoutSkeleton } from '@/features/workouts/components/workout-skeleton';
 import { NativeButton } from '@/components/ui/native-button';
 import { haptics } from '@/lib/haptics';
-import { discardWorkout, useWorkout } from '@/features/workouts/hooks';
+import { discardWorkout, switchWorkoutVersion, useWorkout } from '@/features/workouts/hooks';
+import { shortTitle, shortVersionOf } from '@/features/workouts/short-version';
+import { useActiveProgramDay } from '@/features/programs/hooks';
 import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selectors';
 
 // Module-level so the object identity is stable: expo-router's Stack.Screen
@@ -64,6 +66,10 @@ export default function WorkoutScreen() {
     });
   }, []);
 
+  // The full/short switch: only for a lifting day of the active programme.
+  const day = useActiveProgramDay(workout?.program_day_id ?? null);
+  const short = day?.kind === 'lifting' ? shortVersionOf(day) : null;
+
   const [contentReady, setContentReady] = useState(false);
   useEffect(() => {
     // A short timer rather than InteractionManager (deprecated): long enough
@@ -90,6 +96,8 @@ export default function WorkoutScreen() {
   const volumeKg = workoutVolumeKg(allSets);
   const completedCount = completedSetCount(allSets);
   const liveSetCount = allSets.filter((s) => !s.deleted).length;
+
+  const isShort = day != null && short != null && workout.title === shortTitle(day, short);
 
   function goHome() {
     router.replace('/');
@@ -192,6 +200,14 @@ export default function WorkoutScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Changed your mind? Ticked sets stay either way. */}
+          {day != null && short != null && (
+            <NativeButton
+              label={isShort ? 'Switch to the full workout' : `Short on time? Switch to ${short.minutes} min`}
+              systemImage={isShort ? 'arrow.up.left.and.arrow.down.right' : 'timer'}
+              onPress={() => switchWorkoutVersion(workout.id, day, !isShort)}
+            />
+          )}
           {exercises.length === 0 && <Text style={styles.empty}>No exercises yet — add one to get started.</Text>}
           {exercises.map((exercise, index) => (
             <ExerciseCard

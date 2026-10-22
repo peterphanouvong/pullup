@@ -78,3 +78,9 @@ export function shortVersionOf(day: ProgramDay): ShortVersion | null {
     .map((e, i) => ({ ...e, position: i + 1, sets: Math.min(e.sets ?? FALLBACK_SETS, FALLBACK_SETS) }));
   return { minutes: DEFAULT_MINUTES, day: { ...day, exercises } };
 }
+
+/** The short version's workout title, which is also how a live workout
+ * knows which version it's on: "Lower A · 15 min". */
+export function shortTitle(day: ProgramDay, short: ShortVersion): string {
+  return `${day.name} · ${short.minutes} min`;
+}

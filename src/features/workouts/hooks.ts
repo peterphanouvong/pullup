@@ -28,7 +28,8 @@ import {
 } from './selectors';
 import { buildWorkoutFromDay } from './start';
 import { weekCompletion } from './today-state';
-import { shortVersionOf } from './short-version';
+import { reshapeWorkout } from './reshape';
+import { shortTitle, shortVersionOf } from './short-version';
 import { exercises$, generateId, workoutExercises$, workoutSets$, workouts$ } from './store';
 import type { Exercise, SetType, Workout, WorkoutExercise, WorkoutSet } from './types';
 
@@ -61,7 +62,39 @@ export function startWorkoutFromDay(day: ProgramDay, programDayId: string, userI
 export function startShortWorkoutFromDay(day: ProgramDay, programDayId: string, userId: string): string | null {
   const short = shortVersionOf(day);
   if (!short) return null;
-  return startWorkoutFromDay({ ...short.day, name: `${day.name} · ${short.minutes} min` }, programDayId, userId);
+  return startWorkoutFromDay({ ...short.day, name: shortTitle(day, short) }, programDayId, userId);
+}
+
+/** Moves a live workout between the day's full and short versions, keeping
+ * every completed set (see `reshape.ts`). `day` is always the full day. */
+export function switchWorkoutVersion(workoutId: string, day: ProgramDay, toShort: boolean): void {
+  const workout = workouts$[workoutId].peek();
+  if (workout == null) return;
+  const short = shortVersionOf(day);
+  if (!short) return;
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const { exercises } = selectWorkoutView(
+    workoutId,
+    workouts$.peek() ?? {},
+    workoutExercises$.peek() ?? {},
+    workoutSets$.peek() ?? {},
+  );
+  const plan = reshapeWorkout(exercises, day, toShort ? short.day : day, {
+    workoutId,
+    userId: workout.user_id,
+    now,
+    idGen: generateId,
+  });
+
+  haptics.commit();
+  for (const id of plan.removeSetIds) workoutSets$[id].assign({ deleted: true, updated_at: nowIso });
+  for (const id of plan.removeExerciseIds) workoutExercises$[id].assign({ deleted: true, updated_at: nowIso });
+  for (const exercise of plan.addExercises) workoutExercises$[exercise.id].set(exercise);
+  for (const set of plan.addSets) workoutSets$[set.id].set(set);
+  for (const { id, position } of plan.positions) workoutExercises$[id].assign({ position, updated_at: nowIso });
+  for (const { id, target } of plan.targets) workoutSets$[id].assign({ target, updated_at: nowIso });
+  workouts$[workoutId].assign({ title: toShort ? shortTitle(day, short) : day.name, updated_at: nowIso });
 }
 
 /** Creates a bare workout with no exercises (the "Start empty workout"
