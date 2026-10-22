@@ -46,6 +46,14 @@ describe('rest timer', () => {
     const state = restTimer$.get()!;
     expect(remainingSeconds(state, new Date('2026-10-14T12:00:45.000Z'))).toBe(-15);
   });
+
+  it('a clock from before the start reads the full countdown, not more', () => {
+    startRestTimer(30, new Date('2026-10-14T12:00:00.000Z'));
+    const state = restTimer$.get()!;
+    // The bar's last tick was 2s before play was pressed.
+    expect(remainingSeconds(state, new Date('2026-10-14T11:59:58.000Z'))).toBe(30);
+    expect(remainingFraction(state, new Date('2026-10-14T11:59:58.000Z'))).toBe(1);
+  });
 });
 
 describe('remainingFraction', () => {

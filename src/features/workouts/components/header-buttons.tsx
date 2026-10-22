@@ -1,5 +1,5 @@
 import type { SFSymbol } from 'expo-symbols';
-import { Button, Host, Image, Text } from '@expo/ui/swift-ui';
+import { Button, Host, Image, Menu, Text } from '@expo/ui/swift-ui';
 import {
   accessibilityLabel as a11yLabel,
   buttonBorderShape,
@@ -58,6 +58,37 @@ export function HeaderIconButton({
       >
         <Image systemName={icon} size={iconSize} color={theme.colors.ink} />
       </Button>
+    </Host>
+  );
+}
+
+/** The same round glass button, opening a menu of actions instead of
+ * acting on tap: for things worth a second look before they happen. */
+export function HeaderMenuButton({
+  icon,
+  accessibilityLabel,
+  actions,
+}: {
+  icon: SFSymbol;
+  accessibilityLabel: string;
+  actions: { label: string; icon: SFSymbol; onPress: () => void }[];
+}) {
+  const theme = useTheme();
+  return (
+    <Host matchContents seedColor={theme.colors.accent}>
+      <Menu
+        label={<Image systemName={icon} size={HEADER_ICON_SIZE} color={theme.colors.ink} />}
+        modifiers={[
+          buttonStyle('glass'),
+          buttonBorderShape('circle'),
+          controlSize('regular'),
+          a11yLabel(accessibilityLabel),
+        ]}
+      >
+        {actions.map((action) => (
+          <Button key={action.label} label={action.label} systemImage={action.icon} onPress={action.onPress} />
+        ))}
+      </Menu>
     </Host>
   );
 }

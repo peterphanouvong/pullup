@@ -13,12 +13,13 @@ import { Screen } from '@/components/ui/screen';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { ExerciseCard } from '@/features/workouts/components/exercise-card';
-import { openExercisePicker, openStartRestSheet } from '@/features/workouts/components/exercise-menu';
+import { openExercisePicker } from '@/features/workouts/components/exercise-menu';
 import { RestTimerBar } from '@/features/workouts/components/rest-timer-bar';
 import { FILL_BAR_CLEARANCE, FillDownBar } from '@/features/workouts/components/fill-down-bar';
 import {
   HEADER_CHEVRON_SIZE,
   HeaderIconButton,
+  HeaderMenuButton,
   HeaderPrimaryButton,
 } from '@/features/workouts/components/header-buttons';
 import { WorkoutHeaderTitle } from '@/features/workouts/components/workout-header';
@@ -136,8 +137,8 @@ export default function WorkoutScreen() {
       {/* Native navigation bar via expo-router's composition components
           (SF Symbols, liquid-glass backgrounds on iOS 26): chevron.down
           dismisses the modal downward — the workout keeps running and the
-          minimized bar picks it up on Today — the timer starts a rest, and
-          Finish opens the Save step. */}
+          minimized bar picks it up on Today — the hourglass switches between
+          the full and short versions, and Finish opens the Save step. */}
       <Stack.Screen options={MODAL_OPTIONS} />
       {/* Transparent bar, same as the Programme tab: no material of its
           own, so iOS draws its soft scroll-edge effect as content passes
@@ -174,11 +175,19 @@ export default function WorkoutScreen() {
             item — that's how Finish disappeared once the title moved left. */}
         <Stack.Toolbar.View hidesSharedBackground>
           <View style={styles.trailing}>
-            <HeaderIconButton icon="timer" accessibilityLabel="Start rest timer" onPress={() => {
-                haptics.tap();
-                openStartRestSheet();
-              }}
-            />
+            {/* Changed your mind? Ticked sets stay either way. A menu
+                rather than a tap, since switching drops unticked sets. */}
+            {day != null && short != null && (
+              <HeaderMenuButton
+                icon={isShort ? 'hourglass.bottomhalf.filled' : 'hourglass'}
+                accessibilityLabel="Short on time"
+                actions={[
+                  isShort
+                    ? { label: 'Switch to the full workout', icon: 'arrow.up.left.and.arrow.down.right', onPress: () => switchWorkoutVersion(workout.id, day, false) }
+                    : { label: `Short on time? Switch to ${short.minutes} min`, icon: 'hourglass', onPress: () => switchWorkoutVersion(workout.id, day, true) },
+                ]}
+              />
+            )}
             <HeaderPrimaryButton label="Finish" onPress={handleFinish} />
           </View>
         </Stack.Toolbar.View>
@@ -200,14 +209,6 @@ export default function WorkoutScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Changed your mind? Ticked sets stay either way. */}
-          {day != null && short != null && (
-            <NativeButton
-              label={isShort ? 'Switch to the full workout' : `Short on time? Switch to ${short.minutes} min`}
-              systemImage={isShort ? 'arrow.up.left.and.arrow.down.right' : 'timer'}
-              onPress={() => switchWorkoutVersion(workout.id, day, !isShort)}
-            />
-          )}
           {exercises.length === 0 && <Text style={styles.empty}>No exercises yet — add one to get started.</Text>}
           {exercises.map((exercise, index) => (
             <ExerciseCard

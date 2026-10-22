@@ -53,9 +53,16 @@ export function skipRestTimer(): void {
 
 /** Pure: whole seconds remaining at `now`. Can go negative once the
  * countdown has passed zero — callers clamp/format for display and decide
- * when to fire the haptic / auto-dismiss. */
+ * when to fire the haptic / auto-dismiss.
+ *
+ * Never more than `totalSeconds`: a `now` from before the countdown began
+ * (the bar's clock is only refreshed by its 1s tick, so it's stale for the
+ * first second of a new countdown) reads as the start, not as extra time.
+ * The start is `endsAt - totalSeconds`, which the ±15s adjust keeps fixed. */
 export function remainingSeconds(state: RestTimerState, now: Date): number {
-  return Math.round((new Date(state.endsAt).getTime() - now.getTime()) / 1000);
+  const endsAt = new Date(state.endsAt).getTime();
+  const at = Math.max(now.getTime(), endsAt - state.totalSeconds * 1000);
+  return Math.round((endsAt - at) / 1000);
 }
 
 /** Fraction of the rest still to run, 0–1 — the countdown bar's progress
