@@ -73,6 +73,7 @@ export function DevPanel() {
     { label: 'Onboarding: crew step', href: '/onboarding/crew' },
     { label: 'Plan', href: '/plan' },
     { label: 'Calendar', href: '/calendar' },
+    { label: 'Vibe lab (backdrop dials)', href: '/vibe-lab' },
     { label: 'Activity', href: '/activities' },
     { label: 'Exercise picker', href: '/workout/picker' },
     ...(programId ? [{ label: 'Active program overview', href: `/program/${programId}` as Href }] : []),

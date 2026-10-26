@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { haptics } from '@/lib/haptics';
@@ -9,6 +9,7 @@ import { SectionLabel } from '@/components/ui/section-label';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, useProgram, usePrograms } from '@/features/programs/hooks';
 import type { ProgramSummary } from '@/features/programs/types';
+import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 export default function PlanScreen() {
   const programs = usePrograms();
@@ -46,7 +47,8 @@ export default function PlanScreen() {
   // ScrollView to draw its scroll-edge effect over when that view is the
   // screen's first subview.
   return (
-    <ScrollView
+    <ShaderScrollView
+      vibe="programme"
       style={styles.scroll}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
@@ -85,7 +87,7 @@ export default function PlanScreen() {
           {rest.map((program) => renderCard(program, false))}
         </>
       )}
-    </ScrollView>
+    </ShaderScrollView>
   );
 }
 

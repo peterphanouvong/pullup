@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from '@/components/ui/card';
 import { useThemedStyles } from '@/styles/use-theme';
@@ -7,6 +7,7 @@ import { sessionDate, shortDuration, thousands } from '@/features/profile/format
 import { usePersonLogbook } from '@/features/stats/hooks';
 import { workoutCard } from '@/features/stats/stats';
 import type { WorkoutSet } from '@/features/workouts/types';
+import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 function setText(s: WorkoutSet): string {
   if (s.duration_seconds != null && s.weight_kg == null) return `${s.duration_seconds} s`;
@@ -40,7 +41,8 @@ export default function PersonWorkoutScreen() {
   return (
     <>
       <Stack.Title>{workout.title}</Stack.Title>
-      <ScrollView
+      <ShaderScrollView
+        vibe="crew"
         style={styles.scroll}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
@@ -64,7 +66,7 @@ export default function PersonWorkoutScreen() {
             ))}
           </Card>
         ))}
-      </ScrollView>
+      </ShaderScrollView>
     </>
   );
 }

@@ -1,7 +1,7 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { useThemedStyles } from '@/styles/use-theme';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { NativeButton } from '@/components/ui/native-button';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -15,9 +15,11 @@ import { DevPanel } from '@/features/dev/dev-panel';
 import { DashboardGrid } from '@/features/profile/components/dashboard-grid';
 import { ProfileHeader } from '@/features/profile/components/profile-header';
 import { SessionCard } from '@/features/profile/components/session-card';
+import { ballRadius, SessionJar } from '@/features/profile/components/session-jar';
 import { WeeklyChart } from '@/features/profile/components/weekly-chart';
 import { useMyLogbook } from '@/features/stats/hooks';
 import { workoutCard } from '@/features/stats/stats';
+import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 const RECENT_SESSIONS = 5;
 
@@ -29,6 +31,7 @@ const RECENT_SESSIONS = 5;
  */
 export default function ProfileScreen() {
   const session = useSession();
+  const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   const queryClient = useQueryClient();
   const profile = useProfile();
@@ -37,6 +40,13 @@ export default function ProfileScreen() {
 
   const target = profile.data?.weeklyTarget ?? DEFAULT_WEEKLY_TARGET;
   const starts = book.workouts.map((w) => w.started_at);
+  // The jar: one ball per session, sized by how long it ran. Capped so the
+  // physics stays cheap once the log is long.
+  const balls = book.workouts.slice(0, 80).map((w) => ({
+    id: w.id,
+    radius: ballRadius(workoutCard(book, w).durationSeconds),
+    tone: w.program_day_id != null ? ('lift' as const) : ('other' as const),
+  }));
   const name = profile.data?.displayName ?? null;
   const isGuest = session.user.is_anonymous;
 
@@ -52,7 +62,8 @@ export default function ProfileScreen() {
   // ScrollView to draw its scroll-edge effect over when that view is the
   // screen's first subview.
   return (
-    <ScrollView
+    <ShaderScrollView
+      vibe="profile"
       style={styles.scroll}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
@@ -71,6 +82,8 @@ export default function ProfileScreen() {
           { label: 'This week', value: `${sessionsThisWeek(starts, now)}/${target}` },
         ]}
       />
+
+      <SessionJar balls={balls} />
 
       <WeeklyChart book={book} now={now} />
 
@@ -93,7 +106,7 @@ export default function ProfileScreen() {
               key={w.id}
               data={workoutCard(book, w)}
               now={now}
-              onPress={() => router.push(`/workout/${w.id}/summary`)}
+              onPress={() => router.push({ pathname: '/workout/[id]/summary', params: { id: w.id, view: '1' } })}
               onShare={() => router.push({ pathname: '/workout/[id]/summary', params: { id: w.id, share: '1' } })}
             />
           ))
@@ -104,9 +117,20 @@ export default function ProfileScreen() {
       </View>
 
       <AccountActions />
+      {/* The backdrop dials (see features/backdrop): in every build for
+          now, so the look can be tuned on a real phone over TestFlight. */}
+      <NativeButton
+        variant="ghost"
+        label="Tune the look"
+        labelColor={theme.colors.inkMuted}
+        onPress={() => {
+          haptics.tap();
+          router.push('/vibe-lab');
+        }}
+      />
       {/* Jump links for trying flows that gate themselves; dev builds only. */}
       {__DEV__ && <DevPanel />}
-    </ScrollView>
+    </ShaderScrollView>
   );
 }
 

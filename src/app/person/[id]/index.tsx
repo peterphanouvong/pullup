@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useThemedStyles } from '@/styles/use-theme';
@@ -12,6 +12,7 @@ import { SessionCard } from '@/features/profile/components/session-card';
 import { WeeklyChart } from '@/features/profile/components/weekly-chart';
 import { usePersonLogbook } from '@/features/stats/hooks';
 import { workoutCard } from '@/features/stats/stats';
+import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 /**
  * A crewmate's profile: the same header, chart and sessions as your own,
@@ -39,7 +40,8 @@ export default function PersonScreen() {
   return (
     <>
       {name != null && <Stack.Title>{name}</Stack.Title>}
-      <ScrollView
+      <ShaderScrollView
+        vibe="crew"
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -68,7 +70,7 @@ export default function PersonScreen() {
             ))
           )}
         </View>
-      </ScrollView>
+      </ShaderScrollView>
     </>
   );
 }

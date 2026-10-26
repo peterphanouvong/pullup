@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
@@ -16,6 +16,7 @@ import { haptics } from '@/lib/haptics';
 import { startShortWorkoutFromDay, startWorkoutFromDay, useActiveWorkout } from '@/features/workouts/hooks';
 import { shortVersionOf } from '@/features/workouts/short-version';
 import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
+import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 // The bar is the app's (see `styles/header.ts`); only the fallback title
 // is set here, for the states that have no day to name yet.
@@ -102,7 +103,8 @@ export default function DayScreen() {
           object: the composition components memoize, so a data-driven
           title doesn't re-configure the bar on every render. */}
       <Stack.Title>{day.name}</Stack.Title>
-      <ScrollView
+      <ShaderScrollView
+        vibe="programme"
         style={styles.scroll}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
@@ -156,27 +158,26 @@ export default function DayScreen() {
           )}
         </View>
         <View style={styles.exercises}>
-          {/* The main work sits in a box: the exercises the short version
-              keeps, i.e. what matters most today. Runs of them are boxed
-              together, so a coach's pick from the middle of the day still
-              reads as one thing where it can. */}
+          {/* The main work is lit, not labelled: the exercises the short
+              version keeps (what matters most today) sit in a faint blue
+              wash with a soft halo, and the rest stay on the page. Runs
+              of them share one surface, so a coach's pick from the middle
+              of the day still reads as one thing where it can. */}
           {groupMainWork(day.exercises, mainIds).map((run) =>
             run.main ? (
-              <View key={run.exercises[0].id} style={styles.mainBox}>
-                <View style={styles.mainHeader}>
-                  <SymbolView name="flame.fill" size={12} tintColor={theme.colors.ink} />
-                  <Text style={styles.mainLabel}>Main work</Text>
+              <View key={run.exercises[0].id} style={styles.mainHalo}>
+                <View style={styles.mainBox}>
+                  {run.exercises.map((exercise) => (
+                    <ExercisePlan key={exercise.id} exercise={exercise} />
+                  ))}
                 </View>
-                {run.exercises.map((exercise) => (
-                  <ExercisePlan key={exercise.id} exercise={exercise} />
-                ))}
               </View>
             ) : (
               run.exercises.map((exercise) => <ExercisePlan key={exercise.id} exercise={exercise} />)
             ),
           )}
         </View>
-      </ScrollView>
+      </ShaderScrollView>
     </>
   );
 }
@@ -198,18 +199,24 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     marginBottom: -theme.spacing.sm,
   },
   exercises: { gap: theme.spacing.xl },
-  // Ink rather than the accent, so it reads as emphasis, not as something
-  // to tap; inset so the box's edge doesn't crowd the set tables.
+  // A very simple glow: the accent's soft halo around a faint accent wash
+  // with a hairline edge. Two layers because a shadow needs an unclipped
+  // view with a fill. Pulled out to the screen's edge inset so the surface
+  // doesn't crowd the set tables on it.
+  mainHalo: {
+    marginHorizontal: -theme.spacing.md,
+    borderRadius: theme.radii.xl,
+    backgroundColor: theme.colors.doneRow,
+    ...theme.shadow.glow,
+    shadowOpacity: 0.35,
+  },
   mainBox: {
     gap: theme.spacing.xl,
     padding: theme.spacing.md,
-    marginHorizontal: -theme.spacing.md,
     borderRadius: theme.radii.xl,
-    borderWidth: 1.5,
-    borderColor: theme.colors.activeRowBorder,
+    borderWidth: 1,
+    borderColor: theme.colors.doneChip,
   },
-  mainHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, marginBottom: -theme.spacing.sm },
-  mainLabel: { ...theme.type.label, color: theme.colors.ink },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.canvas },
   emptyText: { ...theme.type.body, color: theme.colors.ink },
 });

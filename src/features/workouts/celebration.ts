@@ -56,6 +56,24 @@ export function celebrationCopy(context: CelebrationContext): CelebrationCopy {
   };
 }
 
+/**
+ * The crew line on the consistency card: who else has shown up this week.
+ * Names while there are few enough to say, a count after that, and a
+ * nudge when you're the first — training with friends is the point.
+ */
+export function crewLine(trainedNames: string[]): string {
+  if (trainedNames.length === 0) return 'First in your crew this week.';
+  if (trainedNames.length === 1) return `${trainedNames[0]} trained this week too.`;
+  if (trainedNames.length === 2) return `${trainedNames[0]} and ${trainedNames[1]} trained this week too.`;
+  return `${trainedNames.length} crewmates trained this week too.`;
+}
+
+/** The share card's foot when there's no competition to count down to:
+ * the streak once it's a streak, otherwise the plain fact. */
+export function streakKicker(streak: number): string {
+  return streak >= 2 ? `${streak}-week streak.` : 'Session logged.';
+}
+
 /** "Comp day" / "1 day to comp" / "4 days to comp" — never "0 days". */
 export function formatCountdown(daysToComp: number): string {
   if (daysToComp <= 0) return 'Comp day.';

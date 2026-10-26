@@ -7,6 +7,7 @@ import { AuthGate, useSession } from '@/lib/auth';
 import { nativeHeader } from '@/styles/header';
 import { useThemedStyles } from '@/styles/use-theme';
 import { initWorkoutStore } from '@/features/workouts/store';
+import { loadVibes } from '@/features/backdrop/store';
 import { WidgetSync } from '@/features/widgets/widget-sync';
 import { PushGate } from '@/features/notifications/push-gate';
 
@@ -15,6 +16,10 @@ import { PushGate } from '@/features/notifications/push-gate';
 // runtime makes the native chrome (nav bars, tab bar, keyboards) go dark
 // too, not just our own themed views.
 Appearance.setColorScheme('dark');
+
+// The page backdrops' saved dials (see features/backdrop): kicked off at
+// startup so the first screens paint with the tuned look, not the defaults.
+void loadVibes();
 
 const queryClient = new QueryClient();
 
@@ -43,6 +48,8 @@ function WorkoutStoreGate({ children }: { children: ReactNode }) {
 const TABS_OPTIONS = { headerShown: false } as const;
 const PLAN_OPTIONS = { title: 'Plan' } as const;
 const ACTIVITIES_OPTIONS = { title: 'Activity' } as const;
+const CALENDAR_OPTIONS = { title: 'Calendar' } as const;
+const VIBE_LAB_OPTIONS = { title: 'Vibe lab' } as const;
 const EXERCISES_OPTIONS = { title: 'Exercises' } as const;
 // Fallbacks: these screens name themselves with Stack.Title once loaded.
 const EXERCISE_OPTIONS = { title: 'Exercise' } as const;
@@ -68,6 +75,8 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={TABS_OPTIONS} />
               <Stack.Screen name="plan" options={PLAN_OPTIONS} />
               <Stack.Screen name="activities" options={ACTIVITIES_OPTIONS} />
+              <Stack.Screen name="calendar" options={CALENDAR_OPTIONS} />
+              <Stack.Screen name="vibe-lab" options={VIBE_LAB_OPTIONS} />
               <Stack.Screen name="stats/index" options={EXERCISES_OPTIONS} />
               <Stack.Screen name="stats/[key]" options={EXERCISE_OPTIONS} />
               <Stack.Screen name="person/[id]/index" options={PERSON_OPTIONS} />

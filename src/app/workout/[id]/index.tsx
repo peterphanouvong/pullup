@@ -30,6 +30,7 @@ import { discardWorkout, switchWorkoutVersion, useWorkout } from '@/features/wor
 import { shortTitle, shortVersionOf } from '@/features/workouts/short-version';
 import { useActiveProgramDay } from '@/features/programs/hooks';
 import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selectors';
+import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 // Module-level so the object identity is stable: expo-router's Stack.Screen
 // calls navigation.setOptions whenever the `options` prop changes identity,
@@ -194,7 +195,8 @@ export default function WorkoutScreen() {
       </Stack.Toolbar>
       {/* First subview: see the header note above. */}
       {contentReady ? (
-        <ScrollView
+        <ShaderScrollView
+          vibe="workout"
           ref={scrollRef}
           onScroll={(e) => {
             scrollY.current = e.nativeEvent.contentOffset.y;
@@ -224,7 +226,7 @@ export default function WorkoutScreen() {
             systemImage="plus"
             onPress={() => openExercisePicker(workout.id, 'add')}
           />
-        </ScrollView>
+        </ShaderScrollView>
       ) : (
         <View style={[styles.scroll, { paddingTop: insets.top + HEADER_HEIGHT }]}>
           <WorkoutSkeleton exerciseCount={exercises.length} />

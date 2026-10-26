@@ -1,5 +1,6 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { SymbolView } from 'expo-symbols';
 import { Card } from '@/components/ui/card';
 import { NativeButton } from '@/components/ui/native-button';
@@ -41,6 +42,24 @@ export function ExerciseCard({
   // table rather than sitting behind a tap. Sets added by hand carry no
   // target, hence the search for the first that has one.
   const prescription = exercise.sets.find((s) => s.target != null)?.target ?? null;
+
+  // The last set landing turns the header tick into a filled circle; it
+  // stamps on with the same firm overshoot as a row's tick, so finishing
+  // an exercise has its own small arrival. Only on the change.
+  const allDonePop = useSharedValue(1);
+  const wasAllDone = useRef(allDone);
+  useEffect(() => {
+    if (allDone && !wasAllDone.current) {
+      allDonePop.set(
+        withSequence(
+          withTiming(0.6, { duration: 0 }),
+          withTiming(1, { duration: 320, easing: Easing.out(Easing.back(2.4)) }),
+        ),
+      );
+    }
+    wasAllDone.current = allDone;
+  }, [allDone, allDonePop]);
+  const allDoneStyle = useAnimatedStyle(() => ({ transform: [{ scale: allDonePop.get() }] }));
 
   return (
     <Card style={styles.card}>
@@ -116,12 +135,14 @@ export function ExerciseCard({
           accessibilityRole="button"
           accessibilityLabel={allDone ? 'Untick all sets' : 'Complete all sets'}
         >
-          <SymbolView
-            name={allDone ? 'checkmark.circle.fill' : 'checkmark'}
-            size={allDone ? 16 : 13}
-            weight="bold"
-            tintColor={allDone ? theme.colors.done : theme.colors.inkMuted}
-          />
+          <Animated.View style={allDoneStyle}>
+            <SymbolView
+              name={allDone ? 'checkmark.circle.fill' : 'checkmark'}
+              size={allDone ? 16 : 13}
+              weight="bold"
+              tintColor={allDone ? theme.colors.done : theme.colors.inkMuted}
+            />
+          </Animated.View>
         </Pressable>
       </View>
 

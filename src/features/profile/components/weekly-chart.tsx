@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Host, Picker, Text as SwiftText } from '@expo/ui/swift-ui';
+import { pickerStyle, tag } from '@expo/ui/swift-ui/modifiers';
 import { haptics } from '@/lib/haptics';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
@@ -85,24 +87,25 @@ export function WeeklyChart({ book, now }: { book: Logbook; now: Date }) {
           ))}
       </View>
 
-      <View style={styles.pills}>
-        {METRICS.map((m) => {
-          const selected = m.key === metric;
-          return (
-            <Pressable
-              key={m.key}
-              onPress={() => {
-                if (selected) return;
-                haptics.select();
-                setMetric(m.key);
-              }}
-              style={[styles.pill, selected && styles.pillSelected]}
-            >
-              <Text style={[styles.pillText, selected && styles.pillTextSelected]}>{m.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      {/* The metric switch is the system's segmented control: native
+          glass on iOS 26, and the control people already know. */}
+      <Host matchContents style={styles.picker}>
+        <Picker
+          selection={metric}
+          onSelectionChange={(next) => {
+            if (next === metric) return;
+            haptics.select();
+            setMetric(next);
+          }}
+          modifiers={[pickerStyle('segmented')]}
+        >
+          {METRICS.map((m) => (
+            <SwiftText key={m.key} modifiers={[tag(m.key)]}>
+              {m.label}
+            </SwiftText>
+          ))}
+        </Picker>
+      </Host>
     </View>
   );
 }
@@ -129,15 +132,5 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   barCurrent: { opacity: 0.45 },
   xLabels: { flexDirection: 'row', gap: 4, marginLeft: AXIS_WIDTH, marginTop: -theme.spacing.xs },
   xLabel: { flex: 1, ...theme.type.caption, fontSize: 11, color: theme.colors.inkMuted },
-  pills: { flexDirection: 'row', gap: theme.spacing.sm },
-  pill: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.xs + 2,
-    borderRadius: theme.radii.pill,
-    backgroundColor: theme.colors.glassControl,
-  },
-  // Ink on the selected pill, not the accent: the bars are the colour here.
-  pillSelected: { backgroundColor: theme.colors.ink },
-  pillText: { ...theme.type.caption, color: theme.colors.ink },
-  pillTextSelected: { color: theme.colors.canvas },
+  picker: { alignSelf: 'stretch' },
 });

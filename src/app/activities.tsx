@@ -1,16 +1,20 @@
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
-import { NumeralRow } from '@/components/ui/numeral-row';
 import { SwipeToDelete } from '@/components/ui/swipe-to-delete';
-import { discardWorkout, useFinishedWorkouts } from '@/features/workouts/hooks';
-import { activityDateLabel, activityMetaLabel } from '@/features/workouts/selectors';
+import { SessionCard } from '@/features/profile/components/session-card';
+import { useMyLogbook } from '@/features/stats/hooks';
+import { workoutCard } from '@/features/stats/stats';
+import { discardWorkout } from '@/features/workouts/hooks';
+import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
-// Finished-workout history, newest first (as NumeralRows), fed by the
-// workout store's `useFinishedWorkouts`. Empty state preserved for a
-// brand-new account with no finished sessions yet.
+/**
+ * Every finished session, newest first: the same cards, from the same
+ * logbook, as the Profile tab's "Workouts" (which shows the first few and
+ * sends people here). Tap for the session's overview; swipe to delete.
+ */
 function confirmDelete(workoutId: string, title: string): void {
   Alert.alert('Delete workout?', `"${title}" and everything logged in it will be removed.`, [
     { text: 'Cancel', style: 'cancel' },
@@ -21,19 +25,21 @@ function confirmDelete(workoutId: string, title: string): void {
 export default function ActivitiesScreen() {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
-  const items = useFinishedWorkouts();
+  const book = useMyLogbook();
+  const now = new Date();
 
   // No wrapper view: the bar is transparent, and UIKit only finds the
   // ScrollView to draw its scroll-edge effect over when that view is the
   // screen's first subview.
   return (
-    <ScrollView
+    <ShaderScrollView
+      vibe="profile"
       style={styles.scroll}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior="automatic"
     >
-      {items.length === 0 ? (
+      {book.workouts.length === 0 ? (
         <View style={styles.empty}>
           <SymbolView
             name="clock.arrow.circlepath"
@@ -44,30 +50,34 @@ export default function ActivitiesScreen() {
           <Text style={styles.emptyText}>No workouts yet — your first session will show up here.</Text>
         </View>
       ) : (
-        <View>
-          {items.map(({ workout, summary }) => {
-            const { day, month } = activityDateLabel(workout.finished_at as string);
-            return (
-              <SwipeToDelete key={workout.id} onDelete={() => confirmDelete(workout.id, workout.title)}>
-                <NumeralRow
-                  numeral={day}
-                  caption={month}
-                  title={workout.title}
-                  subtitle={activityMetaLabel(summary.durationSeconds, summary.volumeKg, summary.completedCount)}
-                  onPress={() => router.push(`/workout/${workout.id}/summary`)}
-                />
-              </SwipeToDelete>
-            );
-          })}
+        <View style={styles.list}>
+          {book.workouts.map((w) => (
+            <SwipeToDelete
+              key={w.id}
+              onDelete={() => confirmDelete(w.id, w.title)}
+              childStyle={styles.swipeChild}
+            >
+              <SessionCard
+                data={workoutCard(book, w)}
+                now={now}
+                onPress={() => router.push({ pathname: '/workout/[id]/summary', params: { id: w.id, view: '1' } })}
+                onShare={() => router.push({ pathname: '/workout/[id]/summary', params: { id: w.id, share: '1' } })}
+              />
+            </SwipeToDelete>
+          ))}
         </View>
       )}
-    </ScrollView>
+    </ShaderScrollView>
   );
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: theme.spacing.xl, flexGrow: 1 },
+  list: { gap: theme.spacing.sm },
+  // The card is glass with its own radius; the swipe wrapper stays clear
+  // so it doesn't put a square canvas slab behind the rounded corners.
+  swipeChild: { backgroundColor: 'transparent', borderRadius: theme.radii.xl },
   empty: {
     flex: 1,
     alignItems: 'center',

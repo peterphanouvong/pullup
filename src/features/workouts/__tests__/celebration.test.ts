@@ -1,4 +1,4 @@
-import { celebrationCopy, formatCountdown } from '../celebration';
+import { celebrationCopy, crewLine, formatCountdown, streakKicker } from '../celebration';
 
 describe('formatCountdown', () => {
   it('singularises one day and never says zero', () => {
@@ -40,5 +40,22 @@ describe('celebrationCopy', () => {
       headline: 'Session logged',
       detail: '2 days to comp.',
     });
+  });
+});
+
+describe('crewLine', () => {
+  it('names one or two, counts more, and nudges the first in', () => {
+    expect(crewLine([])).toBe('First in your crew this week.');
+    expect(crewLine(['Sam'])).toBe('Sam trained this week too.');
+    expect(crewLine(['Sam', 'Jo'])).toBe('Sam and Jo trained this week too.');
+    expect(crewLine(['Sam', 'Jo', 'Al'])).toBe('3 crewmates trained this week too.');
+  });
+});
+
+describe('streakKicker', () => {
+  it('only calls it a streak from two weeks', () => {
+    expect(streakKicker(0)).toBe('Session logged.');
+    expect(streakKicker(1)).toBe('Session logged.');
+    expect(streakKicker(4)).toBe('4-week streak.');
   });
 });

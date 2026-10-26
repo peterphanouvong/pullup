@@ -1,4 +1,4 @@
-import { sessionsThisWeek, weekStreak } from '../streak';
+import { sessionsThisWeek, trainedDaysThisWeek, weekStreak } from '../streak';
 
 const at = (y: number, m: number, d: number) => new Date(y, m - 1, d, 7).toISOString();
 // Wednesday 21 October 2026.
@@ -34,5 +34,13 @@ describe('weekStreak', () => {
 describe('sessionsThisWeek', () => {
   it('counts only the current local week', () => {
     expect(sessionsThisWeek([at(2026, 10, 18), at(2026, 10, 19), at(2026, 10, 21)], now)).toBe(2);
+  });
+});
+
+describe('trainedDaysThisWeek', () => {
+  it('flags the current local week Monday-first, leaving last Sunday out', () => {
+    expect(trainedDaysThisWeek([at(2026, 10, 18), at(2026, 10, 19), at(2026, 10, 21)], now)).toEqual([
+      true, false, true, false, false, false, false,
+    ]);
   });
 });

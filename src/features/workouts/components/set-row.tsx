@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSelector } from '@legendapp/state/react';
 import { Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 // Gesture-handler's Pressable: cancels its press when the row's delete
@@ -171,17 +178,45 @@ export function SetRow({
     startSetStopwatch(set.id);
   }
 
-  // The checkbox pops as it fills, so ticks (and the Complete all ripple)
-  // land visibly as well as by feel. Only on the change, never on mount.
-  const pop = useSharedValue(1);
+  // Completing a set lands; it doesn't ripple. The done wash sweeps in from
+  // the checkbox and stops dead at the row's far edge, while the tick is
+  // stamped on: a quick press-in, then one firm overshoot back to size.
+  // Every curve is a timing with a hard end (no spring wobble), so the eye
+  // gets a clear "that's done" — the same beat the haptic gives the hand.
+  // Un-ticking just lets the wash go, no theatre. Only ever on the change,
+  // never on mount, so a screen of logged sets opens still.
+  const sweep = useSharedValue(isCompleted ? 1 : 0);
+  const stamp = useSharedValue(1);
+  const tick = useSharedValue(1);
+  const [rowWidth, setRowWidth] = useState(0);
   const wasCompleted = useRef(isCompleted);
   useEffect(() => {
-    if (isCompleted && !wasCompleted.current) {
-      pop.set(withSequence(withTiming(1.22, { duration: 90 }), withSpring(1, { damping: 9, stiffness: 260 })));
-    }
+    if (isCompleted === wasCompleted.current) return;
     wasCompleted.current = isCompleted;
-  }, [isCompleted, pop]);
-  const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.get() }] }));
+    if (isCompleted) {
+      sweep.set(withTiming(1, { duration: 260, easing: Easing.out(Easing.cubic) }));
+      stamp.set(
+        withSequence(
+          withTiming(0.86, { duration: 70, easing: Easing.in(Easing.quad) }),
+          withTiming(1, { duration: 240, easing: Easing.out(Easing.back(2.2)) }),
+        ),
+      );
+      tick.set(
+        withSequence(
+          withTiming(0.3, { duration: 0 }),
+          withDelay(50, withTiming(1, { duration: 260, easing: Easing.out(Easing.back(2.4)) })),
+        ),
+      );
+    } else {
+      sweep.set(withTiming(0, { duration: 160, easing: Easing.out(Easing.quad) }));
+    }
+  }, [isCompleted, sweep, stamp, tick]);
+  const washStyle = useAnimatedStyle(() => ({
+    opacity: sweep.get() === 0 ? 0 : 1,
+    transform: [{ translateX: (1 - sweep.get()) * rowWidth }],
+  }));
+  const stampStyle = useAnimatedStyle(() => ({ transform: [{ scale: stamp.get() }] }));
+  const tickStyle = useAnimatedStyle(() => ({ transform: [{ scale: tick.get() }] }));
 
   function handleFocus(field: FillField) {
     setIsEditing(true);
@@ -225,7 +260,12 @@ export function SetRow({
   return (
     <>
     <SwipeToDelete onDelete={() => softDeleteSet(set.id)} childStyle={styles.swipeChild}>
-    <View style={[styles.row, isCompleted && styles.rowCompleted, isEditing && styles.rowEditing]}>
+    <View
+      style={[styles.row, isEditing && styles.rowEditing]}
+      onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}
+    >
+      {/* The done wash, behind everything; slides in from the right. */}
+      <Animated.View pointerEvents="none" style={[styles.wash, washStyle]} />
       <Pressable
         style={[styles.setCell, { width: SET_TABLE_COLUMNS.set }]}
         onPress={() => {
@@ -339,12 +379,15 @@ export function SetRow({
         style={[styles.checkCell, { width: SET_TABLE_COLUMNS.check }]}
         onPress={handleComplete}
       >
-        <Animated.View style={[styles.checkbox, isCompleted && styles.checkboxDone, popStyle]}>
-          <SymbolView
-            name="checkmark"
-            size={17}
-            tintColor={isCompleted ? theme.colors.onGradient : theme.colors.inkMuted}
-          />
+        <Animated.View style={[styles.checkbox, isCompleted && styles.checkboxDone, stampStyle]}>
+          <Animated.View style={tickStyle}>
+            <SymbolView
+              name="checkmark"
+              size={17}
+              weight={isCompleted ? 'bold' : 'regular'}
+              tintColor={isCompleted ? theme.colors.onGradient : theme.colors.inkMuted}
+            />
+          </Animated.View>
         </Animated.View>
       </Pressable>
     </View>
@@ -358,7 +401,17 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   // swipe actions stay hidden at rest (the swipeable keeps them at opacity 0
   // until a swipe starts), so the row doesn't need to be opaque to cover them.
   swipeChild: { backgroundColor: 'transparent', borderRadius: theme.radii.md },
-  rowCompleted: { backgroundColor: theme.colors.doneRow },
+  // The completed wash is its own layer (so it can sweep in) rather than
+  // the row's background. Inset by the row's border so it sits inside it.
+  wash: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderRadius: theme.radii.md - 1,
+    backgroundColor: theme.colors.doneRow,
+  },
   // Active row: slightly lifted fill plus a hairline edge. The border is
   // drawn in place of the row's transparent default, so nothing shifts.
   rowEditing: {

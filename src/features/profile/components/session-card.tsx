@@ -12,6 +12,9 @@ const SHOWN_EXERCISES = 3;
  * One session in a profile's list, Hevy-style: when, what it was called,
  * time / volume / records, then the first few exercises as "4 sets Deadlift".
  * Taps through to the session; the share button is only on your own.
+ *
+ * A real glass card (the default `Card`): Profile and Activity both list
+ * sessions with this, so the two stay the same thing in two places.
  */
 export function SessionCard({
   data,
@@ -29,7 +32,7 @@ export function SessionCard({
   const more = data.exercises.length - SHOWN_EXERCISES;
 
   return (
-    <Card style={styles.card} onPress={onPress} glass={false}>
+    <Card style={styles.card} onPress={onPress}>
       <View style={styles.top}>
         <View style={styles.titleBlock}>
           <Text style={styles.date}>{sessionDate(data.workout.started_at, now)}</Text>

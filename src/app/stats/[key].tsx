@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Card } from '@/components/ui/card';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -8,6 +8,7 @@ import { dayMonth, kg } from '@/features/profile/format';
 import { useMyLogbook } from '@/features/stats/hooks';
 import { exerciseHistory, personalBests } from '@/features/stats/stats';
 import type { WorkoutSet } from '@/features/workouts/types';
+import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 const CHART_SESSIONS = 12;
 const CHART_HEIGHT = 120;
@@ -59,7 +60,8 @@ export default function ExerciseHistoryScreen() {
   return (
     <>
       <Stack.Title>{best.name}</Stack.Title>
-      <ScrollView
+      <ShaderScrollView
+        vibe="profile"
         style={styles.scroll}
         contentContainerStyle={styles.content}
         contentInsetAdjustmentBehavior="automatic"
@@ -101,7 +103,7 @@ export default function ExerciseHistoryScreen() {
             <Text style={styles.sets}>{h.sets.map(setText).join('   ')}</Text>
           </View>
         ))}
-      </ScrollView>
+      </ShaderScrollView>
     </>
   );
 }

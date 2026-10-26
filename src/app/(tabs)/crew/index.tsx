@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActionSheetIOS, ActivityIndicator, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { useCrewPrompts } from '@/features/crews/use-crew-prompts';
 import { crewWeekRange } from '@/features/crews/week';
 import { YourWeekCard } from '@/features/crews/components/your-week-card';
 import { NotificationsNudge } from '@/features/notifications/components/notifications-nudge';
+import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 /**
  * Your crews: small private groups of mates who can see who's trained this
@@ -93,7 +94,8 @@ export default function CrewScreen() {
           />
         </Stack.Toolbar>
       )}
-      <ScrollView
+      <ShaderScrollView
+        vibe="crew"
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -132,7 +134,7 @@ export default function CrewScreen() {
             ))}
           </>
         )}
-      </ScrollView>
+      </ShaderScrollView>
     </>
   );
 }

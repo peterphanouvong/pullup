@@ -18,6 +18,8 @@ export function useCrewWeek(crewId: string, range: CrewWeekRange) {
   return useQuery({
     queryKey: ['crew-week', crewId, range.fromIso],
     queryFn: () => fetchCrewWeek(crewId, range.fromIso, range.toIso),
+    // Callers with no crew yet pass '' rather than conditionally hooking.
+    enabled: crewId.length > 0,
   });
 }
 

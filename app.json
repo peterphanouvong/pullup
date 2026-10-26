@@ -50,6 +50,12 @@
       ],
       "expo-sqlite",
       "expo-sharing",
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Pull Up tilts the session jar on your profile with your phone."
+        }
+      ],
       "expo-apple-authentication",
       [
         "expo-widgets",

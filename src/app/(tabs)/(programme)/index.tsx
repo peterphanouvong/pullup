@@ -32,7 +32,8 @@ import type { Theme } from "@/styles/theme";
 import { useThemedStyles, useTheme } from "@/styles/use-theme";
 import { router, Stack } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
+import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 const WEEKDAY_LABELS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
@@ -191,7 +192,8 @@ export default function TodayScreen() {
     return (
       <>
         <SettingsToolbar programId={null} onStartEmpty={handleStartEmpty} />
-        <ScrollView
+        <ShaderScrollView
+          vibe="programme"
           style={styles.scroll}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
@@ -218,7 +220,7 @@ export default function TodayScreen() {
               }}
             />
           </Card>
-        </ScrollView>
+        </ShaderScrollView>
         {renderFloating()}
       </>
     );
@@ -267,7 +269,8 @@ export default function TodayScreen() {
     // between the screen and the ScrollView breaks the large-title collapse.
     <>
       <SettingsToolbar programId={programId} onStartEmpty={handleStartEmpty} />
-      <ScrollView
+      <ShaderScrollView
+        vibe="programme"
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,
@@ -359,7 +362,7 @@ export default function TodayScreen() {
             })}
           </>
         )}
-      </ScrollView>
+      </ShaderScrollView>
       {renderFloating()}
     </>
   );

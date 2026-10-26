@@ -1,4 +1,4 @@
-import { fromKey, localDayOf } from '@/features/programs/calendar';
+import { dateKey, fromKey, localDayOf } from '@/features/programs/calendar';
 import { mondayOf } from '@/features/programs/schedule';
 
 /**
@@ -22,6 +22,16 @@ export function weekStreak(sessionStartIsos: string[], target: number, now: Date
     cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() - 7);
   }
   return streak;
+}
+
+/** Monday-first flags for the local week containing `now`: whether each
+ * day had a session. The celebration's row of seven dots. */
+export function trainedDaysThisWeek(sessionStartIsos: string[], now: Date): boolean[] {
+  const monday = fromKey(mondayOf(now));
+  const days = new Set(sessionStartIsos.map(localDayOf));
+  return Array.from({ length: 7 }, (_, i) =>
+    days.has(dateKey(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i))),
+  );
 }
 
 /** Sessions started in the local week containing `now`. */
