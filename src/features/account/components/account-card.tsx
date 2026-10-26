@@ -23,7 +23,7 @@ function showError(e: unknown) {
 
 /** Asks for the name crews will see. iOS-only (`Alert.prompt`), like the
  * rest of the app's chrome. Resolves once saved or dismissed. */
-function promptForName(defaultValue: string, onSave: (name: string) => Promise<void>) {
+export function promptForName(defaultValue: string, onSave: (name: string) => Promise<void>) {
   Alert.prompt(
     'Your name',
     'This is what your crew will see.',

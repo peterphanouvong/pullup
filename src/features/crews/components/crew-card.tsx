@@ -1,4 +1,5 @@
 import { ActionSheetIOS, ActivityIndicator, Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { Card } from '@/components/ui/card';
 import { IconCircle } from '@/components/ui/icon-circle';
 import { useSession } from '@/lib/auth';
@@ -13,8 +14,15 @@ import { orderMembers, type CrewWeekRange } from '../week';
 
 const WEEKDAY_INITIALS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+/** The link opens the app straight onto the join prompt
+ * (`src/app/join/[code].tsx`); the code is spelt out too, for anyone whose
+ * messages app won't make a `pullup://` link tappable. */
+export function inviteLink(code: string): string {
+  return `pullup://join/${code}`;
+}
+
 export function inviteMessage(name: string, code: string): string {
-  return `Join my crew “${name}” on Pull Up. Open Crew, tap +, and enter code ${code}.`;
+  return `Join my crew “${name}” on Pull Up: ${inviteLink(code)}\n\nOr open Crew, tap +, and enter code ${code}.`;
 }
 
 export function shareInvite(name: string, code: string) {
@@ -41,8 +49,8 @@ export function CrewCard({ crew, range, todayKey, now }: { crew: Crew; range: Cr
   const pokedMeToday = (pokes.data ?? []).filter((p) => p.crewId === crew.id && p.toUser === session.user.id);
   const pokedByMeToday = new Set((pokes.data ?? []).filter((p) => p.fromUser === session.user.id).map((p) => p.toUser));
 
-  /** A crewmate's row: one nudge a day, nothing else — no profile, no
-   * message. "You training today?" is the whole vocabulary. */
+  /** A crewmate's row: their profile, or one nudge a day. No messages:
+   * "You training today?" is the whole vocabulary. */
   function openMember(member: { userId: string; displayName: string }) {
     haptics.tap();
     const already = pokedByMeToday.has(member.userId);
@@ -50,12 +58,16 @@ export function CrewCard({ crew, range, todayKey, now }: { crew: Crew; range: Cr
       {
         title: member.displayName,
         message: already ? 'You’ve poked them today. Once a day is plenty.' : undefined,
-        options: [already ? 'Poked today 👋' : `Poke ${member.displayName} 👋`, 'Cancel'],
-        cancelButtonIndex: 1,
-        disabledButtonIndices: already ? [0] : [],
+        options: ['View profile', already ? 'Poked today 👋' : `Poke ${member.displayName} 👋`, 'Cancel'],
+        cancelButtonIndex: 2,
+        disabledButtonIndices: already ? [1] : [],
       },
       (index) => {
-        if (index !== 0 || already) return;
+        if (index === 0) {
+          router.push({ pathname: '/person/[id]', params: { id: member.userId } });
+          return;
+        }
+        if (index !== 1 || already) return;
         haptics.commit();
         pokes.poke.mutate(
           { crewId: crew.id, userId: member.userId },

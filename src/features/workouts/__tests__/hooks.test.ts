@@ -5,6 +5,8 @@
 import {
   addExerciseToWorkout,
   addSet,
+  COMPLETE_ALL_STEP_MS,
+  completeAllSets,
   completeSet,
   discardWorkout,
   finishWorkout,
@@ -135,6 +137,29 @@ describe('completeSet', () => {
 
     completeSet(setId, new Date('2026-10-14T12:05:00.000Z'));
     expect(workoutSets$[setId].completed_at.get()).toBeNull();
+  });
+});
+
+describe('completeAllSets', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('ticks the pending sets one by one, top to bottom, then un-ticks them all', () => {
+    jest.useFakeTimers();
+    const userId = freshUser();
+    initWorkoutStore(userId);
+    const workoutId = startWorkoutFromDay(liftingDay, 'day-1', userId);
+    const [exercise] = readWorkoutView(workoutId).exercises;
+    const [first, second, third] = exercise.sets;
+    completeSet(second.id, new Date());
+
+    completeAllSets(exercise.id);
+    expect(workoutSets$[first.id].completed_at.get()).not.toBeNull();
+    expect(workoutSets$[third.id].completed_at.get()).toBeNull();
+    jest.advanceTimersByTime(COMPLETE_ALL_STEP_MS);
+    expect(workoutSets$[third.id].completed_at.get()).not.toBeNull();
+
+    completeAllSets(exercise.id);
+    expect(readWorkoutView(workoutId).exercises[0].sets.every((s) => s.completed_at == null)).toBe(true);
   });
 });
 

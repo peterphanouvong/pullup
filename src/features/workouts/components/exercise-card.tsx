@@ -1,36 +1,15 @@
 import { useRef } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 import { Card } from '@/components/ui/card';
 import { NativeButton } from '@/components/ui/native-button';
 import { IconCircle } from '@/components/ui/icon-circle';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
-import { addSet, updateExerciseNotes, type WorkoutExerciseWithSets } from '../hooks';
+import { addSet, completeAllSets, updateExerciseNotes, type WorkoutExerciseWithSets } from '../hooks';
 import { openExerciseMenu, openRestTimerSheet } from './exercise-menu';
+import { logTypeOf } from '../log-type';
 import { SET_TABLE_COLUMNS, SetRow } from './set-row';
-
-// A fallback once a fresh exercise's sets are all still blank (no
-// weight/reps/duration logged yet): look for a time-shaped token ("20 s",
-// "30 s/side") in the programme-prescribed `target` ghost text composed by
-// `buildWorkoutFromDay`'s `composeTarget`. Deliberately excludes bare "m"
-// distances the same way `start.ts`'s own TIMED_PRESCRIPTION_RE does.
-const TIMED_TARGET_RE = /\d+\s*s(?:\/side)?\b/i;
-
-/**
- * Is this exercise's set table duration-based (TIME column) rather than
- * weighted (KG/REPS columns)? Detection order, cheapest/most-certain first:
- * 1. Any set already has `duration_seconds` logged -> duration.
- * 2. Any set already has `weight_kg` or `reps` logged -> weighted.
- * 3. Otherwise (a fresh, unlogged prefill) fall back to the `target` ghost
- *    text's shape, since `buildWorkoutFromDay` doesn't stamp a per-set
- *    duration-vs-weighted flag up front.
- */
-function isDurationExercise(exercise: WorkoutExerciseWithSets): boolean {
-  if (exercise.sets.some((s) => s.duration_seconds != null)) return true;
-  if (exercise.sets.some((s) => s.weight_kg != null || s.reps != null)) return false;
-  return exercise.sets.some((s) => s.target != null && TIMED_TARGET_RE.test(s.target));
-}
 
 function formatRestTimer(restSeconds: number | null): string {
   if (restSeconds == null) return 'OFF';
@@ -52,8 +31,9 @@ export function ExerciseCard({
 }) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
-  const isDuration = isDurationExercise(exercise);
+  const logType = logTypeOf(exercise);
   const doneCount = exercise.sets.filter((s) => s.completed_at != null).length;
+  const allDone = exercise.sets.length > 0 && doneCount === exercise.sets.length;
   const notesRef = useRef<TextInput>(null);
   // What the programme asked for — "4 × 2 @ 85%", or whatever its LOAD
   // column said ("RPE 7", "moderate"). That's the thing you're deciding
@@ -76,6 +56,7 @@ export function ExerciseCard({
               exercise,
               canMoveUp,
               canMoveDown,
+              logType,
               onAddNote: () => notesRef.current?.focus(),
             })
           }
@@ -114,15 +95,34 @@ export function ExerciseCard({
       <View style={styles.header}>
         <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.set, textAlign: 'center' }]}>SET</Text>
         <Text style={[styles.headerLabel, styles.headerPrevious]}>PREVIOUS</Text>
-        {isDuration ? (
-          <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.cell * 2, textAlign: 'center' }]}>TIME</Text>
+        {logType !== 'weight_reps' ? (
+          <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.cell * 2, textAlign: 'center' }]}>
+            {logType === 'duration' ? 'TIME' : 'REPS'}
+          </Text>
         ) : (
           <>
             <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.cell, textAlign: 'center' }]}>KG</Text>
             <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.cell, textAlign: 'center' }]}>REPS</Text>
           </>
         )}
-        <Text style={[styles.headerLabel, { width: SET_TABLE_COLUMNS.check, textAlign: 'center' }]}>✓</Text>
+        {/* Complete all: the sets tick themselves off top to bottom. */}
+        <Pressable
+          style={[styles.headerCheck, { width: SET_TABLE_COLUMNS.check }]}
+          onPress={() => {
+            Keyboard.dismiss();
+            completeAllSets(exercise.id);
+          }}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={allDone ? 'Untick all sets' : 'Complete all sets'}
+        >
+          <SymbolView
+            name={allDone ? 'checkmark.circle.fill' : 'checkmark'}
+            size={allDone ? 16 : 13}
+            weight="bold"
+            tintColor={allDone ? theme.colors.done : theme.colors.inkMuted}
+          />
+        </Pressable>
       </View>
 
       {exercise.sets.map((set) => (
@@ -133,7 +133,7 @@ export function ExerciseCard({
           exerciseId={exercise.exercise_id}
           exerciseName={exercise.exercise_name}
           workoutId={workoutId}
-          isDuration={isDuration}
+          logType={logType}
         />
       ))}
 
@@ -156,4 +156,5 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, marginTop: theme.spacing.xs },
   headerLabel: { ...theme.type.label, color: theme.colors.inkMuted },
   headerPrevious: { flex: 1 },
+  headerCheck: { alignItems: 'center', justifyContent: 'center', height: 20 },
 });

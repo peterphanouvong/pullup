@@ -8,6 +8,7 @@
  */
 
 import type { ProgramDay } from '@/features/programs/types';
+import { inferLogType } from './log-type';
 import type { Workout, WorkoutExercise, WorkoutSet } from './types';
 
 export interface BuildWorkoutFromDayOpts {
@@ -100,7 +101,8 @@ export function buildWorkoutFromDay(
   const sets: WorkoutSet[] = [];
 
   for (const dayExercise of day.exercises) {
-    const timed = isTimedPrescription(dayExercise.reps);
+    const logType = dayExercise.logType ?? inferLogType(dayExercise.exerciseName, dayExercise.reps);
+    const timed = logType === 'duration';
     const setCount = dayExercise.sets ?? 1;
     const target = composeTarget(setCount, dayExercise.reps, dayExercise.load);
 
@@ -111,7 +113,9 @@ export function buildWorkoutFromDay(
       exercise_id: dayExercise.exerciseId,
       exercise_name: dayExercise.exerciseName,
       position: dayExercise.position,
-      rest_seconds: timed ? null : 150,
+      // Holds go without a rest timer; sprints are timed but still rest.
+      rest_seconds: isTimedPrescription(dayExercise.reps) ? null : 150,
+      log_type: logType,
       notes: dayExercise.notes ?? null,
       created_at: nowIso,
       updated_at: nowIso,
@@ -127,7 +131,7 @@ export function buildWorkoutFromDay(
         position: i + 1,
         set_type: 'working',
         weight_kg: null,
-        reps: prefillReps(dayExercise.reps),
+        reps: timed ? null : prefillReps(dayExercise.reps),
         duration_seconds: null,
         target,
         completed_at: null,

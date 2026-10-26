@@ -5,6 +5,7 @@
  * mirroring `start.ts`'s split.
  */
 
+import { inferLogType } from './log-type';
 import type { Exercise, WorkoutExercise, WorkoutSet } from './types';
 
 /**
@@ -87,6 +88,7 @@ export function buildAddedExercise(args: BuildAddedExerciseArgs): BuildAddedExer
     exercise_name: args.exercise.name,
     position: args.position,
     rest_seconds: 150,
+    log_type: inferLogType(args.exercise.name, null),
     notes: null,
     created_at: nowIso,
     updated_at: nowIso,

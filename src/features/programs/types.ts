@@ -1,3 +1,5 @@
+import type { LogType } from '@/features/workouts/types';
+
 export type DayKind = 'lifting' | 'court' | 'rest' | 'comp';
 
 export interface DayExercise {
@@ -9,6 +11,8 @@ export interface DayExercise {
   reps: string | null;
   load: string | null;
   notes: string | null;
+  /** Set by the coach or by "Log as…"; null means infer it. */
+  logType?: LogType | null;
 }
 
 export interface ProgramDay {
@@ -85,6 +89,8 @@ export interface RawProgram {
         reps: string | null;
         load: string | null;
         notes: string | null;
+        /** Absent until the column's migration has run. */
+        log_type?: LogType | null;
       }[];
     }[];
   }[];

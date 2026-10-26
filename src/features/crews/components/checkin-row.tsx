@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
 import { useThemedStyles } from '@/styles/use-theme';
@@ -26,16 +27,26 @@ export function CheckinRow({ checkin, now }: { checkin: Checkin; now: Date }) {
     react.mutate({ workoutId: checkin.workoutId, emoji: next });
   }
 
+  /** The session itself: yours opens its summary, a crewmate's opens
+   * read-only from their profile. */
+  function open() {
+    haptics.tap();
+    if (isMe) router.push(`/workout/${checkin.workoutId}/summary`);
+    else router.push({ pathname: '/person/[id]/[workoutId]', params: { id: checkin.userId, workoutId: checkin.workoutId } });
+  }
+
   return (
     <View style={styles.row}>
-      <View style={[styles.avatar, isMe && styles.avatarMe]}>
+      <Pressable onPress={open} style={[styles.avatar, isMe && styles.avatarMe]}>
         <Text style={styles.avatarInitial}>{checkin.displayName.charAt(0).toUpperCase()}</Text>
-      </View>
+      </Pressable>
       <View style={styles.body}>
-        <Text style={styles.headline} numberOfLines={1}>
-          {checkinHeadline(checkin, session.user.id)}
-        </Text>
-        <Text style={styles.detail}>{checkinDetail(checkin, now)}</Text>
+        <Pressable onPress={open} style={({ pressed }) => [styles.openable, pressed && styles.chipPressed]}>
+          <Text style={styles.headline} numberOfLines={1}>
+            {checkinHeadline(checkin, session.user.id)}
+          </Text>
+          <Text style={styles.detail}>{checkinDetail(checkin, now)}</Text>
+        </Pressable>
         <View style={styles.chips}>
           {REACTIONS.map((emoji) => {
             const count = checkin.reactions.filter((r) => r.emoji === emoji).length;
@@ -76,6 +87,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   avatarMe: { backgroundColor: theme.colors.accent },
   avatarInitial: { ...theme.type.caption, fontWeight: '700', color: theme.colors.ink },
   body: { flex: 1, gap: 2 },
+  openable: { gap: 2 },
   headline: { ...theme.type.body, fontWeight: '600', color: theme.colors.ink },
   detail: { ...theme.type.caption, color: theme.colors.inkMuted, fontVariant: ['tabular-nums'] },
   chips: { flexDirection: 'row', gap: theme.spacing.xs, marginTop: theme.spacing.xs },

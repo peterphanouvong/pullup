@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { toProgram } from './mapping';
 import { mondayOf } from './schedule';
 import type { ActiveProgram, Program, ProgramSummary, RawProgram } from './types';
+import type { LogType } from '@/features/workouts/types';
 
 const PROGRAM_SELECT = `
   id, slug, name, summary, description,
@@ -9,7 +10,7 @@ const PROGRAM_SELECT = `
     id, position, name, phase, description,
     program_days (
       id, position, name, kind, notes,
-      day_exercises ( id, position, exercise_name, exercise_id, sets, reps, load, notes )
+      day_exercises ( id, position, exercise_name, exercise_id, sets, reps, load, notes, log_type )
     )
   )
 `;
@@ -111,6 +112,23 @@ export async function saveDayExercises(
     const { error } = await supabase.from('day_exercises').insert(inserts);
     if (error) throw error;
   }
+}
+
+/** "Log as…" from a live workout, remembered on the programme day so the
+ * next time it's started the table is already right. Matched by name, the
+ * way a workout's exercises relate back to the day. Only the user's own
+ * instance can be written (RLS), so on a template this quietly does nothing. */
+export async function saveDayExerciseLogType(
+  dayId: string,
+  exerciseName: string,
+  logType: LogType,
+): Promise<void> {
+  const { error } = await supabase
+    .from('day_exercises')
+    .update({ log_type: logType })
+    .eq('day_id', dayId)
+    .eq('exercise_name', exerciseName);
+  if (error) throw error;
 }
 
 /** Selecting a template copies it into a private instance owned by the

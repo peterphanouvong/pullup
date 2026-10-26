@@ -1,28 +1,52 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { SymbolView, type SFSymbol } from 'expo-symbols';
-import { useThemedStyles, useTheme } from '@/styles/use-theme';
+import { useQueryClient } from '@tanstack/react-query';
+import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
-import { useActiveProgram, useProgram } from '@/features/programs/hooks';
-import { useFinishedWorkouts } from '@/features/workouts/hooks';
-import { AccountActions, AccountCard } from '@/features/account/components/account-card';
+import { NativeButton } from '@/components/ui/native-button';
+import { SectionLabel } from '@/components/ui/section-label';
+import { useSession } from '@/lib/auth';
+import { haptics } from '@/lib/haptics';
+import { AccountActions, AccountCard, promptForName } from '@/features/account/components/account-card';
+import { DEFAULT_WEEKLY_TARGET, saveDisplayName } from '@/features/account/api';
+import { useProfile } from '@/features/account/hooks';
+import { sessionsThisWeek, weekStreak } from '@/features/crews/streak';
 import { DevPanel } from '@/features/dev/dev-panel';
+import { DashboardGrid } from '@/features/profile/components/dashboard-grid';
+import { ProfileHeader } from '@/features/profile/components/profile-header';
+import { SessionCard } from '@/features/profile/components/session-card';
+import { WeeklyChart } from '@/features/profile/components/weekly-chart';
+import { useMyLogbook } from '@/features/stats/hooks';
+import { workoutCard } from '@/features/stats/stats';
+
+const RECENT_SESSIONS = 5;
 
 /**
- * The hub for everything that isn't this week's training: who you are,
- * which programme you're on, and what you've already done.
- *
- * Each row carries its own count or name, so the screen answers "how much
- * is in there?" without you having to open it.
+ * You, Hevy-style: who you are and how you've been showing up (sessions,
+ * the weekly streak, this week against your target), twelve weeks as a
+ * chart, the way into stats, calendar, plan and history, then your latest
+ * sessions. The same layout a crewmate sees of you (`/person/[id]`).
  */
 export default function ProfileScreen() {
+  const session = useSession();
   const styles = useThemedStyles(createStyles);
-  const active = useActiveProgram();
-  const program = useProgram(active.data?.programId ?? '');
-  const finished = useFinishedWorkouts();
+  const queryClient = useQueryClient();
+  const profile = useProfile();
+  const book = useMyLogbook();
+  const now = new Date();
 
-  const programName = program.data?.name ?? 'No program selected';
-  const sessionCount = finished.length;
+  const target = profile.data?.weeklyTarget ?? DEFAULT_WEEKLY_TARGET;
+  const starts = book.workouts.map((w) => w.started_at);
+  const name = profile.data?.displayName ?? null;
+  const isGuest = session.user.is_anonymous;
+
+  function rename() {
+    haptics.tap();
+    promptForName(name ?? '', async (next) => {
+      await saveDisplayName(session.user.id, next);
+      await queryClient.invalidateQueries({ queryKey: ['profile', session.user.id] });
+    });
+  }
 
   // No wrapper view: the bar is transparent, and UIKit only finds the
   // ScrollView to draw its scroll-edge effect over when that view is the
@@ -34,25 +58,49 @@ export default function ProfileScreen() {
       showsVerticalScrollIndicator={false}
       contentInsetAdjustmentBehavior="automatic"
     >
-      <AccountCard />
+      {/* A guest gets the case for signing in first: crews and a name
+          need an account. */}
+      {isGuest && <AccountCard />}
 
-      <View style={styles.rows}>
-        <HubRow
-          icon="list.bullet.rectangle"
-          title="Plan"
-          detail={programName}
-          onPress={() => router.push('/plan')}
-        />
-        <HubRow
-          icon="clock.arrow.circlepath"
-          title="Activity"
-          detail={
-            sessionCount === 0
-              ? 'No sessions logged yet'
-              : `${sessionCount} session${sessionCount === 1 ? '' : 's'} logged`
-          }
-          onPress={() => router.push('/activities')}
-        />
+      <ProfileHeader
+        name={isGuest ? 'You' : name}
+        onPressName={isGuest ? undefined : rename}
+        stats={[
+          { label: 'Workouts', value: String(book.workouts.length) },
+          { label: 'Streak', value: `${weekStreak(starts, target, now)} wk` },
+          { label: 'This week', value: `${sessionsThisWeek(starts, now)}/${target}` },
+        ]}
+      />
+
+      <WeeklyChart book={book} now={now} />
+
+      <DashboardGrid
+        tiles={[
+          { icon: 'trophy', label: 'Exercises', onPress: () => router.push('/stats') },
+          { icon: 'calendar', label: 'Calendar', onPress: () => router.push('/calendar') },
+          { icon: 'list.bullet.rectangle', label: 'Plan', onPress: () => router.push('/plan') },
+          { icon: 'clock.arrow.circlepath', label: 'Activity', onPress: () => router.push('/activities') },
+        ]}
+      />
+
+      <View style={styles.sessions}>
+        <SectionLabel>Workouts</SectionLabel>
+        {book.workouts.length === 0 ? (
+          <Text style={styles.empty}>Your sessions show up here once you finish one.</Text>
+        ) : (
+          book.workouts.slice(0, RECENT_SESSIONS).map((w) => (
+            <SessionCard
+              key={w.id}
+              data={workoutCard(book, w)}
+              now={now}
+              onPress={() => router.push(`/workout/${w.id}/summary`)}
+              onShare={() => router.push({ pathname: '/workout/[id]/summary', params: { id: w.id, share: '1' } })}
+            />
+          ))
+        )}
+        {book.workouts.length > RECENT_SESSIONS && (
+          <NativeButton variant="ghost" label="See all workouts" onPress={() => router.push('/activities')} />
+        )}
       </View>
 
       <AccountActions />
@@ -62,60 +110,9 @@ export default function ProfileScreen() {
   );
 }
 
-function HubRow({
-  icon,
-  title,
-  detail,
-  onPress,
-}: {
-  icon: SFSymbol;
-  title: string;
-  detail: string;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-  const styles = useThemedStyles(createStyles);
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
-      <View style={styles.rowIcon}>
-        <SymbolView name={icon} size={18} tintColor={theme.colors.ink} />
-      </View>
-      <View style={styles.rowBody}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        <Text style={styles.rowDetail} numberOfLines={1}>
-          {detail}
-        </Text>
-      </View>
-      <SymbolView name="chevron.right" size={15} tintColor={theme.colors.inkMuted} />
-    </Pressable>
-  );
-}
-
 const createStyles = (theme: Theme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.canvas },
-  content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
-  rows: { gap: theme.spacing.sm },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.lg,
-    backgroundColor: theme.colors.glass,
-    borderRadius: theme.radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.glassBorder,
-    padding: theme.spacing.lg,
-    ...theme.shadow.card,
-  },
-  rowPressed: { opacity: 0.85 },
-  rowIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: theme.radii.lg,
-    backgroundColor: theme.colors.canvas,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowBody: { flex: 1, gap: 2 },
-  rowTitle: { ...theme.type.heading, color: theme.colors.ink },
-  rowDetail: { ...theme.type.caption, color: theme.colors.inkMuted },
+  content: { padding: theme.spacing.lg, gap: theme.spacing.xl, paddingBottom: theme.spacing.xxl },
+  sessions: { gap: theme.spacing.sm },
+  empty: { ...theme.type.body, color: theme.colors.inkMuted },
 });

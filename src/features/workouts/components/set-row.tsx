@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { useSelector } from '@legendapp/state/react';
 import { Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 // Gesture-handler's Pressable: cancels its press when the row's delete
@@ -11,7 +12,7 @@ import type { Theme } from '@/styles/theme';
 import { useNumericField } from '../numeric-input';
 import { previousSet } from '../selectors';
 import { workoutExercises$, workouts$, workoutSets$ } from '../store';
-import type { WorkoutSet } from '../types';
+import type { LogType, WorkoutSet } from '../types';
 import { haptics } from '@/lib/haptics';
 import { fillFromPrevious } from '../edit';
 import { blurSetField, focusSetField, type FillField } from '../focused-set';
@@ -61,11 +62,12 @@ function setNumberLabel(siblingSets: WorkoutSet[], set: WorkoutSet): string {
   return String(index + 1);
 }
 
-function formatGhost(set: WorkoutSet | null, isDuration: boolean): string {
+function formatGhost(set: WorkoutSet | null, logType: LogType): string {
   if (!set) return '—';
-  if (isDuration) {
+  if (logType === 'duration') {
     return set.duration_seconds != null ? `${set.duration_seconds}s` : '—';
   }
+  if (logType === 'reps') return set.reps != null ? `${set.reps} reps` : '—';
   if (set.weight_kg != null && set.reps != null) return `${set.weight_kg}kg × ${set.reps}`;
   if (set.weight_kg != null) return `${set.weight_kg}kg`;
   if (set.reps != null) return `${set.reps} reps`;
@@ -78,15 +80,16 @@ export function SetRow({
   exerciseId,
   exerciseName,
   workoutId,
-  isDuration,
+  logType,
 }: {
   set: WorkoutSet;
   siblingSets: WorkoutSet[];
   exerciseId: string | null;
   exerciseName: string;
   workoutId: string;
-  isDuration: boolean;
+  logType: LogType;
 }) {
+  const isDuration = logType === 'duration';
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
 
@@ -168,6 +171,18 @@ export function SetRow({
     startSetStopwatch(set.id);
   }
 
+  // The checkbox pops as it fills, so ticks (and the Complete all ripple)
+  // land visibly as well as by feel. Only on the change, never on mount.
+  const pop = useSharedValue(1);
+  const wasCompleted = useRef(isCompleted);
+  useEffect(() => {
+    if (isCompleted && !wasCompleted.current) {
+      pop.set(withSequence(withTiming(1.22, { duration: 90 }), withSpring(1, { damping: 9, stiffness: 260 })));
+    }
+    wasCompleted.current = isCompleted;
+  }, [isCompleted, pop]);
+  const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.get() }] }));
+
   function handleFocus(field: FillField) {
     setIsEditing(true);
     focusSetField(set.id, field);
@@ -200,6 +215,8 @@ export function SetRow({
     haptics.tap();
     if (isDuration) {
       updateSet(set.id, { duration_seconds: previous.duration_seconds });
+    } else if (logType === 'reps') {
+      updateSet(set.id, { reps: previous.reps });
     } else {
       updateSet(set.id, { weight_kg: previous.weight_kg, reps: previous.reps });
     }
@@ -223,7 +240,7 @@ export function SetRow({
 
       <Pressable style={styles.previousCell} onPress={copyGhost}>
         <Text style={styles.ghost} numberOfLines={1}>
-          {formatGhost(previous, isDuration)}
+          {formatGhost(previous, logType)}
         </Text>
       </Pressable>
 
@@ -262,6 +279,23 @@ export function SetRow({
             />
           </Pressable>
         </>
+      ) : logType === 'reps' ? (
+        // Bodyweight and plyo work: one wide REPS cell where KG and REPS sit.
+        <TextInput
+          style={[
+            styles.input,
+            isCompleted ? styles.inputDone : styles.inputPending,
+            { width: SET_TABLE_COLUMNS.cell * 2 + theme.spacing.xs },
+          ]}
+          onFocus={() => handleFocus('reps')}
+          onBlur={() => handleBlur('reps')}
+          selectTextOnFocus
+          keyboardType="number-pad"
+          placeholder={previous?.reps != null ? String(previous.reps) : 'reps'}
+          placeholderTextColor={theme.colors.inkMuted}
+          value={repsField.text}
+          onChangeText={repsField.onChangeText}
+        />
       ) : (
         <>
           <TextInput
@@ -305,13 +339,13 @@ export function SetRow({
         style={[styles.checkCell, { width: SET_TABLE_COLUMNS.check }]}
         onPress={handleComplete}
       >
-        <View style={[styles.checkbox, isCompleted && styles.checkboxDone]}>
+        <Animated.View style={[styles.checkbox, isCompleted && styles.checkboxDone, popStyle]}>
           <SymbolView
             name="checkmark"
             size={17}
             tintColor={isCompleted ? theme.colors.onGradient : theme.colors.inkMuted}
           />
-        </View>
+        </Animated.View>
       </Pressable>
     </View>
     </SwipeToDelete>

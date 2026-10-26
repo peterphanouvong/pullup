@@ -15,6 +15,11 @@ export type PlanDayKind = 'lifting' | 'court' | 'rest' | 'comp';
 
 export const PLAN_DAY_KINDS: readonly PlanDayKind[] = ['lifting', 'court', 'rest', 'comp'];
 
+/** How the exercise is logged: KG + REPS, REPS only, or TIME. */
+export type PlanLogType = 'weight_reps' | 'reps' | 'duration';
+
+export const PLAN_LOG_TYPES: readonly PlanLogType[] = ['weight_reps', 'reps', 'duration'];
+
 export interface PlanExercise {
   exercise_name: string;
   sets: number | null;
@@ -22,6 +27,8 @@ export interface PlanExercise {
   reps: string | null;
   load: string | null;
   notes: string | null;
+  /** Optional so plans written before it existed still validate. */
+  log?: PlanLogType;
 }
 
 export interface PlanDay {
@@ -91,9 +98,10 @@ export const PLAN_JSON_SCHEMA = {
                   items: {
                     type: 'object',
                     additionalProperties: false,
-                    required: ['exercise_name', 'sets', 'reps', 'load', 'notes'],
+                    required: ['exercise_name', 'sets', 'reps', 'load', 'notes', 'log'],
                     properties: {
                       exercise_name: { type: 'string' },
+                      log: { type: 'string', enum: [...PLAN_LOG_TYPES] },
                       sets: { type: ['integer', 'null'] },
                       reps: { type: ['string', 'null'] },
                       load: { type: ['string', 'null'] },
@@ -166,6 +174,9 @@ export function validatePlan(value: unknown): PlanCheck {
         }
         if (!optionalText(ex.reps, MAX_NAME) || !optionalText(ex.load, MAX_NAME) || !optionalText(ex.notes, MAX_TEXT)) {
           return { ok: false, reason: `${exWhere} has a field that is too long` };
+        }
+        if (ex.log !== undefined && !PLAN_LOG_TYPES.includes(ex.log as PlanLogType)) {
+          return { ok: false, reason: `${exWhere} has an unknown log type` };
         }
       }
     }

@@ -81,5 +81,27 @@ export function useCrewPrompts() {
     ]);
   }
 
-  return { promptCreate, promptJoin, busy: createCrew.isPending || joinCrew.isPending };
+  /** An invite link was opened (`pullup://join/CODE`): one tap to join,
+   * since the code came from a mate rather than the keyboard. */
+  function confirmJoin(rawCode: string) {
+    const code = normaliseInviteCode(rawCode);
+    if (code == null) return;
+    haptics.tap();
+    Alert.alert('Join this crew?', `Invite code ${code}.`, [
+      { text: 'Not now', style: 'cancel' },
+      {
+        text: 'Join',
+        onPress: () =>
+          joinCrew.mutate(code, {
+            onSuccess: () => {
+              haptics.success();
+              offerPush();
+            },
+            onError: (e) => Alert.alert('Couldn’t join', crewErrorText(e)),
+          }),
+      },
+    ]);
+  }
+
+  return { promptCreate, promptJoin, confirmJoin, busy: createCrew.isPending || joinCrew.isPending };
 }

@@ -10,6 +10,9 @@
 
 export type SetType = 'warmup' | 'working' | 'drop' | 'failure';
 
+/** Which columns a set table shows; see `log-type.ts`. */
+export type LogType = 'weight_reps' | 'reps' | 'duration';
+
 export interface Exercise {
   id: string;
   name: string;
@@ -42,6 +45,9 @@ export interface WorkoutExercise {
   exercise_name: string;
   position: number;
   rest_seconds: number | null;
+  /** Optional: rows written before the column existed have none, and
+   * `logTypeOf` infers one for them. */
+  log_type?: LogType | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

@@ -43,6 +43,11 @@ function WorkoutStoreGate({ children }: { children: ReactNode }) {
 const TABS_OPTIONS = { headerShown: false } as const;
 const PLAN_OPTIONS = { title: 'Plan' } as const;
 const ACTIVITIES_OPTIONS = { title: 'Activity' } as const;
+const EXERCISES_OPTIONS = { title: 'Exercises' } as const;
+// Fallbacks: these screens name themselves with Stack.Title once loaded.
+const EXERCISE_OPTIONS = { title: 'Exercise' } as const;
+const PERSON_OPTIONS = { title: 'Profile' } as const;
+const PERSON_WORKOUT_OPTIONS = { title: 'Workout' } as const;
 // The interview covers the app and can't be swiped away half-done; it
 // draws its own chrome (see features/onboarding/components/step-frame).
 const ONBOARDING_OPTIONS = { headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false } as const;
@@ -63,6 +68,10 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={TABS_OPTIONS} />
               <Stack.Screen name="plan" options={PLAN_OPTIONS} />
               <Stack.Screen name="activities" options={ACTIVITIES_OPTIONS} />
+              <Stack.Screen name="stats/index" options={EXERCISES_OPTIONS} />
+              <Stack.Screen name="stats/[key]" options={EXERCISE_OPTIONS} />
+              <Stack.Screen name="person/[id]/index" options={PERSON_OPTIONS} />
+              <Stack.Screen name="person/[id]/[workoutId]" options={PERSON_WORKOUT_OPTIONS} />
               <Stack.Screen name="onboarding" options={ONBOARDING_OPTIONS} />
             </Stack>
           </WorkoutStoreGate>

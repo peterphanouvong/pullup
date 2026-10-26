@@ -126,6 +126,7 @@ describe('buildAddedExercise', () => {
       exercise_name: 'Deadlift',
       position: 4,
       rest_seconds: 150,
+      log_type: 'weight_reps',
       notes: null,
       created_at: ts,
       updated_at: ts,

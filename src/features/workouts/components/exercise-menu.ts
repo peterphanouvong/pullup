@@ -8,9 +8,12 @@
 import { ActionSheetIOS, Alert, Platform } from 'react-native';
 import { haptics } from '@/lib/haptics';
 import { router } from 'expo-router';
-import { removeExercise, moveExerciseInWorkout, updateExerciseRestSeconds } from '../hooks';
+import { saveDayExerciseLogType } from '@/features/programs/api';
+import { removeExercise, moveExerciseInWorkout, updateExerciseLogType, updateExerciseRestSeconds } from '../hooks';
+import { LOG_TYPES, LOG_TYPE_LABELS } from '../log-type';
+import { workouts$ } from '../store';
 import { startRestTimer } from '../rest-timer';
-import type { WorkoutExercise } from '../types';
+import type { LogType, WorkoutExercise } from '../types';
 
 const REST_TIMER_PRESETS: { label: string; seconds: number | null }[] = [
   { label: 'OFF', seconds: null },
@@ -92,6 +95,34 @@ export function openRestTimerSheet(workoutExerciseId: string): void {
   ]);
 }
 
+/** "Log as…": weight & reps, reps only, or time. The current one is
+ * ticked. Also saved to the programme day the workout came from, so the
+ * fix sticks; that save is best-effort, the live change never waits on it. */
+export function openLogTypeSheet(workoutId: string, exercise: WorkoutExercise, current: LogType): void {
+  const choose = (logType: LogType) => {
+    if (logType === current) return;
+    updateExerciseLogType(exercise.id, logType);
+    const dayId = workouts$[workoutId].program_day_id.peek();
+    if (dayId != null) saveDayExerciseLogType(dayId, exercise.exercise_name, logType).catch(() => {});
+  };
+  const labels = LOG_TYPES.map((t) => (t === current ? `✓ ${LOG_TYPE_LABELS[t]}` : LOG_TYPE_LABELS[t]));
+
+  if (Platform.OS === 'ios') {
+    ActionSheetIOS.showActionSheetWithOptions(
+      { title: 'Log as', options: [...labels, 'Cancel'], cancelButtonIndex: labels.length },
+      (index) => {
+        if (index < LOG_TYPES.length) choose(LOG_TYPES[index]);
+      },
+    );
+    return;
+  }
+
+  Alert.alert('Log as', undefined, [
+    ...LOG_TYPES.map((t, i) => ({ text: labels[i], onPress: () => choose(t) })),
+    { text: 'Cancel', style: 'cancel' as const },
+  ]);
+}
+
 function confirmRemoveExercise(workoutExerciseId: string): void {
   haptics.warning();
   Alert.alert('Remove exercise?', "This removes it and all its logged sets. This can't be undone.", [
@@ -108,17 +139,19 @@ export interface ExerciseMenuArgs {
    * that list, from `useWorkout`) computes these from the row's index. */
   canMoveUp: boolean;
   canMoveDown: boolean;
+  /** The table's current type, so "Log as…" can tick it. */
+  logType: LogType;
   /** Focuses the exercise card's notes input. */
   onAddNote: () => void;
 }
 
 /**
  * Builds + shows the per-exercise ⋮ action sheet: Add note, Replace
- * exercise…, Move up/down (omitted at the ends), Rest timer…, Remove
+ * exercise…, Move up/down (omitted at the ends), Log as…, Rest timer…, Remove
  * exercise (destructive, confirmed), Cancel.
  */
 export function openExerciseMenu(args: ExerciseMenuArgs): void {
-  const { workoutId, exercise, canMoveUp, canMoveDown, onAddNote } = args;
+  const { workoutId, exercise, canMoveUp, canMoveDown, logType, onAddNote } = args;
 
   const items: { label: string; destructive?: boolean; onPress: () => void }[] = [
     { label: 'Add note', onPress: onAddNote },
@@ -127,6 +160,7 @@ export function openExerciseMenu(args: ExerciseMenuArgs): void {
     ...(canMoveDown
       ? [{ label: 'Move down', onPress: () => moveExerciseInWorkout(workoutId, exercise.id, 'down') }]
       : []),
+    { label: 'Log as…', onPress: () => openLogTypeSheet(workoutId, exercise, logType) },
     { label: 'Rest timer…', onPress: () => openRestTimerSheet(exercise.id) },
     { label: 'Remove exercise', destructive: true, onPress: () => confirmRemoveExercise(exercise.id) },
   ];

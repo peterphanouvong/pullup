@@ -10,6 +10,7 @@ import { ExercisePlan } from '@/features/programs/components/exercise-plan';
 import { Markdown } from '@/features/programs/components/markdown';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
+import type { DayExercise } from '@/features/programs/types';
 import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
 import { startShortWorkoutFromDay, startWorkoutFromDay, useActiveWorkout } from '@/features/workouts/hooks';
@@ -19,6 +20,19 @@ import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
 // The bar is the app's (see `styles/header.ts`); only the fallback title
 // is set here, for the states that have no day to name yet.
 const SCREEN_OPTIONS = { title: 'Workout' } as const;
+
+/** Splits the day's exercises into consecutive runs of main work and the
+ * rest, in the day's own order. */
+function groupMainWork(exercises: DayExercise[], mainIds: Set<string>): { main: boolean; exercises: DayExercise[] }[] {
+  const runs: { main: boolean; exercises: DayExercise[] }[] = [];
+  for (const exercise of exercises) {
+    const main = mainIds.has(exercise.id);
+    const last = runs[runs.length - 1];
+    if (last != null && last.main === main) last.exercises.push(exercise);
+    else runs.push({ main, exercises: [exercise] });
+  }
+  return runs;
+}
 
 /**
  * The workout preview: what a programme day asks for, before you commit to
@@ -63,6 +77,10 @@ export default function DayScreen() {
 
   const isActiveProgram = active.data?.programId === id;
   const short = day.kind === 'lifting' ? shortVersionOf(day) : null;
+  // A day of only main work has nothing to set apart, so no box then.
+  const mainIds = new Set(
+    short != null && short.day.exercises.length < day.exercises.length ? short.day.exercises.map((e) => e.id) : [],
+  );
 
   function handleStart() {
     startWorkoutOrPrompt(activeWorkout, () => {
@@ -138,9 +156,25 @@ export default function DayScreen() {
           )}
         </View>
         <View style={styles.exercises}>
-          {day.exercises.map((exercise) => (
-            <ExercisePlan key={exercise.id} exercise={exercise} />
-          ))}
+          {/* The main work sits in a box: the exercises the short version
+              keeps, i.e. what matters most today. Runs of them are boxed
+              together, so a coach's pick from the middle of the day still
+              reads as one thing where it can. */}
+          {groupMainWork(day.exercises, mainIds).map((run) =>
+            run.main ? (
+              <View key={run.exercises[0].id} style={styles.mainBox}>
+                <View style={styles.mainHeader}>
+                  <SymbolView name="flame.fill" size={12} tintColor={theme.colors.ink} />
+                  <Text style={styles.mainLabel}>Main work</Text>
+                </View>
+                {run.exercises.map((exercise) => (
+                  <ExercisePlan key={exercise.id} exercise={exercise} />
+                ))}
+              </View>
+            ) : (
+              run.exercises.map((exercise) => <ExercisePlan key={exercise.id} exercise={exercise} />)
+            ),
+          )}
         </View>
       </ScrollView>
     </>
@@ -164,6 +198,18 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     marginBottom: -theme.spacing.sm,
   },
   exercises: { gap: theme.spacing.xl },
+  // Ink rather than the accent, so it reads as emphasis, not as something
+  // to tap; inset so the box's edge doesn't crowd the set tables.
+  mainBox: {
+    gap: theme.spacing.xl,
+    padding: theme.spacing.md,
+    marginHorizontal: -theme.spacing.md,
+    borderRadius: theme.radii.xl,
+    borderWidth: 1.5,
+    borderColor: theme.colors.activeRowBorder,
+  },
+  mainHeader: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs, marginBottom: -theme.spacing.sm },
+  mainLabel: { ...theme.type.label, color: theme.colors.ink },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.canvas },
   emptyText: { ...theme.type.body, color: theme.colors.ink },
 });

@@ -14,13 +14,14 @@
 import { haptics } from '@/lib/haptics';
 import { useSelector } from '@legendapp/state/react';
 import type { ProgramDay } from '@/features/programs/types';
-import { buildAddedExercise, buildReplacement, moveExercise } from './edit';
+import { buildAddedExercise, buildReplacement, fillFromPrevious, moveExercise } from './edit';
 import { skipRestTimer, startRestTimer } from './rest-timer';
 import {
   activeWorkout,
   currentExerciseName,
   finishedWorkoutSummaries,
   hasFinishedWorkoutForDay,
+  previousSet,
   recentExerciseIds,
   savedTimes,
   searchExercises,
@@ -31,7 +32,7 @@ import { weekCompletion } from './today-state';
 import { reshapeWorkout } from './reshape';
 import { shortTitle, shortVersionOf } from './short-version';
 import { exercises$, generateId, workoutExercises$, workoutSets$, workouts$ } from './store';
-import type { Exercise, SetType, Workout, WorkoutExercise, WorkoutSet } from './types';
+import type { Exercise, LogType, SetType, Workout, WorkoutExercise, WorkoutSet } from './types';
 
 // ---------------------------------------------------------------------------
 // Mutations (plain functions — not hooks)
@@ -141,6 +142,54 @@ export function completeSet(setId: string, now: Date): void {
   }
 }
 
+/** Gap between rows in the "Complete all" ripple: quick enough to feel
+ * like one gesture, slow enough to see and feel each set land. */
+export const COMPLETE_ALL_STEP_MS = 90;
+
+/** The table header's tick: completes every pending set of the exercise,
+ * top to bottom, one knock per set, then a success once the last lands.
+ * Empty cells borrow last time's numbers the way a single tick does. When
+ * everything is already done it un-ticks the lot instead, quietly.
+ * Returns a cancel for the ripple still in flight. */
+export function completeAllSets(workoutExerciseId: string): () => void {
+  const exercise = workoutExercises$[workoutExerciseId].peek();
+  if (exercise == null) return () => {};
+  const live = Object.values(workoutSets$.peek() ?? {})
+    .filter((s): s is WorkoutSet => !!s && !s.deleted && s.workout_exercise_id === workoutExerciseId)
+    .sort((a, b) => a.position - b.position);
+  const pending = live.filter((s) => s.completed_at == null);
+
+  if (pending.length === 0) {
+    if (live.length === 0) return () => {};
+    haptics.select();
+    const nowIso = new Date().toISOString();
+    for (const set of live) workoutSets$[set.id].assign({ completed_at: null, updated_at: nowIso });
+    return () => {};
+  }
+
+  const tick = (set: WorkoutSet, i: number) => {
+    if (workoutSets$[set.id].completed_at.peek() != null) return;
+    const previous = previousSet({
+      exerciseId: exercise.exercise_id,
+      exerciseName: exercise.exercise_name,
+      setIndex: live.indexOf(set),
+      currentWorkoutId: exercise.workout_id,
+      workouts: workouts$.peek() ?? {},
+      workoutExercises: workoutExercises$.peek() ?? {},
+      sets: workoutSets$.peek() ?? {},
+    });
+    const borrowed = fillFromPrevious(set, previous);
+    if (Object.keys(borrowed).length > 0) updateSet(set.id, borrowed);
+    completeSet(set.id, new Date());
+    if (i === pending.length - 1) haptics.success();
+    else haptics.complete();
+  };
+  // The first lands on the tap itself; the rest follow down the table.
+  tick(pending[0], 0);
+  const timers = pending.slice(1).map((set, i) => setTimeout(() => tick(set, i + 1), (i + 1) * COMPLETE_ALL_STEP_MS));
+  return () => timers.forEach(clearTimeout);
+}
+
 export type SetPatch = Partial<Pick<WorkoutSet, 'weight_kg' | 'reps' | 'duration_seconds' | 'set_type' | 'target'>>;
 
 export function updateSet(setId: string, patch: SetPatch): void {
@@ -186,6 +235,18 @@ export function softDeleteSet(setId: string): void {
 export function updateExerciseNotes(workoutExerciseId: string, notes: string): void {
   if (workoutExercises$[workoutExerciseId].peek() == null) return;
   workoutExercises$[workoutExerciseId].assign({ notes, updated_at: new Date().toISOString() });
+}
+
+/** "Log as…": switches the exercise's set table between weight & reps,
+ * reps only and time. Logged numbers stay on the sets either way, so
+ * switching back shows them again. */
+export function updateExerciseLogType(workoutExerciseId: string, logType: LogType): void {
+  if (workoutExercises$[workoutExerciseId].peek() == null) return;
+  workoutExercises$[workoutExerciseId].assign({
+    log_type: logType,
+    updated_at: new Date().toISOString(),
+  });
+  haptics.select();
 }
 
 /** Writes the exercise's rest-timer preset (`null` = OFF) — the exercise

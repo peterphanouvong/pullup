@@ -203,8 +203,9 @@ describe('buildWorkoutFromDay', () => {
       expect(exercises[4].rest_seconds).toBe(150);
     });
 
-    it('treats sprint distance text ("30 m") as reps-style, not duration — rest_seconds 150', () => {
+    it('logs sprint distance text ("30 m") as timed, but keeps a rest — rest_seconds 150', () => {
       const { exercises } = buildWorkoutFromDay(mondayLowerPower, opts);
+      expect(exercises[0].log_type).toBe('duration');
       expect(exercises[0].rest_seconds).toBe(150);
     });
 

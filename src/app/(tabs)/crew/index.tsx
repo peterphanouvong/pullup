@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActionSheetIOS, ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { NativeButton } from '@/components/ui/native-button';
@@ -28,7 +28,15 @@ export default function CrewScreen() {
   const queryClient = useQueryClient();
   const crews = useMyCrews();
   // Create and join are shared with onboarding's last step.
-  const { promptCreate, promptJoin } = useCrewPrompts();
+  const { promptCreate, promptJoin, confirmJoin } = useCrewPrompts();
+  // Set by an invite link (src/app/join/[code].tsx). Asked once, then
+  // cleared, so coming back to the tab doesn't ask again.
+  const { join } = useLocalSearchParams<{ join?: string }>();
+  useEffect(() => {
+    if (!join) return;
+    router.setParams({ join: undefined });
+    confirmJoin(join);
+  }, [join, confirmJoin]);
   const [refreshing, setRefreshing] = useState(false);
 
   const now = new Date();
@@ -108,8 +116,8 @@ export default function CrewScreen() {
             <View style={styles.emptyText}>
               <Text style={styles.emptyTitle}>Start a crew</Text>
               <Text style={styles.lede}>
-                Up to 8 mates. Everyone sees who’s trained each day this week. Nothing else: no workouts, no
-                weights, just whether you showed up.
+                Up to 8 mates. See who’s trained each day this week, cheer each other on, and open each
+                other’s sessions to see what they lifted.
               </Text>
             </View>
             <NativeButton label="Create a crew" variant="primary" systemImage="plus" onPress={() => promptCreate()} />

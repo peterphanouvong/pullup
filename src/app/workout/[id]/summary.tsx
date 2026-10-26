@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { captureRef } from 'react-native-view-shot';
@@ -49,8 +49,24 @@ function formatDateLabel(iso: string): string {
  * screen with this one; Done `replace`s too, so the finished workout never
  * sits behind this on the back stack.
  */
+/** Captures the share card as an image and opens the share sheet. Sharing
+ * is a bonus, never a blocker: a failed capture or a dismissed sheet leaves
+ * the summary exactly as it was. */
+async function shareCardImage(cardRef: RefObject<View | null>): Promise<void> {
+  try {
+    const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share session' });
+    }
+  } catch {
+    // See above.
+  }
+}
+
 export default function WorkoutSummaryScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  // `share=1`: opened from a share button elsewhere (a profile's session
+  // card), so the sheet comes straight up once the card has laid out.
+  const { id, share } = useLocalSearchParams<{ id: string; share?: string }>();
   const { workout, exercises } = useWorkout(id);
   const crewCount = useMyCrews().data?.length ?? 0;
   const styles = useThemedStyles(createStyles);
@@ -84,6 +100,13 @@ export default function WorkoutSummaryScreen() {
       }).start();
     });
   }, [heroAnim, restAnim]);
+
+  const hasWorkout = workout != null;
+  useEffect(() => {
+    if (share !== '1' || !hasWorkout) return;
+    const handle = setTimeout(() => void shareCardImage(cardRef), 600);
+    return () => clearTimeout(handle);
+  }, [share, hasWorkout]);
 
   // Week context for the copy: how far this session got us, and how close
   // the competition is. Hooks stay unconditional, so this runs before the
@@ -123,17 +146,8 @@ export default function WorkoutSummaryScreen() {
     if (isSharing) return;
     haptics.tap();
     setIsSharing(true);
-    try {
-      const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share session' });
-      }
-    } catch {
-      // Sharing is a bonus, never a blocker: a failed capture or a dismissed
-      // sheet leaves the summary exactly as it was.
-    } finally {
-      setIsSharing(false);
-    }
+    await shareCardImage(cardRef);
+    setIsSharing(false);
   }
 
   return (

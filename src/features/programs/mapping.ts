@@ -30,6 +30,7 @@ export function toProgram(raw: RawProgram): Program {
           reps: exercise.reps,
           load: exercise.load,
           notes: exercise.notes,
+          logType: exercise.log_type ?? null,
         })),
       })),
     })),
