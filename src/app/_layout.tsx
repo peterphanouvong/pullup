@@ -6,6 +6,7 @@ import { Stack } from 'expo-router';
 import { AuthGate, useSession } from '@/lib/auth';
 import { nativeHeader } from '@/styles/header';
 import { useThemedStyles } from '@/styles/use-theme';
+import type { Theme } from '@/styles/theme';
 import { initWorkoutStore } from '@/features/workouts/store';
 import { loadVibes } from '@/features/backdrop/store';
 import { WidgetSync } from '@/features/widgets/widget-sync';
@@ -64,10 +65,19 @@ const PERSON_WORKOUT_OPTIONS = { title: 'Workout' } as const;
 // draws its own chrome (see features/onboarding/components/step-frame).
 const ONBOARDING_OPTIONS = { headerShown: false, presentation: 'fullScreenModal', gestureEnabled: false } as const;
 
+// The root view's own colour: everything under it remounts when the
+// account changes (see WorkoutStoreGate), and for that frame or two this
+// is all that's on screen. Unpainted it's white.
+const rootStyle = (theme: Theme) =>
+  StyleSheet.create({
+    root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.colors.canvas },
+  });
+
 export default function RootLayout() {
   const header = useThemedStyles(nativeHeader);
+  const styles = useThemedStyles(rootStyle);
   return (
-    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+    <GestureHandlerRootView style={styles.root}>
       <QueryClientProvider client={queryClient}>
         <AuthGate>
           <WorkoutStoreGate>

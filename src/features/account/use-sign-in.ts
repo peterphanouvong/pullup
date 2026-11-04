@@ -7,6 +7,7 @@ import { haptics } from '@/lib/haptics';
 import { cleanDisplayName, saveDisplayName, seedDisplayName } from './api';
 import { promptForName, showError } from './prompt-for-name';
 import { googleSignInAvailable, signInWith, type SignInProvider } from './sign-in';
+import { adoptSticker } from '@/features/sticker/hooks';
 
 export const PROVIDER_LABELS: Record<SignInProvider, string> = { apple: 'Apple', google: 'Google' };
 
@@ -70,13 +71,16 @@ export function useSignIn() {
           {
             text: 'Switch',
             onPress: () => {
+              const guestId = session.user.id;
               result
                 .switchAccount()
                 .then(async (userId) => {
                   haptics.success();
                   // The app remounts as the other user; only a provider name
                   // is seeded here — an existing name is never overwritten.
+                  // A sticker taken as the guest goes with them.
                   if (result.suggestedName != null) await nameAccount(userId, result.suggestedName);
+                  await adoptSticker(guestId, userId, queryClient);
                 })
                 .catch(showError);
             },

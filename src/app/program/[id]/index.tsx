@@ -8,13 +8,21 @@ import { SectionLabel } from '@/components/ui/section-label';
 import { Markdown } from '@/features/programs/components/markdown';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { buildPhaseTimeline } from '@/features/programs/mapping';
-import { useActiveProgram, useProgram, useSelectProgram } from '@/features/programs/hooks';
+import {
+  useActiveProgram,
+  useProgram,
+  useProgramHistory,
+  useResumeProgram,
+  useSelectProgram,
+} from '@/features/programs/hooks';
 
 export default function ProgramOverviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const program = useProgram(id);
   const active = useActiveProgram();
+  const history = useProgramHistory();
   const select = useSelectProgram();
+  const resume = useResumeProgram();
   const styles = useThemedStyles(createStyles);
 
   if (program.isPending || program.isError) {
@@ -31,6 +39,24 @@ export default function ProgramOverviewScreen() {
   // Active whether you're looking at your instance or the template it came
   // from: either way, selecting again would only start a fresh copy.
   const isActive = active.data?.programId === data.id || active.data?.templateId === data.id;
+  // One of your own past instances resumes in place (the days you logged
+  // stay attached); only a template is copied by selecting it. Until the
+  // history has loaded we can't tell which this is, so the button waits.
+  const past = history.programs.find((p) => p.id === data.id) ?? null;
+  const pending = select.isPending || resume.isPending;
+  const title = isActive
+    ? '✓ Your program'
+    : past != null
+      ? past.sessionCount > 0
+        ? `Pick up at week ${past.resumeWeek}`
+        : 'Start this program'
+      : 'Make this my program';
+  const failed = select.isError || resume.isError;
+
+  function makeMine() {
+    if (past != null) resume.mutate({ programId: past.id, weekPosition: past.resumeWeek });
+    else select.mutate({ programId: data.id });
+  }
 
   // `Stack.Title` rather than an options object: the composition
   // components memoize, so a title that changes with the data doesn't
@@ -51,12 +77,12 @@ export default function ProgramOverviewScreen() {
         <Text style={styles.summary}>{data.summary}</Text>
 
         <PrimaryButton
-          title={isActive ? '✓ Your program' : select.isPending ? 'Selecting…' : 'Make this my program'}
+          title={title}
           disabled={isActive}
-          loading={select.isPending}
-          onPress={() => select.mutate({ programId: data.id })}
+          loading={pending || (!isActive && history.isPending)}
+          onPress={makeMine}
         />
-        {select.isError && <Text style={styles.error}>Couldn&apos;t select — try again.</Text>}
+        {failed && <Text style={styles.error}>Couldn&apos;t switch to this program — try again.</Text>}
 
         <SectionLabel>Timeline</SectionLabel>
         <Card style={styles.timelineCard}>

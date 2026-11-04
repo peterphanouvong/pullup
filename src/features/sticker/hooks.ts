@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { observable } from '@legendapp/state';
 import { useSelector } from '@legendapp/state/react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
 import { useProfile } from '@/features/account/hooks';
-import { fetchAvatars, loadLocalSticker, uploadSticker } from './api';
+import { fetchAvatars, loadLocalSticker, localStickerFile, uploadSticker } from './api';
 
 /** Each user's sticker on this device, by id; `undefined` until checked. */
 const localSticker$ = observable<Record<string, string | null | undefined>>({});
@@ -12,6 +12,31 @@ const localSticker$ = observable<Record<string, string | null | undefined>>({});
 /** Remembers a freshly rendered sticker so every screen updates at once. */
 export function setLocalSticker(userId: string, uri: string): void {
   localSticker$[userId].set(uri);
+}
+
+/**
+ * The sticker a guest made on this phone, carried over to the account
+ * they then switched to. Stickers are filed by user id, so without this a
+ * sticker taken during onboarding is orphaned the moment the sign-in
+ * turns out to be an existing account: the account never shows it and
+ * never uploads it. The one just taken is the newest, so it goes up
+ * even if the account had one from before.
+ */
+export async function adoptSticker(fromUserId: string, toUserId: string, queryClient: QueryClient): Promise<void> {
+  if (fromUserId === toUserId) return;
+  const from = localStickerFile(fromUserId);
+  if (!from.exists) return;
+  const to = localStickerFile(toUserId);
+  if (to.exists) to.delete();
+  from.copy(to);
+  setLocalSticker(toUserId, `${to.uri}?v=${Date.now()}`);
+  try {
+    await uploadSticker(toUserId);
+    await queryClient.invalidateQueries({ queryKey: ['profile', toUserId] });
+  } catch (e) {
+    // The local copy shows meanwhile; AvatarSync retries next launch.
+    console.warn('[avatar] upload after switching accounts:', e);
+  }
 }
 
 /** Your own sticker: the uploaded one when there is one, else this
@@ -61,8 +86,9 @@ export function AvatarSync() {
       .then(() => {
         if (!cancelled) void queryClient.invalidateQueries({ queryKey: ['profile', userId] });
       })
-      .catch(() => {
+      .catch((e: unknown) => {
         // Next launch tries again; the local copy keeps showing meanwhile.
+        console.warn('[avatar] upload:', e);
       });
     return () => {
       cancelled = true;

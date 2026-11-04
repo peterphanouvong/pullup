@@ -55,9 +55,12 @@ export default function SignInScreen() {
         }
       })
       .catch(() => {
-        // Couldn't ask: carry on as a signed-in newcomer. The programme
-        // tab sorts out which it really is once it loads.
-        if (!cancelled) router.replace('/onboarding/name');
+        // Couldn't ask: into the app. The programme tab sorts out which
+        // it really is once it loads, and brings the interview back for
+        // an account that has no programme. Sending them to the name
+        // step here would drag an existing account through the interview
+        // over a dropped request.
+        if (!cancelled) router.dismissAll();
       });
     return () => {
       cancelled = true;

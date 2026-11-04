@@ -21,6 +21,7 @@ import { WeeklyChart } from '@/features/profile/components/weekly-chart';
 import { useMyLogbook } from '@/features/stats/hooks';
 import { workoutCard } from '@/features/stats/stats';
 import { useMyAvatar } from '@/features/sticker/hooks';
+import { resetOnboarding } from '@/features/onboarding/state';
 import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 const RECENT_SESSIONS = 5;
@@ -125,6 +126,20 @@ export default function ProfileScreen() {
       </View>
 
       <AccountActions />
+      {/* The welcome screen again, from the top: name, sticker, and a
+          programme written or picked afresh. Nothing is lost by it; the
+          programme you're on goes into your history on Plan. */}
+      <NativeButton
+        variant="ghost"
+        systemImage="arrow.counterclockwise"
+        label="Redo onboarding"
+        labelColor={theme.colors.inkMuted}
+        onPress={() => {
+          haptics.tap();
+          resetOnboarding();
+          router.push('/onboarding');
+        }}
+      />
       {/* The backdrop dials (see features/backdrop): in every build for
           now, so the look can be tuned on a real phone over TestFlight. */}
       <NativeButton
