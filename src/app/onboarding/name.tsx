@@ -24,7 +24,7 @@ export default function NameScreen() {
   function next() {
     haptics.tap();
     draft$.name.set(clean ?? undefined);
-    router.push('/onboarding/1');
+    router.push('/onboarding/selfie');
   }
 
   return (
@@ -38,7 +38,7 @@ export default function NameScreen() {
       secondary="Skip"
       onSecondary={() => {
         draft$.name.set(undefined);
-        router.push('/onboarding/1');
+        router.push('/onboarding/selfie');
       }}
     >
       <TextInput

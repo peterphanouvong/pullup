@@ -1,9 +1,40 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
-import { createCrew, fetchCrewFeed, fetchCrewWeek, fetchMyCrews, fetchPokes, joinCrew, leaveCrew, pokeCrewmate, setReaction } from './api';
+import {
+  createCrew,
+  fetchCrewFeed,
+  fetchCrewWeek,
+  fetchMyCrews,
+  fetchPokes,
+  joinCrew,
+  leaveCrew,
+  pokeCrewmate,
+  setCrewCover,
+  setReaction,
+} from './api';
 import { withMyReaction, type Checkin, type Reaction } from './feed';
 import { useProfile } from '@/features/account/hooks';
-import type { CrewWeekRange } from './week';
+import { useFinishedWorkouts } from '@/features/workouts/hooks';
+import { useAvatars, useMyAvatar } from '@/features/sticker/hooks';
+import { orderMembers, withLocalSessions, type CrewMemberWeek, type CrewWeekRange } from './week';
+
+/** The crew's week as a card shows it: you on top with this phone's
+ * sessions counted, then the rest. Empty while loading. */
+export function useCrewMembers(week: CrewMemberWeek[] | undefined, range: CrewWeekRange): CrewMemberWeek[] {
+  const session = useSession();
+  const finished = useFinishedWorkouts();
+  const starts = finished.map((f) => f.workout.started_at);
+  return orderMembers(withLocalSessions(week ?? [], session.user.id, starts, range), session.user.id);
+}
+
+/** Everyone's sticker, yours from this phone if the upload hasn't landed
+ * yet, so you never see yourself as an initial while crewmates have faces. */
+export function useCrewAvatars(userIds: string[]): Record<string, string | null> {
+  const session = useSession();
+  const remote = useAvatars(userIds);
+  const mine = useMyAvatar();
+  return mine != null && remote[session.user.id] == null ? { ...remote, [session.user.id]: mine } : remote;
+}
 
 export function useMyCrews() {
   const session = useSession();
@@ -34,6 +65,10 @@ function useCrewMutation<T, R>(fn: (arg: T) => Promise<R>) {
 }
 
 export const useCreateCrew = () => useCrewMutation(createCrew);
+export const useSetCrewCover = () =>
+  useCrewMutation((input: { crewId: string; picked: { uri: string; mimeType: string } }) =>
+    setCrewCover(input.crewId, input.picked),
+  );
 export const useJoinCrew = () => useCrewMutation(joinCrew);
 export const useLeaveCrew = () => useCrewMutation(leaveCrew);
 

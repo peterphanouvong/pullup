@@ -1,4 +1,4 @@
-import { completeBrief, isAnswered, noteFor, titleFor, visibleQuestions } from '../questions';
+import { DEFAULT_WEEKS, briefToDraft, completeBrief, defaultDraft, isAnswered, noteFor, titleFor, visibleQuestions } from '../questions';
 
 describe('onboarding questions', () => {
   it('skips the court-days question for someone with no sport', () => {
@@ -34,7 +34,7 @@ describe('onboarding questions', () => {
     const brief = completeBrief({
       ...partial,
       sessionMinutes: 45,
-      equipment: 'gym',
+      equipment: ['barbell', 'rack', 'bench', 'dumbbells'],
       experience: 'some',
       limitations: ['knee'],
       sacrifices: [],
@@ -49,7 +49,7 @@ describe('onboarding questions', () => {
       sessionMinutes: 45,
       minimumMinutes: 15,
       obstacles: [],
-      equipment: 'gym',
+      equipment: ['barbell', 'rack', 'bench', 'dumbbells'],
       experience: 'some',
       limitations: ['knee'],
       sacrifices: [],
@@ -77,5 +77,33 @@ describe('onboarding questions', () => {
     expect(noteFor(draft, 'equipment')).toBe('a squat rack in the garage, no cables');
     expect(isAnswered(equipment, draft)).toBe(true);
     expect(completeBrief(draft)).toMatchObject({ equipment: null, notes: { equipment: 'a squat rack in the garage, no cables' } });
+  });
+});
+
+describe('defaults and rebuilding', () => {
+  it('starts every question answered, so the interview can be tapped through', () => {
+    const draft = defaultDraft();
+    for (const q of visibleQuestions(draft)) expect(isAnswered(q, draft)).toBe(true);
+    expect(completeBrief(draft)).not.toBeNull();
+  });
+
+  it('only asks about length as a comp countdown; other blocks default', () => {
+    expect(visibleQuestions({ goal: 'strength' }).map((q) => q.key)).not.toContain('weeks');
+    expect(completeBrief({ ...defaultDraft(), goal: 'strength' })?.weeks).toBe(DEFAULT_WEEKS);
+    expect(completeBrief({ ...defaultDraft(), goal: 'comp', weeks: 3 })?.weeks).toBe(3);
+  });
+
+  it('names the sport in the sessions question so it reads apart from lifting days', () => {
+    const q = visibleQuestions({ sport: 'netball' }).find((x) => x.key === 'courtDays')!;
+    expect(titleFor(q, { sport: 'netball' })).toBe('How many netball sessions a week?');
+    expect(titleFor(q, { sport: 'other' })).toBe('How many court or field sessions a week?');
+  });
+
+  it('reads an older single-choice equipment answer back as the kit it meant', () => {
+    const draft = briefToDraft({ ...completeBrief(defaultDraft())!, equipment: 'dumbbells', notes: { goal: 'run faster' } });
+    expect(draft.equipment).toEqual(['dumbbells', 'bench']);
+    // A written answer stays written: the card value is cleared, not defaulted.
+    expect(draft.goal).toBeUndefined();
+    expect(draft.notes?.goal).toBe('run faster');
   });
 });

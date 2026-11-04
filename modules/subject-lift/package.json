@@ -1,0 +1,7 @@
+{
+  "name": "subject-lift",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lifts the subject out of a photo with Vision (iOS 17+), for the sticker avatar.",
+  "main": "index.ts"
+}

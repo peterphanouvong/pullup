@@ -10,7 +10,8 @@
  * than trusting the caller to have done so.
  */
 
-import type { Exercise, Workout, WorkoutExercise, WorkoutSet } from './types';
+import { logTypeOf } from './log-type';
+import type { Exercise, LogType, Workout, WorkoutExercise, WorkoutSet } from './types';
 
 const isLiveSet = (s: WorkoutSet) => !s.deleted;
 const isCompleted = (s: WorkoutSet) => isLiveSet(s) && s.completed_at != null;
@@ -326,4 +327,130 @@ export function recentExerciseIds(
     if (result.length >= cap) break;
   }
   return result;
+}
+
+/** What the row's SET chip shows: warm-ups "W", drops "D", failures "F";
+ * working sets are numbered 1..n among the exercise's *other working
+ * sets*, in position order. */
+export function setChipLabel(siblingSets: WorkoutSet[], set: WorkoutSet): string {
+  if (set.set_type === 'warmup') return 'W';
+  if (set.set_type === 'drop') return 'D';
+  if (set.set_type === 'failure') return 'F';
+  const working = siblingSets.filter((s) => s.set_type === 'working').sort((a, b) => a.position - b.position);
+  const index = working.findIndex((s) => s.id === set.id);
+  return String(index + 1);
+}
+
+/** The PREVIOUS column: last time's lift in the table's shorthand, "—"
+ * with nothing to show. */
+export function formatPreviousSet(set: WorkoutSet | null, logType: LogType): string {
+  if (!set) return '—';
+  if (logType === 'duration') {
+    return set.duration_seconds != null ? `${set.duration_seconds}s` : '—';
+  }
+  if (logType === 'reps') return set.reps != null ? `${set.reps} reps` : '—';
+  if (set.weight_kg != null && set.reps != null) return `${set.weight_kg}kg × ${set.reps}`;
+  if (set.weight_kg != null) return `${set.weight_kg}kg`;
+  if (set.reps != null) return `${set.reps} reps`;
+  return '—';
+}
+
+/** One input cell of a set row as the widgets draw it: what's typed in,
+ * or the placeholder the empty cell shows (last time's number, else the
+ * unit). */
+export interface QueuedCell {
+  value: string | null;
+  hint: string;
+}
+
+/** A set still to do, as the widgets show it: the exercise, where the set
+ * sits in the table, and the row itself — chip, PREVIOUS ghost, and the
+ * cells with the same placeholders the app's row has — so what's on the
+ * Lock Screen matches what's on the workout screen. */
+export interface QueuedSet {
+  setId: string;
+  exerciseName: string;
+  /** Which row of the exercise's table this is, 1-based, and how many. */
+  number: number;
+  of: number;
+  /** A one-line summary: "80 kg × 5", "45 s", "12 reps", or the prescription. */
+  label: string;
+  /** The SET chip: W, D, F or the working-set number. */
+  chip: string;
+  /** Tints the chip the way the row does: drops and failures read red. */
+  chipTone: 'working' | 'warmup' | 'intense';
+  logType: LogType;
+  /** The PREVIOUS column. */
+  previous: string;
+  /** KG and REPS for weighted work; one REPS or TIME cell otherwise. */
+  cells: QueuedCell[];
+}
+
+/** The next few sets of the workout, in table order: the live exercises by
+ * position, their live sets by position, skipping what's done. `workouts`
+ * (all of them, for the previous-session ghost) is optional: without it
+ * the cells fall back to unit placeholders. */
+export function upcomingSets(
+  workoutId: string,
+  workoutExercises: Record<string, WorkoutExercise>,
+  workoutSets: Record<string, WorkoutSet>,
+  limit = 3,
+  workouts: Record<string, Workout> = {},
+): QueuedSet[] {
+  const live = Object.values(workoutExercises)
+    .filter((e): e is WorkoutExercise => !!e && !!e.id && !e.deleted && e.workout_id === workoutId)
+    .sort((a, b) => a.position - b.position);
+  const queue: QueuedSet[] = [];
+  for (const exercise of live) {
+    const sets = Object.values(workoutSets)
+      .filter((s): s is WorkoutSet => !!s && !s.deleted && s.workout_exercise_id === exercise.id)
+      .sort((a, b) => a.position - b.position);
+    const logType = logTypeOf({ ...exercise, sets });
+    sets.forEach((set, index) => {
+      if (set.completed_at != null || queue.length >= limit) return;
+      const previous = previousSet({
+        exerciseId: exercise.exercise_id,
+        exerciseName: exercise.exercise_name,
+        setIndex: index,
+        currentWorkoutId: workoutId,
+        workouts,
+        workoutExercises,
+        sets: workoutSets,
+      });
+      queue.push({
+        setId: set.id,
+        exerciseName: exercise.exercise_name,
+        number: index + 1,
+        of: sets.length,
+        label: queuedSetLabel(set),
+        chip: setChipLabel(sets, set),
+        chipTone: set.set_type === 'warmup' ? 'warmup' : set.set_type === 'working' ? 'working' : 'intense',
+        logType,
+        previous: formatPreviousSet(previous, logType),
+        cells: queuedCells(set, previous, logType),
+      });
+    });
+    if (queue.length >= limit) break;
+  }
+  return queue;
+}
+
+/** The row's inputs: the value if entered, else the placeholder the app
+ * shows (last time's figure, else the unit). */
+function queuedCells(set: WorkoutSet, previous: WorkoutSet | null, logType: LogType): QueuedCell[] {
+  const text = (n: number | null | undefined) => (n != null ? String(n) : null);
+  if (logType === 'duration') {
+    return [{ value: text(set.duration_seconds), hint: text(previous?.duration_seconds) ?? 'sec' }];
+  }
+  const reps = { value: text(set.reps), hint: text(previous?.reps) ?? 'reps' };
+  if (logType === 'reps') return [reps];
+  return [{ value: text(set.weight_kg), hint: text(previous?.weight_kg) ?? 'kg' }, reps];
+}
+
+/** "80 kg × 5", "45 s", "12 reps", the prescription, or nothing. */
+function queuedSetLabel(set: WorkoutSet): string {
+  if (set.weight_kg != null && set.reps != null) return `${set.weight_kg} kg × ${set.reps}`;
+  if (set.duration_seconds != null) return `${set.duration_seconds} s`;
+  if (set.reps != null) return `${set.reps} reps`;
+  return set.target ?? '';
 }

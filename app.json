@@ -51,6 +51,13 @@
       "expo-sqlite",
       "expo-sharing",
       [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Pull Up uses the camera for the selfie that becomes your sticker.",
+          "photosPermission": "Pull Up can use a photo from your library for your sticker."
+        }
+      ],
+      [
         "expo-sensors",
         {
           "motionPermission": "Pull Up tilts the session jar on your profile with your phone."

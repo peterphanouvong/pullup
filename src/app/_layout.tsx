@@ -10,6 +10,8 @@ import { initWorkoutStore } from '@/features/workouts/store';
 import { loadVibes } from '@/features/backdrop/store';
 import { WidgetSync } from '@/features/widgets/widget-sync';
 import { PushGate } from '@/features/notifications/push-gate';
+import { AvatarSync } from '@/features/sticker/hooks';
+import { LiveWorkoutOverlay } from '@/features/workouts/components/live-workout-overlay';
 
 // Pull Up is a dark-mode app. `userInterfaceStyle: "dark"` in app.json
 // covers real builds, but Expo Go ignores it — overriding the scheme at
@@ -38,6 +40,9 @@ function WorkoutStoreGate({ children }: { children: ReactNode }) {
       {children}
       <WidgetSync />
       <PushGate />
+      <AvatarSync />
+      {/* After the navigator, so it draws over every screen. */}
+      <LiveWorkoutOverlay />
     </Fragment>
   );
 }

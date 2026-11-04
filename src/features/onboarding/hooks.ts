@@ -40,6 +40,7 @@ export function useBuildProgram() {
       }
       void queryClient.invalidateQueries({ queryKey: ['active-program', session.user.id] });
       void queryClient.invalidateQueries({ queryKey: ['programs'] });
+      void queryClient.invalidateQueries({ queryKey: ['program-history', session.user.id] });
     },
   });
 }

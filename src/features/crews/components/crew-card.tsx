@@ -6,11 +6,12 @@ import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
-import { CREW_MAX_MEMBERS, type Crew } from '../api';
-import { useCrewFeed, useCrewWeek, useLeaveCrew, usePokes } from '../hooks';
+import { CREW_MAX_MEMBERS, pickCrewCover, type Crew } from '../api';
+import { useCrewAvatars, useCrewFeed, useCrewMembers, useCrewWeek, useLeaveCrew, usePokes, useSetCrewCover } from '../hooks';
 import { feedRange } from '../feed';
 import { CheckinRow } from './checkin-row';
-import { orderMembers, type CrewWeekRange } from '../week';
+import type { CrewWeekRange } from '../week';
+import { Avatar } from '@/features/sticker/components/avatar';
 
 const WEEKDAY_INITIALS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -44,7 +45,17 @@ export function CrewCard({ crew, range, todayKey, now }: { crew: Crew; range: Cr
   const week = useCrewWeek(crew.id, range);
   const feed = useCrewFeed(crew.id, feedRange(now));
   const leave = useLeaveCrew();
+  const setCover = useSetCrewCover();
   const pokes = usePokes();
+
+  /** Any member can change the crew's cover photo: it's the crew's, not
+   * the creator's. */
+  async function changeCover() {
+    const picked = await pickCrewCover();
+    if (picked == null) return;
+    haptics.commit();
+    setCover.mutate({ crewId: crew.id, picked }, { onError: (e) => Alert.alert('Couldn’t set the cover', e.message) });
+  }
 
   const pokedMeToday = (pokes.data ?? []).filter((p) => p.crewId === crew.id && p.toUser === session.user.id);
   const pokedByMeToday = new Set((pokes.data ?? []).filter((p) => p.fromUser === session.user.id).map((p) => p.toUser));
@@ -77,7 +88,8 @@ export function CrewCard({ crew, range, todayKey, now }: { crew: Crew; range: Cr
     );
   }
 
-  const members = orderMembers(week.data ?? [], session.user.id);
+  const members = useCrewMembers(week.data, range);
+  const avatars = useCrewAvatars(members.map((m) => m.userId));
 
   function openMenu() {
     haptics.tap();
@@ -85,13 +97,14 @@ export function CrewCard({ crew, range, todayKey, now }: { crew: Crew; range: Cr
       {
         title: crew.name,
         message: `Invite code ${crew.inviteCode}`,
-        options: ['Invite mates', 'Leave crew', 'Cancel'],
-        destructiveButtonIndex: 1,
-        cancelButtonIndex: 2,
+        options: ['Invite mates', crew.coverUrl ? 'Change cover photo' : 'Add a cover photo', 'Leave crew', 'Cancel'],
+        destructiveButtonIndex: 2,
+        cancelButtonIndex: 3,
       },
       (index) => {
         if (index === 0) shareInvite(crew.name, crew.inviteCode);
-        if (index === 1) confirmLeave();
+        if (index === 1) void changeCover();
+        if (index === 2) confirmLeave();
       },
     );
   }
@@ -152,10 +165,13 @@ export function CrewCard({ crew, range, todayKey, now }: { crew: Crew; range: Cr
               onPress={() => openMember(member)}
               style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             >
-              <Text style={[styles.memberName, isMe && styles.memberMe]} numberOfLines={1}>
-                {isMe ? 'You' : member.displayName}
-                {member.streak >= 2 && <Text style={styles.streak}>{`  🔥${member.streak}`}</Text>}
-              </Text>
+              <View style={styles.member}>
+                <Avatar uri={avatars[member.userId]} name={member.displayName} size={24} />
+                <Text style={[styles.memberName, isMe && styles.memberMe]} numberOfLines={1}>
+                  {isMe ? 'You' : member.displayName}
+                  {member.streak >= 2 && <Text style={styles.streak}>{`  🔥${member.streak}`}</Text>}
+                </Text>
+              </View>
               {range.days.map((day) => (
                 <View key={day} style={styles.dotCell}>
                   <View
@@ -213,6 +229,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   streak: { ...theme.type.caption, color: theme.colors.inkMuted },
   poked: { ...theme.type.caption, color: theme.colors.ink, marginTop: theme.spacing.xs },
   nameCell: { flex: 1 },
+  member: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm },
   memberName: { ...theme.type.body, flex: 1, color: theme.colors.ink, paddingRight: theme.spacing.sm },
   memberMe: { fontWeight: '700' },
   weekday: { ...theme.type.label, width: DOT + 8, textAlign: 'center', color: theme.colors.inkMuted },

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useSelector } from '@legendapp/state/react';
 import { haptics } from '@/lib/haptics';
@@ -36,6 +36,14 @@ export default function QuestionScreen() {
   const note = question ? noteFor(draft, question.key) : null;
   // The write-in opens on its card, and stays open while it holds text.
   const [writing, setWriting] = useState(note != null);
+  // The text box is the last thing on the page, under the keyboard the
+  // moment it opens: bring it up once the keyboard has settled.
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    if (!writing) return;
+    const handle = setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 350);
+    return () => clearTimeout(handle);
+  }, [writing]);
 
   if (!question) {
     // A stale deep link past the end: there's nothing to ask.
@@ -123,6 +131,7 @@ export default function QuestionScreen() {
         cta="Continue"
         onCta={next}
         ctaDisabled={!answered}
+        scrollRef={scrollRef}
       >
         {/* Pick-several questions wrap as chips, pick-one as cards with
             their captions. */}

@@ -53,6 +53,24 @@ export function toMemberWeek(row: RawCrewWeekRow): CrewMemberWeek {
   };
 }
 
+/** Your own row with this phone's log folded in: a session that hasn't
+ * reached the server yet still shows against you, and the count agrees
+ * with the "Your week" card above. Crewmates' rows are the server's. */
+export function withLocalSessions(
+  members: CrewMemberWeek[],
+  myUserId: string,
+  localStarts: string[],
+  range: CrewWeekRange,
+): CrewMemberWeek[] {
+  const mine = localStarts.map(localDayOf).filter((day) => range.days.includes(day));
+  if (mine.length === 0) return members;
+  return members.map((m) => {
+    if (m.userId !== myUserId) return m;
+    const trainedDays = new Set([...m.trainedDays, ...mine]);
+    return { ...m, trainedDays, sessionCount: Math.max(m.sessionCount, mine.length) };
+  });
+}
+
 /** You first, then whoever's trained most this week, then who joined
  * first — so the order is stable when everyone's level. */
 export function orderMembers(members: CrewMemberWeek[], myUserId: string): CrewMemberWeek[] {

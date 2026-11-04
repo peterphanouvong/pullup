@@ -17,7 +17,7 @@ import { SymbolView } from 'expo-symbols';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { useNumericField } from '../numeric-input';
-import { previousSet } from '../selectors';
+import { formatPreviousSet, previousSet, setChipLabel } from '../selectors';
 import { workoutExercises$, workouts$, workoutSets$ } from '../store';
 import type { LogType, WorkoutSet } from '../types';
 import { haptics } from '@/lib/haptics';
@@ -56,30 +56,6 @@ export const SET_TABLE_COLUMNS = {
 
 /** One height for every control in a set row — set chip, inputs, checkbox. */
 const SET_CHIP_HEIGHT = 36;
-
-/** Warm-ups show "W", drops "D", failures "F"; working sets are numbered 1..n
- * among the exercise's *other working sets*, in position order — matching
- * the design's "warm-ups show W, working sets number 1..n" rule. */
-function setNumberLabel(siblingSets: WorkoutSet[], set: WorkoutSet): string {
-  if (set.set_type === 'warmup') return 'W';
-  if (set.set_type === 'drop') return 'D';
-  if (set.set_type === 'failure') return 'F';
-  const working = siblingSets.filter((s) => s.set_type === 'working').sort((a, b) => a.position - b.position);
-  const index = working.findIndex((s) => s.id === set.id);
-  return String(index + 1);
-}
-
-function formatGhost(set: WorkoutSet | null, logType: LogType): string {
-  if (!set) return '—';
-  if (logType === 'duration') {
-    return set.duration_seconds != null ? `${set.duration_seconds}s` : '—';
-  }
-  if (logType === 'reps') return set.reps != null ? `${set.reps} reps` : '—';
-  if (set.weight_kg != null && set.reps != null) return `${set.weight_kg}kg × ${set.reps}`;
-  if (set.weight_kg != null) return `${set.weight_kg}kg`;
-  if (set.reps != null) return `${set.reps} reps`;
-  return '—';
-}
 
 export function SetRow({
   set,
@@ -274,13 +250,13 @@ export function SetRow({
         }}
       >
         <View style={[styles.chip, isCompleted && styles.chipDone]}>
-          <Text style={[styles.setNumber, { color: typeColor }]}>{setNumberLabel(siblingSets, set)}</Text>
+          <Text style={[styles.setNumber, { color: typeColor }]}>{setChipLabel(siblingSets, set)}</Text>
         </View>
       </Pressable>
 
       <Pressable style={styles.previousCell} onPress={copyGhost}>
         <Text style={styles.ghost} numberOfLines={1}>
-          {formatGhost(previous, logType)}
+          {formatPreviousSet(previous, logType)}
         </Text>
       </Pressable>
 

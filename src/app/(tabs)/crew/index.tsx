@@ -10,7 +10,7 @@ import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { AccountCard } from '@/features/account/components/account-card';
 import { dateKey } from '@/features/programs/calendar';
-import { CrewCard } from '@/features/crews/components/crew-card';
+import { CrewCoverCard } from '@/features/crews/components/crew-cover-card';
 import { useMyCrews } from '@/features/crews/hooks';
 import { useCrewPrompts } from '@/features/crews/use-crew-prompts';
 import { crewWeekRange } from '@/features/crews/week';
@@ -129,8 +129,10 @@ export default function CrewScreen() {
           <>
             <YourWeekCard range={range} todayKey={todayKey} now={now} />
             <NotificationsNudge />
+            {/* Photo-first: each crew is its cover and who's been in this
+                week. The grid, pokes and feed live on the crew's own page. */}
             {list.map((crew) => (
-              <CrewCard key={crew.id} crew={crew} range={range} todayKey={todayKey} now={now} />
+              <CrewCoverCard key={crew.id} crew={crew} range={range} />
             ))}
           </>
         )}

@@ -55,6 +55,10 @@ function tableSynced<TRow extends { id: string }>(
         retrySync: true,
       },
       retry: { infinite: true },
+      // A failed push is retried forever, silently; this is the one place
+      // it's visible, so a column the server doesn't have (or a policy it
+      // won't allow) can be found from a device log.
+      onError: (error: unknown) => console.warn(`[sync] ${collection}:`, error),
     } as any),
   ) as unknown as Observable<Record<string, TRow>>;
 }

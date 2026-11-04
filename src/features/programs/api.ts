@@ -131,6 +131,86 @@ export async function saveDayExerciseLogType(
   if (error) throw error;
 }
 
+/** Moves the active programme's anchor: "I'm on week 3" becomes a start
+ * date that puts today in week 3 (see `startDateForWeek`). */
+export async function setProgramStartDate(userId: string, startDate: string): Promise<void> {
+  const { error } = await supabase.from('user_programs').update({ start_date: startDate }).eq('user_id', userId);
+  if (error) throw error;
+}
+
+/** A programme you've been on before: your own instance that isn't the
+ * active one. Nothing is ever deleted when a new programme replaces the
+ * old, so these are all still here to go back to. */
+export interface PastProgram {
+  id: string;
+  name: string;
+  summary: string;
+  templateId: string | null;
+  /** When the instance was made: the day it was first chosen or built. */
+  createdAt: string;
+  weekCount: number;
+  /** Every day id in the programme, so sessions logged against it can be
+   * counted from the local workout store. */
+  dayIds: string[];
+  /** Day id → week position, for "pick up where you left off". */
+  weekOfDay: Record<string, number>;
+}
+
+interface RawPastProgram {
+  id: string;
+  name: string;
+  summary: string;
+  template_id: string | null;
+  created_at: string;
+  program_weeks: { position: number; program_days: { id: string }[] }[];
+}
+
+/** Your own instances other than the active one, newest first. */
+export async function fetchProgramHistory(userId: string, activeProgramId: string | null): Promise<PastProgram[]> {
+  let query = supabase
+    .from('programs')
+    .select('id, name, summary, template_id, created_at, program_weeks ( position, program_days ( id ) )')
+    .eq('owner_id', userId)
+    .order('created_at', { ascending: false });
+  if (activeProgramId != null) query = query.neq('id', activeProgramId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data as unknown as RawPastProgram[]).map((p) => {
+    const weekOfDay: Record<string, number> = {};
+    for (const week of p.program_weeks) for (const day of week.program_days) weekOfDay[day.id] = week.position;
+    return {
+      id: p.id,
+      name: p.name,
+      summary: p.summary,
+      templateId: p.template_id,
+      createdAt: p.created_at,
+      weekCount: p.program_weeks.length,
+      dayIds: Object.keys(weekOfDay),
+      weekOfDay,
+    };
+  });
+}
+
+/** Makes one of your own instances the active programme again, anchored
+ * so today falls in `weekPosition`. The row is yours (RLS) and the
+ * programme is yours (the foreign key only; a template can't be resumed,
+ * only selected, which copies it). */
+export async function resumeProgram(userId: string, programId: string, startDate: string): Promise<void> {
+  const { error } = await supabase
+    .from('user_programs')
+    .upsert({ user_id: userId, program_id: programId, selected_at: new Date().toISOString(), start_date: startDate });
+  if (error) throw error;
+}
+
+/** The interview answers a built programme was written from, for editing
+ * them and building again. Null for a template copy or an older instance
+ * that has none. */
+export async function fetchProgramBrief(programId: string): Promise<unknown | null> {
+  const { data, error } = await supabase.from('programs').select('brief').eq('id', programId).maybeSingle();
+  if (error) throw error;
+  return data?.brief ?? null;
+}
+
 /** Selecting a template copies it into a private instance owned by the
  * caller and makes that the active programme (the `select_program` RPC);
  * edits later land on the instance, never the template. Returns the

@@ -5,6 +5,8 @@ export interface Profile {
   displayName: string;
   /** Sessions a week you're aiming for, 1–7. */
   weeklyTarget: number;
+  /** Public URL of the sticker avatar, once uploaded. */
+  avatarUrl: string | null;
 }
 
 export const DEFAULT_WEEKLY_TARGET = 3;
@@ -20,11 +22,13 @@ export function cleanDisplayName(raw: string): string | null {
 export async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, display_name, weekly_target')
+    .select('id, display_name, weekly_target, avatar_url')
     .eq('id', userId)
     .maybeSingle();
   if (error) throw error;
-  return data ? { id: data.id, displayName: data.display_name, weeklyTarget: data.weekly_target } : null;
+  return data
+    ? { id: data.id, displayName: data.display_name, weeklyTarget: data.weekly_target, avatarUrl: data.avatar_url }
+    : null;
 }
 
 export async function saveDisplayName(userId: string, displayName: string): Promise<void> {

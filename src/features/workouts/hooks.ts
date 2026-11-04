@@ -271,6 +271,15 @@ export function finishWorkout(id: string, now: Date): void {
   skipRestTimer();
 }
 
+/** Renames a running workout from its header. A blank name keeps the old
+ * one; the Save step can change it again at the end. */
+export function renameWorkout(id: string, title: string): void {
+  const clean = title.trim();
+  if (clean.length === 0) return;
+  haptics.select();
+  workouts$[id].assign({ title: clean, updated_at: new Date().toISOString() });
+}
+
 /** The Save step's commit: writes the edited name, description and start,
  * then marks the workout finished. A blank name keeps the old one; a blank
  * description clears it. `updated_at` is the real save time even when the

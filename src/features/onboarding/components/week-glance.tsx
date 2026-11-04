@@ -1,27 +1,43 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { useThemedStyles } from '@/styles/use-theme';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
+import { useThemedStyles, useTheme } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { stripWeekdayPrefix } from '@/features/programs/labels';
-import type { PlanDayKind, PlanWeek } from '@/features/programs/plan';
+import type { DayKind } from '@/features/programs/types';
 
 const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-const KIND_LABELS: Record<PlanDayKind, string> = { lifting: 'LIFT', court: 'COURT', rest: 'REST', comp: 'COMP' };
+const KIND_LABELS: Record<DayKind, string> = { lifting: 'LIFT', court: 'COURT', rest: 'REST', comp: 'COMP' };
 
-/** A week of the proposal at a glance: seven rows, what each day is, and
- * how much is in it. Enough to judge "does this fit my week" before
- * anything is scrolled into. */
-export function WeekGlance({ week }: { week: PlanWeek }) {
+/** The least a day needs to be glanced at: the plan's days and a written
+ * programme's days both have this. */
+export interface GlanceDay {
+  name: string;
+  kind: DayKind;
+  notes: string | null;
+  exercises: unknown[];
+}
+
+/** A week at a glance: seven rows, what each day is, and how much is in
+ * it. Enough to judge "does this fit my week" before anything is scrolled
+ * into. With `onPressDay` every row opens, so the meat of a day is one
+ * tap away. */
+export function WeekGlance({ days, onPressDay }: { days: GlanceDay[]; onPressDay?: (index: number) => void }) {
+  const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.list}>
-      {week.days.map((day, i) => {
-        const dim = day.kind === 'rest';
+      {days.map((day, i) => {
         const meta =
           day.kind === 'lifting'
             ? `${day.exercises.length} exercise${day.exercises.length === 1 ? '' : 's'}`
             : (day.notes ?? (day.kind === 'comp' ? 'Competition' : day.kind === 'court' ? 'Court session' : 'Rest'));
         return (
-          <View key={i} style={[styles.row, dim && styles.rowDim]}>
+          <Pressable
+            key={i}
+            disabled={onPressDay == null}
+            onPress={() => onPressDay?.(i)}
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+          >
             <Text style={styles.weekday}>{WEEKDAYS[i]}</Text>
             <View style={styles.body}>
               <Text style={styles.name} numberOfLines={1}>
@@ -32,7 +48,8 @@ export function WeekGlance({ week }: { week: PlanWeek }) {
               </Text>
             </View>
             <Text style={[styles.kind, day.kind === 'comp' && styles.kindComp]}>{KIND_LABELS[day.kind]}</Text>
-          </View>
+            {onPressDay != null && <SymbolView name="chevron.right" size={13} tintColor={theme.colors.inkMuted} />}
+          </Pressable>
         );
       })}
     </View>
@@ -52,7 +69,7 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: theme.colors.glassBorder,
   },
-  rowDim: { opacity: 0.6 },
+  rowPressed: { opacity: 0.7 },
   weekday: { ...theme.type.label, color: theme.colors.inkMuted, width: 36 },
   body: { flex: 1, gap: 1 },
   name: { ...theme.type.body, fontWeight: '600', color: theme.colors.ink },

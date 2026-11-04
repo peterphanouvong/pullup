@@ -1,37 +1,49 @@
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSelector } from '@legendapp/state/react';
 import { haptics } from '@/lib/haptics';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { SectionLabel } from '@/components/ui/section-label';
+import { WeekPills } from '@/components/ui/week-pills';
 import { StepFrame } from '@/features/onboarding/components/step-frame';
 import { WeekGlance } from '@/features/onboarding/components/week-glance';
 import { draft$, proposal$ } from '@/features/onboarding/state';
+import { useProgram } from '@/features/programs/hooks';
 
 /**
- * The programme, revealed: its name, what it's for, and week one laid out
- * as a week. It's already written to the account, so Start just moves on;
+ * The programme, revealed: its name, what it's for, and the whole block
+ * to flick through, a week at a time, with every day one tap from its
+ * workout. It's already written to the account, so Start just moves on;
  * "Change something" takes a sentence and sends the coach back round.
+ *
+ * The weeks come from the instance just written, not the plan as
+ * returned: the instance's days have ids, which is what the workout
+ * preview opens by.
  */
 export default function RevealScreen() {
   const proposal = useSelector(proposal$);
   const name = useSelector(() => draft$.name.get());
   const styles = useThemedStyles(createStyles);
+  const program = useProgram(proposal?.programId ?? '');
+  const [viewedWeek, setViewedWeek] = useState(1);
 
   if (!proposal) {
     router.replace('/onboarding');
     return null;
   }
-  const { plan } = proposal;
+  const { plan, programId } = proposal;
   const firstWeek = plan.weeks[0];
   const liftingDays = firstWeek.days.filter((d) => d.kind === 'lifting').length;
+  const weeks = program.data?.weeks ?? [];
+  const week = weeks.find((w) => w.position === viewedWeek) ?? weeks[0] ?? null;
 
   function changeSomething() {
     haptics.tap();
     Alert.prompt(
       'What should change?',
-      'One line is plenty: “no Friday sessions”, “swap squats for leg press”, “make it shorter”.',
+      'One line is plenty: “no Friday sessions”, “swap squats for leg press”, “make it 8 weeks”.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -65,8 +77,24 @@ export default function RevealScreen() {
         <Fact value={firstWeek.phase} label="to start" />
       </View>
       <View style={styles.week}>
-        <SectionLabel>{firstWeek.name}</SectionLabel>
-        <WeekGlance week={firstWeek} />
+        {week == null ? (
+          <ActivityIndicator style={styles.loading} />
+        ) : (
+          <>
+            {weeks.length > 1 && (
+              <WeekPills weeks={weeks} viewedPosition={week.position} currentPosition={1} onSelect={setViewedWeek} />
+            )}
+            <SectionLabel>{`${week.name} · ${week.phase}`}</SectionLabel>
+            {week.description != null && <Text style={styles.weekNote}>{week.description}</Text>}
+            <WeekGlance
+              days={week.days}
+              onPressDay={(i) => {
+                haptics.tap();
+                router.push(`/program/${programId}/day/${week.days[i].id}`);
+              }}
+            />
+          </>
+        )}
       </View>
     </StepFrame>
   );
@@ -100,4 +128,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
   factValue: { ...theme.type.title, color: theme.colors.ink },
   factLabel: { ...theme.type.caption, color: theme.colors.inkMuted },
   week: { gap: theme.spacing.sm },
+  weekNote: { ...theme.type.caption, color: theme.colors.inkMuted },
+  loading: { paddingVertical: theme.spacing.xl },
 });

@@ -2,16 +2,16 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { requireOptionalNativeModule } from 'expo';
 import { useSelector } from '@legendapp/state/react';
-import type { LiveActivityFactory, Widget } from 'expo-widgets';
+import { addUserInteractionListener, type LiveActivityFactory, type Widget } from 'expo-widgets';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
 import { restTimer$ } from '@/features/workouts/rest-timer';
 import { activeWorkout } from '@/features/workouts/selectors';
 import { workoutExercises$, workouts$, workoutSets$ } from '@/features/workouts/store';
-import { useFinishedWorkouts } from '@/features/workouts/hooks';
+import { completeSet, useFinishedWorkouts } from '@/features/workouts/hooks';
 import { useProfile } from '@/features/account/hooks';
-import type { WorkoutActivityProps } from '@/widgets/workout-activity';
+import { COMPLETE_TARGET_PREFIX, type WorkoutActivityProps } from '@/widgets/workout-activity';
 import type { WeekWidgetProps } from '@/widgets/week-widget';
-import { weekWidgetTimeline, workoutActivityProps } from './props';
+import { liveWidgetProps, weekWidgetTimeline, workoutActivityProps } from './props';
 
 /** Only on a build that has the native module: `expo-widgets` resolves it
  * eagerly and throws without it, which would take the app down with it. */
@@ -77,12 +77,26 @@ export function WidgetSync() {
 }
 
 function Sync() {
+  // "Complete set" tapped on the Live Activity or the home screen widget:
+  // the widget has already ticked it on its own; this logs it for real,
+  // and the store change below sends the true state back out. Only an
+  // unticked set is completed, so a tap the app already saw is harmless.
+  useEffect(() => {
+    const subscription = addUserInteractionListener((event) => {
+      if (!event.target.startsWith(COMPLETE_TARGET_PREFIX)) return;
+      const setId = event.target.slice(COMPLETE_TARGET_PREFIX.length);
+      if (workoutSets$[setId].completed_at.peek() == null) completeSet(setId, new Date());
+    });
+    return () => subscription.remove();
+  }, []);
+
   // Serialised so effects fire only when what's shown actually changes —
   // not on every keystroke into a weight field.
   const activityJson = useSelector(() => {
-    const workout = activeWorkout(workouts$.get() ?? {});
+    const workouts = workouts$.get() ?? {};
+    const workout = activeWorkout(workouts);
     if (!workout) return JSON.stringify({ id: null, props: null });
-    const props = workoutActivityProps(workout, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}, restTimer$.get());
+    const props = workoutActivityProps(workout, workoutExercises$.get() ?? {}, workoutSets$.get() ?? {}, restTimer$.get(), workouts);
     return JSON.stringify({ id: workout.id, props });
   });
 
@@ -102,7 +116,13 @@ function Sync() {
     weeks: program.data?.weeks ?? [],
     startDate: active.data?.startDate ?? null,
   });
-  const timelineJson = JSON.stringify(timeline);
+  // While a session runs, every entry carries it, so the widget shows the
+  // set you're on whichever day's entry is current.
+  const live = (() => {
+    const { props } = JSON.parse(activityJson) as { props: WorkoutActivityProps | null };
+    return props ? liveWidgetProps(props) : null;
+  })();
+  const timelineJson = JSON.stringify(timeline.map((e) => ({ ...e, props: { ...e.props, live } })));
 
   useEffect(() => {
     const entries = (JSON.parse(timelineJson) as { date: string; props: WeekWidgetProps }[]).map((e) => ({

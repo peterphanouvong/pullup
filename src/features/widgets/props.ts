@@ -3,7 +3,7 @@ import { stripWeekdayPrefix } from '@/features/programs/labels';
 import type { ProgramWeek } from '@/features/programs/types';
 import { crewWeekRange } from '@/features/crews/week';
 import type { RestTimerState } from '@/features/workouts/rest-timer';
-import { completedSetCount, currentExerciseName } from '@/features/workouts/selectors';
+import { completedSetCount, currentExerciseName, upcomingSets } from '@/features/workouts/selectors';
 import type { Workout, WorkoutExercise, WorkoutSet } from '@/features/workouts/types';
 import type { WorkoutActivityProps } from '@/widgets/workout-activity';
 import type { WeekWidgetProps } from '@/widgets/week-widget';
@@ -14,6 +14,8 @@ export function workoutActivityProps(
   workoutExercises: Record<string, WorkoutExercise>,
   workoutSets: Record<string, WorkoutSet>,
   rest: RestTimerState | null,
+  /** Every workout, for the PREVIOUS column's ghost. */
+  workouts: Record<string, Workout> = {},
 ): WorkoutActivityProps {
   const liveExerciseIds = new Set(
     Object.values(workoutExercises)
@@ -28,6 +30,20 @@ export function workoutActivityProps(
     totalSets: sets.length,
     startedAt: new Date(workout.started_at).getTime(),
     restEndsAt: rest != null ? new Date(rest.endsAt).getTime() : null,
+    // A few ahead, so the widget's own "Complete set" can advance to the
+    // next one before the app has caught up.
+    queue: upcomingSets(workout.id, workoutExercises, workoutSets, 3, workouts),
+  };
+}
+
+/** The live session as the home screen widget shows it while one runs:
+ * the same current set and queue as the Live Activity. */
+export function liveWidgetProps(activity: WorkoutActivityProps): NonNullable<WeekWidgetProps['live']> {
+  return {
+    title: activity.title,
+    completedSets: activity.completedSets,
+    totalSets: activity.totalSets,
+    queue: activity.queue,
   };
 }
 
@@ -66,6 +82,8 @@ export function weekWidgetProps(now: Date, input: WeekWidgetInput): WeekWidgetPr
     todayIndex,
     nextSession: nextPlan != null ? stripWeekdayPrefix(nextPlan.dayName) : null,
     programName: input.startDate ? input.programName : null,
+    // The running session is layered on by the sync, not the timeline.
+    live: null,
   };
 }
 

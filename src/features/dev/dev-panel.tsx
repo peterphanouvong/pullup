@@ -22,7 +22,7 @@ const SAMPLE_BRIEF: TrainingBrief = {
   sessionMinutes: 45,
   minimumMinutes: 15,
   obstacles: ['drop_off'],
-  equipment: 'gym',
+  equipment: ['barbell', 'rack', 'bench', 'dumbbells'],
   experience: 'some',
   limitations: ['knee'],
   sacrifices: ['late_nights'],
@@ -66,6 +66,7 @@ export function DevPanel() {
   const links: { label: string; href: Href }[] = [
     { label: 'Onboarding: welcome', href: '/onboarding' },
     { label: 'Onboarding: name', href: '/onboarding/name' },
+    { label: 'Onboarding: selfie sticker', href: '/onboarding/selfie' },
     { label: 'Onboarding: question 1', href: '/onboarding/1' },
     { label: 'Onboarding: building (needs a brief)', href: '/onboarding/building' },
     { label: 'Onboarding: save (sign in)', href: '/onboarding/save' },

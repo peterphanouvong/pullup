@@ -4,13 +4,10 @@ import { ProgressSegments } from "@/components/ui/progress-segments";
 import { WeekDayCard } from "@/components/ui/week-day-card";
 import { WeekPills } from "@/components/ui/week-pills";
 import { QueryFallback } from "@/features/programs/components/query-fallback";
-import { useActiveProgram, useProgram } from "@/features/programs/hooks";
+import { useActiveProgram, useProgram, useSetProgramWeek } from "@/features/programs/hooks";
 import { currentProgramPosition } from "@/features/programs/schedule";
 import type { ProgramDay } from "@/features/programs/types";
-import {
-  MINIMIZED_BAR_CLEARANCE,
-  MinimizedWorkoutBar,
-} from "@/features/workouts/components/minimized-workout-bar";
+import { MINIMIZED_BAR_CLEARANCE } from "@/features/workouts/components/minimized-workout-bar";
 import {
   startEmptyWorkout,
   startShortWorkoutFromDay,
@@ -116,6 +113,7 @@ export default function TodayScreen() {
   const session = useSession();
   const styles = useThemedStyles(createStyles);
   const activeWorkout = useActiveWorkout();
+  const setWeek = useSetProgramWeek();
   // Which programme week the screen shows. Null = follow the calendar's
   // current week; a number pins the view to that week (via the week pills).
   const [viewedWeekPosition, setViewedWeekPosition] = useState<number | null>(
@@ -164,11 +162,6 @@ export default function TodayScreen() {
   /** The floating slot is only ever the live-workout bar now: day cards
    * carry their own start buttons, and the unplanned session lives in the
    * header menu. */
-  function renderFloating() {
-    if (activeWorkout == null) return null;
-    return <MinimizedWorkoutBar workout={activeWorkout} />;
-  }
-
   if (active.isPending) {
     return (
       <QueryFallback
@@ -221,7 +214,6 @@ export default function TodayScreen() {
             />
           </Card>
         </ShaderScrollView>
-        {renderFloating()}
       </>
     );
   }
@@ -304,6 +296,31 @@ export default function TodayScreen() {
             <Text style={styles.phaseLabel}>{week?.phase ?? ""}</Text>
             <ProgressSegments total={liftingDays.length} filled={doneCount} />
 
+            {/* Looking at a week that isn't the calendar's: make it the
+                one you're on. Re-anchors the start date so today lands in
+                this week; the days keep their weekdays. */}
+            {week != null && !isCurrentWeek && (
+              <NativeButton
+                variant="secondary"
+                systemImage="location.fill"
+                label={setWeek.isPending ? "Moving…" : `I'm on ${week.name} — make it this week`}
+                disabled={setWeek.isPending}
+                onPress={() => {
+                  haptics.tap();
+                  setWeek.mutate(
+                    { weekPosition: week.position },
+                    {
+                      onSuccess: () => {
+                        haptics.success();
+                        setViewedWeekPosition(null);
+                      },
+                      onError: () => haptics.warning(),
+                    },
+                  );
+                }}
+              />
+            )}
+
             {days.map((d) => {
               const state = dayState(
                 d,
@@ -321,11 +338,9 @@ export default function TodayScreen() {
                     weekday={WEEKDAY_LABELS[d.position - 1] ?? ""}
                     metrics={dayMetrics(d)}
                     meta={metaFor(d)}
-                    onPress={
-                      d.kind === "lifting"
-                        ? () => router.push(`/program/${programId}/day/${d.id}`)
-                        : undefined
-                    }
+                    // Every day opens: a lifting day to its workout, a
+                    // court or rest day to what it's for.
+                    onPress={() => router.push(`/program/${programId}/day/${d.id}`)}
                     // Tapping the card previews the day; the in-card button
                     // commits. Only the active, unfinished session gets one.
                     onStart={
@@ -363,7 +378,6 @@ export default function TodayScreen() {
           </>
         )}
       </ShaderScrollView>
-      {renderFloating()}
     </>
   );
 }

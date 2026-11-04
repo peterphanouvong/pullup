@@ -62,11 +62,13 @@ export interface VibeSettings {
 
 /** Bump whenever DEFAULT_VIBES changes: saved tunings are kept per version,
  * so new defaults show up instead of hiding behind an old save. */
-export const DEFAULTS_VERSION = 3;
+export const DEFAULTS_VERSION = 4;
 
 export const DEFAULT_VIBES: Record<Vibe, VibeSettings> = {
   // Peter's dials from Paper's Grain Gradient playground (wave shape),
   // with the light above the horizon and a blue family, one hue per page.
+  // Still by default (speed 0): a moving full-screen shader on every tab
+  // costs battery; the Vibe Lab's Speed dial turns it on.
   // Electric blue: the house look.
   programme: {
     shape: 'wave',
@@ -80,7 +82,7 @@ export const DEFAULT_VIBES: Record<Vibe, VibeSettings> = {
     motion: 0.5,
     scale: 1.96,
     rotation: 8,
-    speed: 0.42,
+    speed: 0,
     parallax: 0.3,
     offsetX: -0.22,
     offsetY: -0.3,
@@ -98,7 +100,7 @@ export const DEFAULT_VIBES: Record<Vibe, VibeSettings> = {
     motion: 0.5,
     scale: 1.96,
     rotation: -8,
-    speed: 0.42,
+    speed: 0,
     parallax: 0.3,
     offsetX: 0.22,
     offsetY: -0.3,
@@ -116,12 +118,12 @@ export const DEFAULT_VIBES: Record<Vibe, VibeSettings> = {
     motion: 0.5,
     scale: 1.96,
     rotation: 8,
-    speed: 0.42,
+    speed: 0,
     parallax: 0.3,
     offsetX: -0.22,
     offsetY: -0.3,
   },
-  // Dimmer and slower while logging: the set tables are the point.
+  // Dimmer while logging: the set tables are the point.
   workout: {
     shape: 'wave',
     back: '#000A0F',
@@ -134,12 +136,12 @@ export const DEFAULT_VIBES: Record<Vibe, VibeSettings> = {
     motion: 0.5,
     scale: 1.96,
     rotation: 8,
-    speed: 0.3,
+    speed: 0,
     parallax: 0.3,
     offsetX: -0.22,
     offsetY: -0.3,
   },
-  // Brighter and livelier for the finish.
+  // Brighter for the finish.
   celebration: {
     shape: 'wave',
     back: '#000A0F',
@@ -152,7 +154,7 @@ export const DEFAULT_VIBES: Record<Vibe, VibeSettings> = {
     motion: 0.5,
     scale: 1.96,
     rotation: 8,
-    speed: 0.6,
+    speed: 0,
     parallax: 0.3,
     offsetX: -0.22,
     offsetY: -0.3,

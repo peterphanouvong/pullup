@@ -8,7 +8,9 @@ import type { Theme } from '@/styles/theme';
 import { useCrewPrompts } from '@/features/crews/use-crew-prompts';
 import { StepFrame } from '@/features/onboarding/components/step-frame';
 import { useMarkOnboarded } from '@/features/onboarding/gate';
-import { resetOnboarding } from '@/features/onboarding/state';
+import { draft$, resetOnboarding } from '@/features/onboarding/state';
+import { Avatar } from '@/features/sticker/components/avatar';
+import { useMyAvatar } from '@/features/sticker/hooks';
 
 /**
  * Last step: bring your mates. A crew is the app's only social layer
@@ -22,6 +24,8 @@ export default function CrewStepScreen() {
   const prompts = useCrewPrompts();
   const markOnboarded = useMarkOnboarded(session.user.id);
   const isGuest = session.user.is_anonymous ?? false;
+  const avatarUri = useMyAvatar();
+  const name = draft$.name.get() ?? null;
 
   async function finish() {
     haptics.success();
@@ -37,12 +41,17 @@ export default function CrewStepScreen() {
       subtitle={
         isGuest
           ? 'Crews show who’s trained this week, nothing more. Sign in from the Crew tab when you want one.'
-          : 'A crew is up to 8 mates who can see who’s trained each day. No workouts, no weights, just whether you showed up.'
+          : 'A crew is up to 8 mates who can see who’s trained each day. No workouts, no weights, just whether you showed up. Your sticker goes next to your name.'
       }
       cta={isGuest ? 'Start training' : 'Done'}
       onCta={() => void finish()}
       ctaDisabled={prompts.busy}
     >
+      {/* You, as your crew will see you: the sticker from two steps ago. */}
+      <View style={styles.you}>
+        <Avatar uri={avatarUri} name={name} size={132} />
+        {name != null && <Text style={styles.youName}>{name}</Text>}
+      </View>
       {!isGuest && (
         <View style={styles.actions}>
           <NativeButton label="Create a crew" variant="secondary" systemImage="plus" onPress={() => prompts.promptCreate(() => void finish())} />
@@ -55,6 +64,8 @@ export default function CrewStepScreen() {
 }
 
 const createStyles = (theme: Theme) => StyleSheet.create({
+  you: { alignItems: 'center', gap: theme.spacing.sm, paddingVertical: theme.spacing.md },
+  youName: { ...theme.type.heading, color: theme.colors.ink },
   actions: { gap: theme.spacing.sm },
   hint: { ...theme.type.caption, color: theme.colors.inkMuted, textAlign: 'center', paddingTop: theme.spacing.xs },
 });

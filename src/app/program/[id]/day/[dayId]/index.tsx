@@ -10,10 +10,10 @@ import { ExercisePlan } from '@/features/programs/components/exercise-plan';
 import { Markdown } from '@/features/programs/components/markdown';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
-import type { DayExercise } from '@/features/programs/types';
+import type { DayKind } from '@/features/programs/types';
 import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
-import { startShortWorkoutFromDay, startWorkoutFromDay, useActiveWorkout } from '@/features/workouts/hooks';
+import { startEmptyWorkout, startShortWorkoutFromDay, startWorkoutFromDay, useActiveWorkout } from '@/features/workouts/hooks';
 import { shortVersionOf } from '@/features/workouts/short-version';
 import { startWorkoutOrPrompt } from '@/features/workouts/start-guard';
 import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
@@ -22,18 +22,20 @@ import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 // is set here, for the states that have no day to name yet.
 const SCREEN_OPTIONS = { title: 'Workout' } as const;
 
-/** Splits the day's exercises into consecutive runs of main work and the
- * rest, in the day's own order. */
-function groupMainWork(exercises: DayExercise[], mainIds: Set<string>): { main: boolean; exercises: DayExercise[] }[] {
-  const runs: { main: boolean; exercises: DayExercise[] }[] = [];
-  for (const exercise of exercises) {
-    const main = mainIds.has(exercise.id);
-    const last = runs[runs.length - 1];
-    if (last != null && last.main === main) last.exercises.push(exercise);
-    else runs.push({ main, exercises: [exercise] });
-  }
-  return runs;
-}
+const KIND_TITLE: Record<DayKind, string> = {
+  lifting: 'Lifting session',
+  court: 'Court session',
+  rest: 'Rest day',
+  comp: 'Competition day',
+};
+
+/** What a day with nothing to log is for, when the coach left no note. */
+const KIND_BODY: Record<DayKind, string> = {
+  lifting: '',
+  court: 'Training or a game. It counts as training load, so the lifting around it is planned lighter.',
+  rest: 'Nothing to log. A walk, a stretch, an early night: the next session is better for it.',
+  comp: 'The day it was all for. Nothing in the gym; warm up well and go.',
+};
 
 /**
  * The workout preview: what a programme day asks for, before you commit to
@@ -77,11 +79,9 @@ export default function DayScreen() {
   }
 
   const isActiveProgram = active.data?.programId === id;
+  // The live workout, when it's this very day.
+  const resumable = activeWorkout != null && activeWorkout.program_day_id === dayId ? activeWorkout : null;
   const short = day.kind === 'lifting' ? shortVersionOf(day) : null;
-  // A day of only main work has nothing to set apart, so no box then.
-  const mainIds = new Set(
-    short != null && short.day.exercises.length < day.exercises.length ? short.day.exercises.map((e) => e.id) : [],
-  );
 
   function handleStart() {
     startWorkoutOrPrompt(activeWorkout, () => {
@@ -112,12 +112,49 @@ export default function DayScreen() {
       >
         <Text style={styles.subtitle}>{`${program.data.name} · ${week.name}`}</Text>
 
+        {/* A day with nothing to log says what it's for, and still lets
+            you train if you want to: an unplanned session counts too. */}
+        {day.kind !== 'lifting' && (
+          <Card style={styles.kindCard}>
+            <Text style={styles.kindTitle}>{KIND_TITLE[day.kind]}</Text>
+            <Text style={styles.kindBody}>{day.notes ?? KIND_BODY[day.kind]}</Text>
+            {isActiveProgram && day.kind !== 'comp' && (
+              <NativeButton
+                variant="secondary"
+                systemImage="plus"
+                label="Start an empty workout anyway"
+                onPress={() =>
+                  startWorkoutOrPrompt(activeWorkout, () => {
+                    const workoutId = startEmptyWorkout(session.user.id);
+                    router.push(`/workout/${workoutId}`);
+                  })
+                }
+              />
+            )}
+          </Card>
+        )}
+
         {day.kind === 'lifting' && isActiveProgram && (
           <View style={styles.start}>
-            <NativeButton variant="primary" label="Start workout" onPress={handleStart} />
+            {/* This day is already running: the only thing to do is get
+                back into it. Starting again is what the live pill's
+                trash is for. */}
+            {resumable != null ? (
+              <NativeButton
+                variant="primary"
+                systemImage="play.fill"
+                label="Resume workout"
+                onPress={() => {
+                  haptics.tap();
+                  router.push(`/workout/${resumable.id}`);
+                }}
+              />
+            ) : (
+              <NativeButton variant="primary" label="Start workout" onPress={handleStart} />
+            )}
             {/* The minimum viable workout: for a flat day, and it still
                 counts for the week. */}
-            {short != null && (
+            {short != null && resumable == null && (
               <NativeButton
                 variant="secondary"
                 systemImage="timer"
@@ -128,6 +165,8 @@ export default function DayScreen() {
           </View>
         )}
 
+        {day.kind === 'lifting' && (
+          <>
         {/* Placeholder for the session's history (volume, reps, duration
             over time) until there's a chart to put here. */}
         <Card style={styles.statsCard}>
@@ -158,25 +197,12 @@ export default function DayScreen() {
           )}
         </View>
         <View style={styles.exercises}>
-          {/* The main work is lit, not labelled: the exercises the short
-              version keeps (what matters most today) sit in a faint blue
-              wash with a soft halo, and the rest stay on the page. Runs
-              of them share one surface, so a coach's pick from the middle
-              of the day still reads as one thing where it can. */}
-          {groupMainWork(day.exercises, mainIds).map((run) =>
-            run.main ? (
-              <View key={run.exercises[0].id} style={styles.mainHalo}>
-                <View style={styles.mainBox}>
-                  {run.exercises.map((exercise) => (
-                    <ExercisePlan key={exercise.id} exercise={exercise} />
-                  ))}
-                </View>
-              </View>
-            ) : (
-              run.exercises.map((exercise) => <ExercisePlan key={exercise.id} exercise={exercise} />)
-            ),
-          )}
+          {day.exercises.map((exercise) => (
+            <ExercisePlan key={exercise.id} exercise={exercise} />
+          ))}
         </View>
+          </>
+        )}
       </ShaderScrollView>
     </>
   );
@@ -199,24 +225,9 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     marginBottom: -theme.spacing.sm,
   },
   exercises: { gap: theme.spacing.xl },
-  // A very simple glow: the accent's soft halo around a faint accent wash
-  // with a hairline edge. Two layers because a shadow needs an unclipped
-  // view with a fill. Pulled out to the screen's edge inset so the surface
-  // doesn't crowd the set tables on it.
-  mainHalo: {
-    marginHorizontal: -theme.spacing.md,
-    borderRadius: theme.radii.xl,
-    backgroundColor: theme.colors.doneRow,
-    ...theme.shadow.glow,
-    shadowOpacity: 0.35,
-  },
-  mainBox: {
-    gap: theme.spacing.xl,
-    padding: theme.spacing.md,
-    borderRadius: theme.radii.xl,
-    borderWidth: 1,
-    borderColor: theme.colors.doneChip,
-  },
+  kindCard: { gap: theme.spacing.sm },
+  kindTitle: { ...theme.type.heading, color: theme.colors.ink },
+  kindBody: { ...theme.type.body, color: theme.colors.inkMuted },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.canvas },
   emptyText: { ...theme.type.body, color: theme.colors.ink },
 });

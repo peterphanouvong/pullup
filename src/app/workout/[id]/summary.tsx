@@ -23,6 +23,7 @@ import { ShareCard } from '@/features/workouts/components/share-card';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
 import { currentProgramPosition, nextCompDay } from '@/features/programs/schedule';
 import { useMyLogbook } from '@/features/stats/hooks';
+import { useMyAvatar } from '@/features/sticker/hooks';
 import { useWeekCompletion, useWorkout } from '@/features/workouts/hooks';
 import { formatWorkoutDuration, workoutSummary } from '@/features/workouts/selectors';
 
@@ -92,6 +93,7 @@ export default function WorkoutSummaryScreen() {
   const program = useProgram(active.data?.programId ?? '');
   const profile = useProfile();
   const book = useMyLogbook();
+  const avatarUri = useMyAvatar();
   const crews = useMyCrews();
   const crewCount = crews.data?.length ?? 0;
   const firstCrew = crews.data?.[0] ?? null;
@@ -252,6 +254,7 @@ export default function WorkoutSummaryScreen() {
             dateLabel={formatDateLabel(finishedAt)}
             stats={{ duration, volumeKg: summary.volumeKg, sets: summary.completedCount }}
             kicker={week?.daysToComp != null ? formatCountdown(week.daysToComp) : streakKicker(streak)}
+            avatarUri={avatarUri}
           />
         </View>
 

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
 import { seedDisplayName } from '@/features/account/api';
@@ -16,6 +16,10 @@ import { StepFrame } from '@/features/onboarding/components/step-frame';
  * guest this screen is done.
  */
 export default function SaveScreen() {
+  // `next=crew` when the programme came from the catalogue: there's no
+  // reveal for a template, so the crew step follows directly.
+  const { next } = useLocalSearchParams<{ next?: string }>();
+  const destination = next === 'crew' ? '/onboarding/crew' : '/onboarding/reveal';
   const session = useSession();
   const queryClient = useQueryClient();
   const isGuest = session.user.is_anonymous ?? false;
@@ -30,16 +34,16 @@ export default function SaveScreen() {
         queryClient.invalidateQueries({ queryKey: ['profile', session.user.id] }),
       );
     }
-    router.replace('/onboarding/reveal');
-  }, [isGuest, session.user.id, queryClient]);
+    router.replace(destination);
+  }, [isGuest, session.user.id, queryClient, destination]);
 
   return (
     <StepFrame
       step={null}
       title="Save your program"
       subtitle="Sign in so it’s yours on any phone, and so your crew can find you."
-      cta="Show me the program"
-      onCta={() => router.replace('/onboarding/reveal')}
+      cta={next === 'crew' ? 'Continue' : 'Show me the program'}
+      onCta={() => router.replace(destination)}
     >
       <AccountCard />
     </StepFrame>

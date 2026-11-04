@@ -15,7 +15,7 @@
 import Anthropic from 'npm:@anthropic-ai/sdk';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { PLAN_JSON_SCHEMA, validatePlan } from '../_shared/plan-schema.ts';
-import { briefToProse, isBrief } from '../_shared/brief.ts';
+import { briefToProse, isBrief, normaliseBrief } from '../_shared/brief.ts';
 
 // The spec names the current Sonnet; move to Opus only if proposals are poor.
 const MODEL = 'claude-sonnet-5-5';
@@ -50,7 +50,7 @@ Structure:
 - What stops them: shape the plan around it. Not knowing what to do means clear, simple sessions with few exercises; no time means shorter sessions and supersets; dropping off means an easier first week that builds; too tired after court means lighter lifting on court days and the hard work on fresh days.
 - Progress across the weeks: load, volume or intensity moves week to week, with a deload where the length warrants one. Repeat structure, vary the dose.
 - Respect limitations: for a flagged knee, ankle, shoulder or back, choose joint-friendly variations and add isometric or tempo work rather than avoiding the area entirely.
-- Equipment is a hard constraint. Bodyweight means no bands, no bench.
+- Equipment is a hard constraint: only what they listed, nothing else. Bodyweight only means no bands, no bench, no bar: floor and a wall at most.
 - Keep text tight. The description is markdown a lifter reads once: an overview paragraph, a table of weeks and phases, and the weekly rules. No motivational filler.
 
 Where the athlete answered in their own words, those words win over any assumption the card options would have made: read them for the sport, the days, the kit, the injury or the deadline they describe, and if they name a length or a date, size the programme to it (never more than 8 weeks).
@@ -96,7 +96,9 @@ Deno.serve(async (req) => {
   if (!user) return json({ error: 'not signed in' }, 401);
 
   const body = await req.json().catch(() => null);
-  if (!body || !isBrief(body.brief)) return json({ error: 'bad brief' }, 400);
+  // Older app builds still send the single-choice equipment answer.
+  const brief = body ? normaliseBrief(body.brief) : null;
+  if (!body || !isBrief(brief)) return json({ error: 'bad brief' }, 400);
   const note = typeof body.note === 'string' ? body.note.trim().slice(0, NOTE_MAX) : '';
   const programId = typeof body.program_id === 'string' ? body.program_id : null;
 
@@ -119,7 +121,7 @@ Deno.serve(async (req) => {
 
   const parts = [
     `Today is ${today}. The program starts on the Monday of this week.`,
-    `## The athlete\n${briefToProse(body.brief)}`,
+    `## The athlete\n${briefToProse(brief)}`,
   ];
   if (current.data) {
     parts.push(`## Their current program\n${compactProgram(current.data as Row)}`);

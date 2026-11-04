@@ -5,7 +5,8 @@ import { haptics } from '@/lib/haptics';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { REACTIONS, checkinDetail, checkinHeadline, myReaction, type Checkin, type Reaction } from '../feed';
-import { useSetReaction } from '../hooks';
+import { useCrewAvatars, useSetReaction } from '../hooks';
+import { Avatar } from '@/features/sticker/components/avatar';
 
 /**
  * One check-in in a crew's feed: who finished what, when and how much,
@@ -19,6 +20,7 @@ export function CheckinRow({ checkin, now }: { checkin: Checkin; now: Date }) {
 
   const mine = myReaction(checkin, session.user.id);
   const isMe = checkin.userId === session.user.id;
+  const avatars = useCrewAvatars([checkin.userId]);
 
   function toggle(emoji: Reaction) {
     const next = mine === emoji ? null : emoji;
@@ -37,8 +39,8 @@ export function CheckinRow({ checkin, now }: { checkin: Checkin; now: Date }) {
 
   return (
     <View style={styles.row}>
-      <Pressable onPress={open} style={[styles.avatar, isMe && styles.avatarMe]}>
-        <Text style={styles.avatarInitial}>{checkin.displayName.charAt(0).toUpperCase()}</Text>
+      <Pressable onPress={open} hitSlop={6}>
+        <Avatar uri={avatars[checkin.userId]} name={checkin.displayName} size={AVATAR} />
       </Pressable>
       <View style={styles.body}>
         <Pressable onPress={open} style={({ pressed }) => [styles.openable, pressed && styles.chipPressed]}>
@@ -76,16 +78,6 @@ const AVATAR = 32;
 
 const createStyles = (theme: Theme) => StyleSheet.create({
   row: { flexDirection: 'row', gap: theme.spacing.md, paddingVertical: theme.spacing.sm },
-  avatar: {
-    width: AVATAR,
-    height: AVATAR,
-    borderRadius: AVATAR / 2,
-    backgroundColor: theme.colors.glassControl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarMe: { backgroundColor: theme.colors.accent },
-  avatarInitial: { ...theme.type.caption, fontWeight: '700', color: theme.colors.ink },
   body: { flex: 1, gap: 2 },
   openable: { gap: 2 },
   headline: { ...theme.type.body, fontWeight: '600', color: theme.colors.ink },

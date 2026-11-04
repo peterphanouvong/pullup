@@ -11,4 +11,11 @@ export type {
   Sport,
   TrainingBrief,
 } from '../../../supabase/functions/_shared/brief';
-export { BRIEF_KEYS, BRIEF_NOTE_MAX, briefToProse, isBrief } from '../../../supabase/functions/_shared/brief';
+export {
+  BRIEF_KEYS,
+  BRIEF_NOTE_MAX,
+  EQUIPMENT,
+  briefToProse,
+  isBrief,
+  normaliseBrief,
+} from '../../../supabase/functions/_shared/brief';

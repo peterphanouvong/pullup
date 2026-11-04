@@ -1,3 +1,5 @@
+import { File } from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import { toCheckin, type Checkin, type RawCheckinRow, type Reaction } from './feed';
 import { toMemberWeek, type CrewMemberWeek, type RawCrewWeekRow } from './week';
@@ -7,6 +9,8 @@ export interface Crew {
   name: string;
   inviteCode: string;
   memberCount: number;
+  /** The crew's cover photo, the face of its card; null until someone sets one. */
+  coverUrl: string | null;
 }
 
 /** Most members a crew can have; the server enforces it too. */
@@ -16,6 +20,7 @@ interface RawCrew {
   id: string;
   name: string;
   invite_code: string;
+  cover_url: string | null;
   crew_members: { count: number }[];
 }
 
@@ -23,7 +28,7 @@ interface RawCrew {
 export async function fetchMyCrews(): Promise<Crew[]> {
   const { data, error } = await supabase
     .from('crews')
-    .select('id, name, invite_code, crew_members(count)')
+    .select('id, name, invite_code, cover_url, crew_members(count)')
     .order('created_at');
   if (error) throw error;
   return (data as unknown as RawCrew[]).map((c) => ({
@@ -31,7 +36,37 @@ export async function fetchMyCrews(): Promise<Crew[]> {
     name: c.name,
     inviteCode: c.invite_code,
     memberCount: c.crew_members[0]?.count ?? 0,
+    coverUrl: c.cover_url,
   }));
+}
+
+/** Opens the photo library for a crew cover, cropped wide. Null when
+ * cancelled or refused. */
+export async function pickCrewCover(): Promise<{ uri: string; mimeType: string } | null> {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) return null;
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    aspect: [16, 10],
+    quality: 0.8,
+  });
+  if (result.canceled || result.assets.length === 0) return null;
+  const asset = result.assets[0];
+  return { uri: asset.uri, mimeType: asset.mimeType ?? 'image/jpeg' };
+}
+
+/** Uploads a cover for the crew and records it. Returns the public URL. */
+export async function setCrewCover(crewId: string, picked: { uri: string; mimeType: string }): Promise<string> {
+  const bytes = await new File(picked.uri).bytes();
+  const body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  const path = `${crewId}/cover.jpg`;
+  const upload = await supabase.storage.from('covers').upload(path, body, { contentType: picked.mimeType, upsert: true });
+  if (upload.error) throw upload.error;
+  const url = `${supabase.storage.from('covers').getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
+  const { error } = await supabase.from('crews').update({ cover_url: url }).eq('id', crewId);
+  if (error) throw error;
+  return url;
 }
 
 export async function fetchCrewWeek(crewId: string, fromIso: string, toIso: string): Promise<CrewMemberWeek[]> {

@@ -1,4 +1,4 @@
-import { crewWeekRange, normaliseInviteCode, orderMembers, toMemberWeek, type CrewMemberWeek } from '../week';
+import { crewWeekRange, normaliseInviteCode, orderMembers, toMemberWeek, withLocalSessions, type CrewMemberWeek } from '../week';
 
 describe('crewWeekRange', () => {
   it('runs Monday to Sunday on the local calendar', () => {
@@ -62,5 +62,31 @@ describe('normaliseInviteCode', () => {
     expect(normaliseInviteCode('ABC10O')).toBeNull();
     expect(normaliseInviteCode('ABCL23')).toBeNull();
     expect(normaliseInviteCode('ABC23')).toBeNull();
+  });
+});
+
+describe('withLocalSessions', () => {
+  const range = crewWeekRange(new Date(2026, 10, 4)); // Wed 4 Nov 2026
+  const member = (userId: string, days: string[]) => ({
+    userId,
+    displayName: userId,
+    joinedAt: '2026-01-01T00:00:00Z',
+    trainedDays: new Set(days),
+    sessionCount: days.length,
+    weeklyTarget: 3,
+    streak: 0,
+  });
+
+  it('counts this phone’s sessions against you even before they reach the server', () => {
+    const members = [member('me', []), member('mate', ['2026-11-02'])];
+    const merged = withLocalSessions(members, 'me', ['2026-11-03T18:00:00', '2026-10-20T18:00:00'], range);
+    expect(merged[0].sessionCount).toBe(1);
+    expect(merged[0].trainedDays.has('2026-11-03')).toBe(true);
+    expect(merged[1]).toBe(members[1]);
+  });
+
+  it('never lowers what the server already knows', () => {
+    const merged = withLocalSessions([member('me', ['2026-11-02', '2026-11-03'])], 'me', ['2026-11-03T18:00:00'], range);
+    expect(merged[0].sessionCount).toBe(2);
   });
 });

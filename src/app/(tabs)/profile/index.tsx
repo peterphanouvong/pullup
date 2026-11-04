@@ -7,7 +7,8 @@ import { NativeButton } from '@/components/ui/native-button';
 import { SectionLabel } from '@/components/ui/section-label';
 import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
-import { AccountActions, AccountCard, promptForName } from '@/features/account/components/account-card';
+import { AccountActions, AccountCard } from '@/features/account/components/account-card';
+import { promptForName } from '@/features/account/prompt-for-name';
 import { DEFAULT_WEEKLY_TARGET, saveDisplayName } from '@/features/account/api';
 import { useProfile } from '@/features/account/hooks';
 import { sessionsThisWeek, weekStreak } from '@/features/crews/streak';
@@ -19,6 +20,7 @@ import { ballRadius, SessionJar } from '@/features/profile/components/session-ja
 import { WeeklyChart } from '@/features/profile/components/weekly-chart';
 import { useMyLogbook } from '@/features/stats/hooks';
 import { workoutCard } from '@/features/stats/stats';
+import { useMyAvatar } from '@/features/sticker/hooks';
 import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 const RECENT_SESSIONS = 5;
@@ -36,6 +38,7 @@ export default function ProfileScreen() {
   const queryClient = useQueryClient();
   const profile = useProfile();
   const book = useMyLogbook();
+  const avatarUri = useMyAvatar();
   const now = new Date();
 
   const target = profile.data?.weeklyTarget ?? DEFAULT_WEEKLY_TARGET;
@@ -75,7 +78,12 @@ export default function ProfileScreen() {
 
       <ProfileHeader
         name={isGuest ? 'You' : name}
+        avatarUri={avatarUri}
         onPressName={isGuest ? undefined : rename}
+        onPressAvatar={() => {
+          haptics.tap();
+          router.push({ pathname: '/onboarding/selfie', params: { from: 'profile' } });
+        }}
         stats={[
           { label: 'Workouts', value: String(book.workouts.length) },
           { label: 'Streak', value: `${weekStreak(starts, target, now)} wk` },

@@ -34,7 +34,15 @@ function formatElapsedCompact(totalSeconds: number): string {
  * The bar is a Liquid Glass capsule: it floats over scrolling content, which
  * is exactly where glass earns its keep. The translucent fill underneath is
  * the pre-iOS-26 fallback. */
-export function MinimizedWorkoutBar({ workout }: { workout: Workout }) {
+export function MinimizedWorkoutBar({
+  workout,
+  clearance = MINIMIZED_BAR_CLEARANCE,
+}: {
+  workout: Workout;
+  /** Room above the safe area: the tab bar's height on tab screens, a
+   * small gap where there's no tab bar. */
+  clearance?: number;
+}) {
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   const insets = useSafeAreaInsets();
@@ -70,7 +78,7 @@ export function MinimizedWorkoutBar({ workout }: { workout: Workout }) {
       onPress={openWorkout}
       style={({ pressed }) => [
         styles.bar,
-        { bottom: insets.bottom + MINIMIZED_BAR_CLEARANCE },
+        { bottom: insets.bottom + clearance },
         pressed && styles.barPressed,
       ]}
     >

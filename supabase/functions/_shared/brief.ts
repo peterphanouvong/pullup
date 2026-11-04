@@ -6,7 +6,24 @@
 
 export type Goal = 'jump' | 'strength' | 'muscle' | 'fitness' | 'comp';
 export type Sport = 'volleyball' | 'basketball' | 'netball' | 'football' | 'other' | 'none';
-export type Equipment = 'gym' | 'dumbbells' | 'bodyweight';
+/** A piece of kit they have. An empty list is bodyweight only. */
+export type Equipment =
+  | 'barbell'
+  | 'dumbbells'
+  | 'bench'
+  | 'rack'
+  | 'cables'
+  | 'machines'
+  | 'pullup_bar'
+  | 'dip_bars'
+  | 'kettlebells'
+  | 'bands'
+  | 'trap_bar'
+  | 'plyo_box'
+  | 'medicine_ball'
+  | 'suspension'
+  | 'jump_rope'
+  | 'cardio';
 export type Experience = 'new' | 'some' | 'years';
 export type Limitation = 'knee' | 'ankle' | 'shoulder' | 'back';
 export type Sacrifice = 'late_nights' | 'sleep_ins' | 'weekends' | 'screens';
@@ -27,7 +44,8 @@ export interface TrainingBrief {
   liftDays: number | null;
   /** Minutes per lifting session. */
   sessionMinutes: number | null;
-  equipment: Equipment | null;
+  /** What they have to train with; empty means bodyweight only. */
+  equipment: Equipment[] | null;
   experience: Experience | null;
   /** Joints to work around; empty means none. */
   limitations: Limitation[] | null;
@@ -59,7 +77,30 @@ export const BRIEF_NOTE_MAX = 200;
 
 const GOALS: readonly Goal[] = ['jump', 'strength', 'muscle', 'fitness', 'comp'];
 const SPORTS: readonly Sport[] = ['volleyball', 'basketball', 'netball', 'football', 'other', 'none'];
-const EQUIPMENT: readonly Equipment[] = ['gym', 'dumbbells', 'bodyweight'];
+export const EQUIPMENT: readonly Equipment[] = [
+  'barbell', 'dumbbells', 'bench', 'rack', 'cables', 'machines', 'pullup_bar', 'dip_bars', 'kettlebells', 'bands',
+  'trap_bar', 'plyo_box', 'medicine_ball', 'suspension', 'jump_rope', 'cardio',
+];
+
+/** What the old single-choice equipment question meant, for briefs saved
+ * (or sent by app builds) before it became a multi-select. */
+const LEGACY_EQUIPMENT: Record<string, Equipment[]> = {
+  gym: [...EQUIPMENT],
+  dumbbells: ['dumbbells', 'bench'],
+  bodyweight: [],
+};
+
+/** A brief as any version of the app wrote it, brought up to the current
+ * shape. Anything that isn't a brief-like object is returned as is, for
+ * `isBrief` to reject. */
+export function normaliseBrief(v: unknown): unknown {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return v;
+  const b = v as Record<string, unknown>;
+  if (typeof b.equipment === 'string' && b.equipment in LEGACY_EQUIPMENT) {
+    return { ...b, equipment: LEGACY_EQUIPMENT[b.equipment] };
+  }
+  return v;
+}
 const EXPERIENCE: readonly Experience[] = ['new', 'some', 'years'];
 const LIMITATIONS: readonly Limitation[] = ['knee', 'ankle', 'shoulder', 'back'];
 const SACRIFICES: readonly Sacrifice[] = ['late_nights', 'sleep_ins', 'weekends', 'screens'];
@@ -102,7 +143,7 @@ export function isBrief(v: unknown): v is TrainingBrief {
     answered('minimumMinutes', intIn(b.minimumMinutes, 5, 30)) &&
     answered('obstacles', listOf(OBSTACLES, b.obstacles)) &&
     answered('sessionMinutes', intIn(b.sessionMinutes, 20, 120)) &&
-    answered('equipment', oneOf(EQUIPMENT, b.equipment)) &&
+    answered('equipment', listOf(EQUIPMENT, b.equipment)) &&
     answered('experience', oneOf(EXPERIENCE, b.experience)) &&
     answered('limitations', listOf(LIMITATIONS, b.limitations)) &&
     answered('sacrifices', listOf(SACRIFICES, b.sacrifices)) &&
@@ -126,10 +167,29 @@ const SPORT_TEXT: Record<Sport, string> = {
   none: 'no sport, lifting only',
 };
 const EQUIPMENT_TEXT: Record<Equipment, string> = {
-  gym: 'a full gym (barbells, racks, machines, cables, dumbbells)',
-  dumbbells: 'dumbbells and a bench at home, no barbell or machines',
-  bodyweight: 'bodyweight only, no equipment',
+  barbell: 'barbell and plates',
+  dumbbells: 'dumbbells',
+  bench: 'a bench',
+  rack: 'a squat rack',
+  cables: 'a cable machine',
+  machines: 'gym machines',
+  pullup_bar: 'a pull-up bar',
+  dip_bars: 'dip bars',
+  kettlebells: 'kettlebells',
+  bands: 'resistance bands',
+  trap_bar: 'a trap bar',
+  plyo_box: 'a plyo box',
+  medicine_ball: 'a medicine ball',
+  suspension: 'a suspension trainer (TRX or rings)',
+  jump_rope: 'a jump rope',
+  cardio: 'cardio machines (bike, rower, treadmill)',
 };
+
+function equipmentText(items: Equipment[]): string {
+  if (items.length === 0) return 'bodyweight only, no equipment at all';
+  const all = EQUIPMENT.every((e) => items.includes(e));
+  return all ? 'a full gym (everything)' : `only ${items.map((e) => EQUIPMENT_TEXT[e]).join(', ')}`;
+}
 const EXPERIENCE_TEXT: Record<Experience, string> = {
   new: 'new to lifting (under a year)',
   some: 'a year or two of lifting',
@@ -187,7 +247,7 @@ export function briefToProse(b: TrainingBrief): string {
     own('sessionMinutes', 'Session length', () => `Session length: about ${b.sessionMinutes} minutes.`),
     own('minimumMinutes', 'On a flat day they could still do', () =>
       `On a flat day they could still do: about ${b.minimumMinutes} minutes.`),
-    own('equipment', 'Equipment', () => `Equipment: ${EQUIPMENT_TEXT[b.equipment!]}.`),
+    own('equipment', 'Equipment', () => `Equipment: ${equipmentText(b.equipment ?? [])}.`),
     own('experience', 'Experience', () => `Experience: ${EXPERIENCE_TEXT[b.experience!]}.`),
     own('limitations', 'Working around', () => `Working around: ${list((b.limitations ?? []).map((l) => LIMITATION_TEXT[l]))}.`),
     own('obstacles', 'What usually stops them', () =>

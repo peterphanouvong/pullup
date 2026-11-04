@@ -1,5 +1,5 @@
 import { PLAN_DAYS_PER_WEEK, validatePlan, type ProgramPlan } from '../plan';
-import { briefToProse, isBrief } from '@/features/onboarding/brief';
+import { briefToProse, isBrief, type Equipment } from '@/features/onboarding/brief';
 
 const day = (i: number) => ({ name: `Day ${i}`, kind: 'rest' as const, notes: null, exercises: [] });
 const lifting = {
@@ -55,7 +55,7 @@ describe('brief', () => {
     sessionMinutes: 60,
     minimumMinutes: 15,
     obstacles: ['drop_off' as const],
-    equipment: 'gym' as const,
+    equipment: ['barbell', 'rack', 'bench', 'dumbbells'] as Equipment[],
     experience: 'years' as const,
     limitations: ['knee' as const],
     sacrifices: ['late_nights' as const],

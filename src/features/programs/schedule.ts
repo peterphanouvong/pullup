@@ -61,6 +61,17 @@ export function mondayOf(date: Date): string {
 }
 
 /**
+ * The Monday start date that puts `today` in week `weekPosition`: this
+ * week's Monday, moved back a week per week already done. Days stay on
+ * their weekdays (day 1 is always a Monday), so the week is the one thing
+ * a lifter can move.
+ */
+export function startDateForWeek(today: Date, weekPosition: number): string {
+  const monday = parseYMD(mondayOf(today));
+  return formatYMD(addDays(monday, -(Math.max(1, weekPosition) - 1) * 7));
+}
+
+/**
  * Maps `today` onto the programme's week/day grid, where `startDate` is the
  * Monday of week 1 day 1. Clamped to a week-1-day-1 "preview" before the
  * programme starts, and to the last week (day 7, finished) once it's over.

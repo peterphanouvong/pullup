@@ -12,6 +12,7 @@ import { SessionCard } from '@/features/profile/components/session-card';
 import { WeeklyChart } from '@/features/profile/components/weekly-chart';
 import { usePersonLogbook } from '@/features/stats/hooks';
 import { workoutCard } from '@/features/stats/stats';
+import { useAvatars } from '@/features/sticker/hooks';
 import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 
 /**
@@ -24,6 +25,7 @@ export default function PersonScreen() {
   const styles = useThemedStyles(createStyles);
   const profile = useQuery({ queryKey: ['profile', id], queryFn: () => fetchProfile(id) });
   const log = usePersonLogbook(id);
+  const avatars = useAvatars([id]);
   const now = new Date();
 
   if (log.isPending || log.isError) {
@@ -49,6 +51,7 @@ export default function PersonScreen() {
       >
         <ProfileHeader
           name={name}
+          avatarUri={avatars[id]}
           stats={[
             { label: 'Streak', value: `${weekStreak(starts, target, now)} wk` },
             { label: 'This week', value: `${sessionsThisWeek(starts, now)}/${target}` },

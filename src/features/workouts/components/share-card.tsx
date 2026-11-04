@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { stripWeekdayPrefix } from '@/features/programs/labels';
+import { Avatar } from '@/features/sticker/components/avatar';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 
@@ -29,14 +30,20 @@ export const ShareCard = forwardRef<View, {
   stats: ShareCardStats;
   /** e.g. "3 days to comp." — the kicker along the card's foot. */
   kicker: string;
-}>(function ShareCard({ weekday, title, dateLabel, stats, kicker }, ref) {
+  /** Your sticker, peeling off the top corner. */
+  avatarUri?: string | null;
+}>(function ShareCard({ weekday, title, dateLabel, stats, kicker, avatarUri }, ref) {
   const styles = useThemedStyles(createStyles);
 
   return (
     <View ref={ref} collapsable={false} style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.weekday}>{weekday}</Text>
-        <Text style={styles.wordmark}>PULL UP</Text>
+        {avatarUri ? (
+          <Avatar uri={avatarUri} name={null} size={64} style={styles.sticker} />
+        ) : (
+          <Text style={styles.wordmark}>PULL UP</Text>
+        )}
       </View>
 
       <View style={styles.rule} />
@@ -52,7 +59,10 @@ export const ShareCard = forwardRef<View, {
         <Stat value={`${stats.sets}`} label="SETS" />
       </View>
 
-      <Text style={styles.kicker}>{kicker}</Text>
+      <View style={styles.foot}>
+        <Text style={styles.kicker}>{kicker}</Text>
+        {avatarUri != null && <Text style={styles.wordmark}>PULL UP</Text>}
+      </View>
     </View>
   );
 });
@@ -81,9 +91,12 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     padding: theme.spacing.xl,
     gap: theme.spacing.md,
   },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 28 },
   weekday: { ...theme.type.title, fontSize: 20, color: theme.colors.done },
   wordmark: { ...theme.type.label, color: theme.colors.inkMuted },
+  // Cocked and pushed into the corner, the way a sticker gets slapped on.
+  sticker: { marginTop: -theme.spacing.md, marginRight: -theme.spacing.sm, transform: [{ rotate: '8deg' }] },
+  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   rule: { height: 1, backgroundColor: theme.colors.border },
   title: { ...theme.type.title, color: theme.colors.ink },
   date: { ...theme.type.caption, color: theme.colors.inkMuted },

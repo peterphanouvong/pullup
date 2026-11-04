@@ -26,7 +26,7 @@ import { WorkoutHeaderTitle } from '@/features/workouts/components/workout-heade
 import { WorkoutSkeleton } from '@/features/workouts/components/workout-skeleton';
 import { NativeButton } from '@/components/ui/native-button';
 import { haptics } from '@/lib/haptics';
-import { discardWorkout, switchWorkoutVersion, useWorkout } from '@/features/workouts/hooks';
+import { discardWorkout, renameWorkout, switchWorkoutVersion, useWorkout } from '@/features/workouts/hooks';
 import { shortTitle, shortVersionOf } from '@/features/workouts/short-version';
 import { useActiveProgramDay } from '@/features/programs/hooks';
 import { completedSetCount, workoutVolumeKg } from '@/features/workouts/selectors';
@@ -176,19 +176,38 @@ export default function WorkoutScreen() {
             item — that's how Finish disappeared once the title moved left. */}
         <Stack.Toolbar.View hidesSharedBackground>
           <View style={styles.trailing}>
-            {/* Changed your mind? Ticked sets stay either way. A menu
-                rather than a tap, since switching drops unticked sets. */}
-            {day != null && short != null && (
-              <HeaderMenuButton
-                icon={isShort ? 'hourglass.bottomhalf.filled' : 'hourglass'}
-                accessibilityLabel="Short on time"
-                actions={[
-                  isShort
-                    ? { label: 'Switch to the full workout', icon: 'arrow.up.left.and.arrow.down.right', onPress: () => switchWorkoutVersion(workout.id, day, false) }
-                    : { label: `Short on time? Switch to ${short.minutes} min`, icon: 'hourglass', onPress: () => switchWorkoutVersion(workout.id, day, true) },
-                ]}
-              />
-            )}
+            {/* The session's menu: rename it, and, for a programme day,
+                switch between the full and short versions. Switching is
+                a menu action rather than a tap since it drops unticked
+                sets; ticked ones stay either way. */}
+            <HeaderMenuButton
+              icon={isShort ? 'hourglass.bottomhalf.filled' : 'ellipsis'}
+              accessibilityLabel="Workout options"
+              actions={[
+                {
+                  label: 'Rename workout',
+                  icon: 'pencil',
+                  onPress: () =>
+                    Alert.prompt(
+                      'Workout name',
+                      undefined,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Save', onPress: (value?: string) => renameWorkout(workout.id, value ?? '') },
+                      ],
+                      'plain-text',
+                      workout.title,
+                    ),
+                },
+                ...(day != null && short != null
+                  ? [
+                      isShort
+                        ? { label: 'Switch to the full workout', icon: 'arrow.up.left.and.arrow.down.right' as const, onPress: () => switchWorkoutVersion(workout.id, day, false) }
+                        : { label: `Short on time? Switch to ${short.minutes} min`, icon: 'hourglass' as const, onPress: () => switchWorkoutVersion(workout.id, day, true) },
+                    ]
+                  : []),
+              ]}
+            />
             <HeaderPrimaryButton label="Finish" onPress={handleFinish} />
           </View>
         </Stack.Toolbar.View>
