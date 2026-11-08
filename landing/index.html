@@ -153,6 +153,13 @@
   }
   .screen.crew { --s1: #072A4A; --s2: #0E6BA8; --s3: #38B6FF; }
   .screen.workout { --s1: #07163F; --s2: #13348F; --s3: #13348F; }
+  /* A real screenshot in the frame: the whole 1179×2556 capture, status
+     bar and all. The frame's screen is sized to the image's aspect at
+     its width, so nothing is cropped. */
+  .phone.shot { height: 566px; }
+  .screen.shot { padding: 0; background: #000; }
+  .screen.shot img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+  .feature .phone.shot { height: 536px; }
   .island { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 92px; height: 28px; border-radius: 999px; background: #000; }
   .scr-title { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; line-height: 1.2; }
   .scr-sub { font-size: 13px; font-weight: 500; color: var(--ink-muted); margin-top: -6px; }
@@ -230,6 +237,7 @@
   .feature p { margin-top: 12px; font-size: 16px; color: var(--ink-muted); }
   .feature .phone { height: 540px; width: 258px; }
   .feature .screen { padding-top: 48px; }
+  .feature .screen.shot { padding-top: 0; }
 
   /* Closing */
   .closing { text-align: center; padding: 72px 0 56px; }
@@ -285,36 +293,10 @@
       </form>
     </div>
 
-    <!-- Programme tab -->
-    <div class="phone">
-      <div class="screen">
-        <div class="island"></div>
-        <div class="scr-title">Week 3</div>
-        <div class="scr-sub">Upper / Lower · 8 weeks</div>
-        <div class="segments"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="label" style="margin-top:6px">Today · Wednesday</div>
-        <div class="gcard today">
-          <div class="row-between">
-            <div>
-              <div class="card-name">Upper A</div>
-              <div class="card-meta">6 exercises · 48 min</div>
-            </div>
-            <span class="pill">Start</span>
-          </div>
-          <div style="margin-top:10px">
-            <div class="ex"><b>Bench Press</b><span>4 × 5</span></div>
-            <div class="ex"><b>Weighted Pull-up</b><span>4 × 6</span></div>
-            <div class="ex"><b>Incline DB Press</b><span>3 × 10</span></div>
-          </div>
-        </div>
-        <div class="gcard dim">
-          <div class="card-name" style="font-size:15px">Lower A</div>
-          <div class="card-meta">Thursday · 5 exercises</div>
-        </div>
-        <div class="gcard dim">
-          <div class="card-name" style="font-size:15px">Upper B</div>
-          <div class="card-meta">Saturday · 6 exercises</div>
-        </div>
+    <!-- Programme tab: week 5 of a written block, today's session up top -->
+    <div class="phone shot">
+      <div class="screen shot">
+        <img src="img/hero-program.jpg" width="560" height="1214" alt="The Program tab: week 5 of 8, Monday's upper push session ready to start, the rest of the week listed below." fetchpriority="high" />
       </div>
     </div>
   </section>
@@ -324,46 +306,25 @@
     <article class="feature">
       <div class="feature-copy">
         <h2>Plan a program</h2>
-        <p>Answer a few questions about your days, your equipment and what you're training for, and the coach writes a full block for you. Or start from one of ours.</p>
+        <p>Answer a few questions about your days, your equipment and what you're training for, and the coach writes a full block for you, down to the sets. Swap an exercise, run the short version of a day when you're pressed for time, or move the week along if you fall behind.</p>
       </div>
-      <!-- Coach interview -->
-      <div class="phone">
-        <div class="screen">
-          <div class="island"></div>
-          <div class="scr-sub" style="margin-top:0">Step 2 of 6</div>
-          <div class="scr-title">Which days can you train?</div>
-          <div class="scr-sub">Pick as many as you'll actually make.</div>
-          <div class="chips" style="margin-top:6px">
-            <span class="on">Mon</span><span>Tue</span><span class="on">Wed</span><span>Thu</span><span class="on">Fri</span><span>Sat</span><span>Sun</span>
-          </div>
-          <div class="label" style="margin-top:10px">Equipment</div>
-          <div class="gcard pick"><div class="card-name" style="font-size:15px">Commercial gym</div><div class="card-meta">Barbells, machines, cables</div></div>
-          <div class="big-btn mt-auto">Next</div>
+      <!-- A written day, with Edit workout in the corner -->
+      <div class="phone shot">
+        <div class="screen shot">
+          <img src="img/plan-day.jpg" width="560" height="1214" alt="A programme day written by the coach: bench press at 82% of training max, slam ball throws, with an Edit workout button." loading="lazy" />
         </div>
       </div>
     </article>
 
     <article class="feature">
       <div class="feature-copy">
-        <h2>Change it when you need to</h2>
-        <p>Swap an exercise, run the short version of a day when you're pressed for time, and move the week along if you fall behind. The plan keeps up with you instead of the other way round.</p>
+        <h2>Finish, and it counts</h2>
+        <p>Every session you finish becomes a card: time under the bar, volume, sets, your face on it, and how long until the day you're training for. Share it, or let it sit in the log where it adds up.</p>
       </div>
-      <!-- Day screen -->
-      <div class="phone">
-        <div class="screen">
-          <div class="island"></div>
-          <div class="scr-sub" style="margin-top:0">Wednesday · Week 3</div>
-          <div class="scr-title">Upper A</div>
-          <div class="seg"><span>Full · 48 min</span><span class="on">Short · 30 min</span></div>
-          <div class="gcard">
-            <div class="ex"><b>Bench Press</b><span>4 × 5</span></div>
-            <div class="ex"><b>Weighted Pull-up</b><span>4 × 6</span></div>
-            <div class="ex"><b>Incline DB Press</b><span>3 × 10</span></div>
-            <div class="ex dim"><span style="color:var(--ink-muted)">Cable Row</span><span>skipped</span></div>
-            <div class="ex dim"><span style="color:var(--ink-muted)">Lateral Raise</span><span>skipped</span></div>
-          </div>
-          <div class="row-between" style="font-size:13px;color:var(--ink-muted)"><span>Bench Press</span><span class="pill tonal">Swap</span></div>
-          <div class="big-btn mt-auto">Start workout</div>
+      <!-- Finish screen: the session card -->
+      <div class="phone shot">
+        <div class="screen shot">
+          <img src="img/finish-card.jpg" width="560" height="1214" alt="A finished session: 23 minutes 47 seconds under the bar, 1290 kg of volume over 15 sets, 19 days to competition, with a sticker of the lifter's face." loading="lazy" />
         </div>
       </div>
     </article>
@@ -373,36 +334,10 @@
         <h2>Train with friends</h2>
         <p>Add your mates to a crew. Every finished session shows up for them, with your face on it, so a skipped Tuesday doesn't go unnoticed and a good week does.</p>
       </div>
-      <!-- Crew tab -->
-      <div class="phone">
-        <div class="screen crew">
-          <div class="island"></div>
-          <div class="scr-title">Crew</div>
-          <div class="cover"><b>Thursday Lads</b></div>
-          <div class="label">This week</div>
-          <div class="gcard">
-            <div class="checkin">
-              <span class="sticker" style="background:linear-gradient(135deg,#F59E0B,#EF4444)"></span>
-              <div><div class="who">Sam</div><div class="what">Upper A · PR</div></div>
-              <span class="when">2h</span><span class="tick">✓</span>
-            </div>
-            <div class="checkin">
-              <span class="sticker" style="background:linear-gradient(135deg,#34C277,#0E6BA8)"></span>
-              <div><div class="who">Jess</div><div class="what">Lower A · short</div></div>
-              <span class="when">1d</span><span class="tick">✓</span>
-            </div>
-            <div class="checkin">
-              <span class="sticker" style="background:linear-gradient(135deg,#7C6BFF,#38B6FF)"></span>
-              <div><div class="who">You</div><div class="what">Upper A</div></div>
-              <span class="when"></span><span class="pill" style="padding:6px 10px;font-size:11px">Go</span>
-            </div>
-          </div>
-          <div class="label">Consistency</div>
-          <div class="gcard" style="display:flex;flex-direction:column;gap:8px">
-            <div class="row-between" style="font-size:13px"><span>Sam</span><span class="streak"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></div>
-            <div class="row-between" style="font-size:13px"><span>Jess</span><span class="streak"><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span></div>
-            <div class="row-between" style="font-size:13px"><span>You</span><span class="streak"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span></div>
-          </div>
+      <!-- A crew: cover photo, the members as stickers, the week's dots -->
+      <div class="phone shot">
+        <div class="screen shot">
+          <img src="img/crew.jpg" width="560" height="1214" alt="A crew page: a cover photo of two mates, then each member as a sticker with seven dots for the week's sessions." loading="lazy" />
         </div>
       </div>
     </article>
@@ -412,23 +347,10 @@
         <h2>See it add up</h2>
         <p>Every set shows what you did last time, so progress is a number you can beat rather than a feeling. Finished sessions collect on your profile, and a good month looks like one.</p>
       </div>
-      <!-- Live workout -->
-      <div class="phone">
-        <div class="screen workout">
-          <div class="island"></div>
-          <div class="scr-title" style="color:var(--accent)">Bench Press</div>
-          <div class="scr-sub">Set 3 of 4 · 80 kg last time</div>
-          <div class="thead label"><span>Set</span><span>Previous</span><span>kg</span><span>Reps</span><span></span></div>
-          <div class="trow done"><span class="chip">W</span><span class="prev">60 × 8</span><span class="cell">60</span><span class="cell">8</span><span class="tick">✓</span></div>
-          <div class="trow done"><span class="chip">1</span><span class="prev">80 × 5</span><span class="cell">80</span><span class="cell">5</span><span class="tick">✓</span></div>
-          <div class="trow done"><span class="chip">2</span><span class="prev">80 × 5</span><span class="cell">82.5</span><span class="cell">5</span><span class="tick">✓</span></div>
-          <div class="trow active"><span class="chip">3</span><span class="prev">80 × 5</span><span class="cell">82.5</span><span class="cell">5</span><span class="tick"></span></div>
-          <div class="trow"><span class="chip">4</span><span class="prev">80 × 4</span><span class="cell dim"></span><span class="cell dim"></span><span class="tick"></span></div>
-          <div style="text-align:center;margin-top:4px"><span class="pill tonal">+ Add set</span></div>
-          <div class="rest mt-auto">
-            <div style="display:flex;align-items:center;gap:10px"><span class="ring"></span><div><div class="label">Rest</div><b>1:12</b></div></div>
-            <span class="pill tonal">Skip</span>
-          </div>
+      <!-- Live workout: sets with last time alongside, rest timer running -->
+      <div class="phone shot">
+        <div class="screen shot">
+          <img src="img/workout.jpg" width="560" height="1214" alt="A live workout: weighted pull-ups, three of four sets ticked off with last time's numbers alongside, a rest timer at 1:44." loading="lazy" />
         </div>
       </div>
     </article>
