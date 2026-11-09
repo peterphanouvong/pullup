@@ -8,7 +8,9 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://uzkshlhlvlslnwygpejp.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_mfP07Ppu1ts2aGE49M5s1w_-nl5lhwv"
+        "EXPO_PUBLIC_SUPABASE_KEY": "sb_publishable_mfP07Ppu1ts2aGE49M5s1w_-nl5lhwv",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_Bjjzhqr24ZCKuLCokAwG8kn2uhWxQJ3fPEe7embVJbMS",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
       }
     }
   },
