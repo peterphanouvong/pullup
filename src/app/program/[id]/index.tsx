@@ -17,7 +17,7 @@ import {
   useSelectProgram,
 } from '@/features/programs/hooks';
 import { NativeButton } from '@/components/ui/native-button';
-import { promptRework } from '@/features/onboarding/rework';
+import { promptReworkOrBuild } from '@/features/onboarding/rework';
 
 export default function ProgramOverviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,8 +27,8 @@ export default function ProgramOverviewScreen() {
   const select = useSelectProgram();
   const resume = useResumeProgram();
   const styles = useThemedStyles(createStyles);
-  // Your own, coach-written instance can be reworked from here; a
-  // template or a copy of one has no saved answers to rewrite from.
+  // Your own active instance can be reworked from here; without saved
+  // answers (a catalogue copy) the prompt explains and offers the interview.
   const isOwnActive = active.data?.programId === id;
   const brief = useProgramBrief(isOwnActive ? id : null);
 
@@ -93,12 +93,12 @@ export default function ProgramOverviewScreen() {
           onPress={makeMine}
         />
         {failed && <Text style={styles.error}>Couldn&apos;t switch to this program — try again.</Text>}
-        {isOwnActive && brief.data != null && (
+        {isOwnActive && (
           <NativeButton
             label="Change something"
             variant="secondary"
             systemImage="wand.and.stars"
-            onPress={() => promptRework(id, brief.data)}
+            onPress={() => promptReworkOrBuild(id, brief.data)}
           />
         )}
 

@@ -5,7 +5,7 @@ import { WeekDayCard } from "@/components/ui/week-day-card";
 import { WeekPills } from "@/components/ui/week-pills";
 import { QueryFallback } from "@/features/programs/components/query-fallback";
 import { useActiveProgram, useProgram, useProgramBrief, useSetProgramWeek } from "@/features/programs/hooks";
-import { promptRework } from "@/features/onboarding/rework";
+import { promptReworkOrBuild } from "@/features/onboarding/rework";
 import { currentProgramPosition } from "@/features/programs/schedule";
 import type { ProgramDay } from "@/features/programs/types";
 import { MINIMIZED_BAR_CLEARANCE } from "@/features/workouts/components/minimized-workout-bar";
@@ -59,8 +59,8 @@ function SettingsToolbar({
 }: {
   programId: string | null;
   onStartEmpty: () => void;
-  /** "Change something": only for a coach-written programme (one with
-   * saved answers to rewrite from). */
+  /** "Change something": rework the active programme from its saved
+   * answers, or be told why that isn't possible. */
   onRework?: () => void;
 }) {
   const theme = useTheme();
@@ -126,7 +126,9 @@ export default function TodayScreen() {
   const setWeek = useSetProgramWeek();
   const brief = useProgramBrief(active.data?.programId ?? null);
   const activeId = active.data?.programId ?? null;
-  const onRework = activeId != null && brief.data != null ? () => promptRework(activeId, brief.data) : undefined;
+  // Always offered for an active programme (see promptReworkOrBuild): a
+  // native menu built once shouldn't gain items later as queries land.
+  const onRework = activeId != null ? () => promptReworkOrBuild(activeId, brief.data) : undefined;
   // Which programme week the screen shows. Null = follow the calendar's
   // current week; a number pins the view to that week (via the week pills).
   const [viewedWeekPosition, setViewedWeekPosition] = useState<number | null>(
@@ -342,6 +344,10 @@ export default function TodayScreen() {
               );
               const isToday = isCurrentWeek && d.position === position.day;
               const short = d.kind === "lifting" ? shortVersionOf(d) : null;
+              // The live workout, when it's this very day: the card offers
+              // to resume it rather than start it over (same as the day page).
+              const resumable =
+                activeWorkout != null && activeWorkout.program_day_id === d.id ? activeWorkout : null;
               return (
                 <Pressable key={d.id}>
                   <WeekDayCard
@@ -357,21 +363,25 @@ export default function TodayScreen() {
                     // Tapping the card previews the day; the in-card button
                     // commits. Only the active, unfinished session gets one.
                     onStart={
-                      isToday && state === "upcoming"
-                        ? () =>
-                            guardedStart(() => {
-                              const workoutId = startWorkoutFromDay(
-                                d,
-                                d.id,
-                                session.user.id,
-                              );
-                              router.push(`/workout/${workoutId}`);
-                            })
-                        : undefined
+                      resumable != null
+                        ? () => router.push(`/workout/${resumable.id}`)
+                        : isToday && state === "upcoming"
+                          ? () =>
+                              guardedStart(() => {
+                                const workoutId = startWorkoutFromDay(
+                                  d,
+                                  d.id,
+                                  session.user.id,
+                                );
+                                router.push(`/workout/${workoutId}`);
+                              })
+                          : undefined
                     }
-                    // The flat-day cut, beside Start: still counts.
+                    startLabel={resumable != null ? "Resume workout" : undefined}
+                    // The flat-day cut, beside Start: still counts. Not
+                    // while a session for this day is already running.
                     onStartShort={
-                      isToday && state === "upcoming" && short != null
+                      resumable == null && isToday && state === "upcoming" && short != null
                         ? () =>
                             guardedStart(() => {
                               const workoutId = startShortWorkoutFromDay(
