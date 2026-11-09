@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { usePathname } from 'expo-router';
 import { PostHogProvider } from 'posthog-react-native';
-import { captureScreen, identify, posthog } from './analytics';
+import { captureScreen, identify, posthog, posthogLogger } from './analytics';
 
 /**
  * Wraps the app in the PostHog client and reports screens.
@@ -11,6 +11,10 @@ import { captureScreen, identify, posthog } from './analytics';
  * which is how it behaves in tests and for anyone without the env file.
  */
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    posthogLogger.info('mobile_analytics_initialized', { runtime: 'expo' });
+  }, []);
+
   if (posthog == null) return <>{children}</>;
   return (
     <PostHogProvider
@@ -42,5 +46,6 @@ function ScreenTracker() {
 export function useIdentifyUser(userId: string, isGuest: boolean) {
   useEffect(() => {
     identify(userId, { is_guest: isGuest });
+    posthogLogger.info('mobile_identity_bound', { is_guest: isGuest });
   }, [userId, isGuest]);
 }

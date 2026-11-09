@@ -55,6 +55,12 @@ export const posthog: PostHog | null = apiKey && host
       // Lifecycle events (installed / opened / backgrounded) come free and
       // are the cheapest retention signal there is.
       captureAppLifecycleEvents: true,
+      // SDK-native structured logs are buffered, persisted, and flushed with
+      // the mobile lifecycle. Only calls through posthogLogger below export.
+      logs: {
+        serviceName: 'pullup-mobile',
+        environment: __DEV__ ? 'development' : 'production',
+      },
       // One global SDK handler reports errors that escape application code.
       // Console output is intentionally excluded: it is not a monitoring signal.
       errorTracking: {
@@ -70,6 +76,15 @@ export const posthog: PostHog | null = apiKey && host
 /** True when analytics is configured — worth checking before building an
  * expensive property bag. */
 export const analyticsEnabled = posthog != null;
+
+/** Dedicated, opt-in PostHog log sink. Keep existing console output out of
+ * this logger: only purposeful calls added for operational visibility leave
+ * the device as Logs records. */
+export const posthogLogger = {
+  info(message: string, attributes?: AnalyticsProperties): void {
+    posthog?.logger.info(message, attributes);
+  },
+};
 
 export function capture(event: AnalyticsEvent, properties?: AnalyticsProperties): void {
   posthog?.capture(event, properties);

@@ -191,7 +191,7 @@
       "id": "8b74dd0d-ea9c-4b5a-bbbd-4db71bddaa92",
       "type": "ai-observability",
       "label": "Add AI observability",
-      "status": "running",
+      "status": "done",
       "dependsOn": [
         "9417690d-1476-4d04-8c9f-cf773ee3634f"
       ],
@@ -201,7 +201,23 @@
       "enqueuedBy": "orchestrator",
       "optional": true,
       "createdAt": "2026-11-09T20:24:40.188Z",
-      "startedAt": "2026-11-09T20:27:49.070Z"
+      "startedAt": "2026-11-09T20:27:49.070Z",
+      "handoff": {
+        "goals": "Instrument every existing production LLM call with PostHog AI Observability, without changing vendor requests or adding an AI feature.",
+        "did": "- `supabase/functions/plan/index.ts`: instrumented the existing Anthropic streamed `messages.stream()` call using the `ai-observability-manual-capture` variant. The Supabase Deno edge runtime has no supported Node wrapper/OTel path, so the function now sends a non-blocking documented `$ai_generation` API payload after both successful and failed calls. It records the Anthropic provider/model, full request and response content, token usage, latency, time-to-first-token, stop reason, and HTTP/error details. Each request gets one trace ID; reworks group by existing `program_id`, while a fresh generation is its own one-turn session. The event uses the authenticated Supabase `user.id`, matching the app identity contract. No tools are registered, so no `$ai_span` events apply. Capture failures are caught and never wait on or fail the programme response.\n- `.env.local`: added the server-side `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` values through the environment tool so local edge-function execution can send AI events. Values are not exposed here.\n- `.posthog-wizard-cache/.posthog-ai.json`: recorded the Anthropic manual-capture integration and its implementation file for the downstream report.\n\nThe only production LLM path found is `src/app/onboarding/building.tsx` → `src/features/onboarding/api.ts:buildPlan()` → authenticated `POST /functions/v1/plan` → `supabase/functions/plan/index.ts` → Anthropic stream. No separately run MCP server or additional worker/queue LLM caller was found; search hits for MCP were Wizard/reference files only.",
+        "forNextAgent": "Before deploying the Supabase `plan` edge function, provision `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` in its Supabase secrets/environment; this task could configure only the local env file. To verify without making a call in this run: as an authenticated user, complete onboarding or request a programme rework. That calls `buildPlan()` in `src/features/onboarding/api.ts`, which streams `POST /functions/v1/plan`. In AI Observability, expect one `programme_generation` generation within a fresh trace, identified by the stable Supabase user ID. A rework of the same programme groups multiple request traces in that programme's AI session; an initial generation correctly forms a one-turn session. Delivery is wired but unverified because no app, edge function, or paid model call was run.\n\nPrivacy mode: effective mode is off for this manual API implementation: prompt/system content and completion content are explicitly sent as `$ai_input` and `$ai_output_choices` in `supabase/functions/plan/index.ts:270-303`. There is no PostHog SDK client here, so an SDK `privacyMode` option does not apply. Before handling prompts, completions, or provider errors that must not reach PostHog, remove or conditionally omit `$ai_input`, `$ai_output_choices`, and `$ai_error` in both the success and error capture payloads at those lines. Manual custom payload fields are not automatically filtered. See https://posthog.com/docs/ai-observability/privacy-mode.",
+        "filesTouched": [
+          "supabase/functions/plan/index.ts",
+          ".env.local",
+          ".posthog-wizard-cache/.posthog-ai.json"
+        ],
+        "evidence": "Read the final edge-function source and confirmed the existing Anthropic stream has success and error `$ai_generation` capture paths sharing request-scoped AI session/trace IDs. Read the client caller at `src/features/onboarding/api.ts` and confirmed it POSTs the streamed request to `/functions/v1/plan`. `check_env_keys` confirmed both new server environment key names are present in `.env.local`. Read the final AI run record. No model call, app run, test, linter, or deployment was performed by instruction.",
+        "assumptions": "Assumed the deployed Supabase edge runtime will receive the two PostHog environment values through its normal Supabase secrets configuration, and that its standard `fetch` remains alive long enough for the deliberately non-blocking best-effort capture. The raw capture API was selected because the installed Anthropic Node wrapper guidance depends on Node/OTel APIs not supported by this Deno edge-function target.",
+        "conflict": "Production Supabase secret provisioning is required outside this task; without it, the edge function safely skips AI capture.",
+        "reportSection": "## AI Observability\n\nInstrumented the production Anthropic programme-generation stream in `supabase/functions/plan/index.ts` with the **manual-capture** variant. The Supabase Deno edge runtime uses a non-blocking documented `$ai_generation` API payload rather than the Node wrapper, preserving the existing Anthropic request and ensuring analytics failures never delay or fail programme generation.\n\nThe authenticated onboarding/rework path is `src/app/onboarding/building.tsx` → `src/features/onboarding/api.ts:buildPlan()` → `POST /functions/v1/plan`. Each request emits one Anthropic generation associated with the authenticated Supabase user ID. Every request has a fresh trace; programme reworks share an AI session via `program_id`, while an initial programme generation is a correct one-turn session. The call has no registered tools, so no tool spans are expected. Delivery is wired but unverified because this run did not invoke the app or make an LLM call.\n\n**Deployment:** provision `POSTHOG_PROJECT_TOKEN` and `POSTHOG_HOST` in the deployed Supabase Edge Function environment before deploying. Local keys were configured in `.env.local`.\n\n### Privacy mode\n\nPrivacy mode is effectively **off** for this manual capture: `supabase/functions/plan/index.ts:270-303` explicitly sends `$ai_input` and `$ai_output_choices`, so prompt, system, and completion content is captured. There is no PostHog SDK client in this Deno implementation, so an SDK-level `privacyMode` setting does not apply. Before sending sensitive prompts, responses, or provider errors, conditionally omit `$ai_input`, `$ai_output_choices`, and `$ai_error` from both manual capture payloads in that block. Manual custom properties are not automatically filtered. See the [AI Observability privacy-mode documentation](https://posthog.com/docs/ai-observability/privacy-mode).",
+        "packages": []
+      },
+      "finishedAt": "2026-11-09T20:31:28.298Z"
     },
     {
       "id": "fa06b82c-119d-4ebd-aaf4-d0c905abb392",
@@ -234,16 +250,17 @@
       "id": "53f7d235-557c-492d-a9d7-8fa869fb38b2",
       "type": "logs",
       "label": "Configure log capture",
-      "status": "pending",
+      "status": "running",
       "dependsOn": [
         "8b74dd0d-ea9c-4b5a-bbbd-4db71bddaa92"
       ],
       "inputs": {},
-      "attempts": 0,
+      "attempts": 1,
       "maxAttempts": 2,
       "enqueuedBy": "orchestrator",
       "optional": true,
-      "createdAt": "2026-11-09T20:24:42.787Z"
+      "createdAt": "2026-11-09T20:24:42.787Z",
+      "startedAt": "2026-11-09T20:31:31.719Z"
     },
     {
       "id": "a111fdf5-e4c8-4c29-b745-27fe539c61d3",

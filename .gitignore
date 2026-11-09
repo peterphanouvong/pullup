@@ -43,3 +43,5 @@ example
 /android
 supabase/.temp/
 .env.local
+
+.claude/
