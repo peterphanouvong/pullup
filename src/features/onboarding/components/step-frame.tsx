@@ -37,8 +37,13 @@ function useKeyboardHeight(): number {
  *
  * The footer rides up on the keyboard, so Continue is never under it
  * while a name or a written answer is being typed, and the scroll view
- * insets itself for the keyboard so the field being typed into stays in
- * view.
+ * gets the keyboard's height as a bottom inset so a field low on the page
+ * can be scrolled into view. The inset is ours, not UIKit's
+ * `automaticallyAdjustKeyboardInsets`: that one also shifts the content
+ * offset when it decides the focused field is under the keyboard, and on
+ * a screen whose field autofocuses as it arrives that decision is made
+ * against a half-laid-out frame, which scrolled the heading up under the
+ * bar.
  *
  * No wrapper view: the bar is transparent, and UIKit only draws its
  * scroll-edge effect when the ScrollView is the screen's first subview,
@@ -92,7 +97,8 @@ export function StepFrame({
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingBottom: FOOTER_CLEARANCE + insets.bottom }]}
         contentInsetAdjustmentBehavior="automatic"
-        automaticallyAdjustKeyboardInsets
+        contentInset={{ bottom: keyboard }}
+        scrollIndicatorInsets={{ bottom: keyboard }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

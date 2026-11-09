@@ -1,7 +1,7 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
 /**
- * `https://pullup.expo.app/join?c=K7Q2MX` — a crew invite opened from a
+ * `https://peterphanouvong-pullup.expo.app/join?c=K7Q2MX` — a crew invite opened from a
  * message. iOS hands the whole URL to the app (associated domain), so this
  * route stands in for the web page the link also serves.
  *

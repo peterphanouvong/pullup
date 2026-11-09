@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
 import { NativeButton } from '@/components/ui/native-button';
 import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
@@ -8,6 +7,7 @@ import type { Theme } from '@/styles/theme';
 import { useCrewPrompts } from '@/features/crews/use-crew-prompts';
 import { StepFrame } from '@/features/onboarding/components/step-frame';
 import { useMarkOnboarded } from '@/features/onboarding/gate';
+import { leaveOnboarding } from '@/features/onboarding/leave';
 import { draft$, resetOnboarding } from '@/features/onboarding/state';
 import { Avatar } from '@/features/sticker/components/avatar';
 import { useMyAvatar } from '@/features/sticker/hooks';
@@ -30,8 +30,8 @@ export default function CrewStepScreen() {
   async function finish() {
     haptics.success();
     await markOnboarded();
+    leaveOnboarding();
     resetOnboarding();
-    router.dismissAll();
   }
 
   return (

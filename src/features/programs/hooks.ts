@@ -141,6 +141,7 @@ export function useSelectProgram() {
   return useMutation({
     mutationFn: ({ programId }: { programId: string }) => selectProgram(programId),
     onSuccess: () => {
+      capture('programme_selected', {});
       queryClient.invalidateQueries({ queryKey: ['active-program', session.user.id] });
       // The new instance is a new programme id; make sure it's not served stale.
       queryClient.invalidateQueries({ queryKey: ['programs'] });

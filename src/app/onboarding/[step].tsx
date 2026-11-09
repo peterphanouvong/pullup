@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSelector } from '@legendapp/state/react';
 import { haptics } from '@/lib/haptics';
 import { useThemedStyles, useTheme } from '@/styles/use-theme';
@@ -10,6 +10,7 @@ import { OptionCard } from '@/features/onboarding/components/option-card';
 import { StepFrame } from '@/features/onboarding/components/step-frame';
 import { isAnswered, noteFor, titleFor, visibleQuestions } from '@/features/onboarding/questions';
 import { draft$ } from '@/features/onboarding/state';
+import { leaveOnboarding } from '@/features/onboarding/leave';
 
 /**
  * Question `step` (1-based) of the interview. Which questions exist
@@ -45,11 +46,16 @@ export default function QuestionScreen() {
     return () => clearTimeout(handle);
   }, [writing]);
 
-  if (!question) {
-    // A stale deep link past the end: there's nothing to ask.
-    router.replace('/onboarding/building');
-    return null;
-  }
+  // A stale deep link past the end: there's nothing to ask. Only while
+  // focused: finishing the interview resets the draft under these screens,
+  // which can leave a step with no question for a moment.
+  const past = question == null;
+  useFocusEffect(
+    useCallback(() => {
+      if (past) router.replace('/onboarding/building');
+    }, [past]),
+  );
+  if (!question) return null;
 
   const answered = isAnswered(question, draft);
   const pills = question.kind === 'multi';
@@ -120,7 +126,7 @@ export default function QuestionScreen() {
           tintColor={theme.colors.ink}
           onPress={() => {
             haptics.tap();
-            router.dismissAll();
+            leaveOnboarding();
           }}
         />
       </Stack.Toolbar>

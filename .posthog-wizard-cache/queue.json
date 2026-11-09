@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "runId": "7793e2bf-7636-4c37-b217-f817dd891070",
+  "tasks": [
+    {
+      "id": "638b68ef-abff-47cb-83e5-2cddda2ba3b4",
+      "type": "warehouse",
+      "status": "pending",
+      "dependsOn": [
+        "63ef1fe6-543c-49ba-94d0-a46189214c70",
+        "efc12336-0f32-43a7-aa60-5c048ddd7fdb",
+        "e7b56999-aa6d-4657-8908-83eb13596e8c",
+        "9a146800-df01-4d3c-9ca9-62e51b971a91",
+        "9417690d-1476-4d04-8c9f-cf773ee3634f",
+        "8b74dd0d-ea9c-4b5a-bbbd-4db71bddaa92",
+        "fa06b82c-119d-4ebd-aaf4-d0c905abb392",
+        "53f7d235-557c-492d-a9d7-8fa869fb38b2",
+        "a111fdf5-e4c8-4c29-b745-27fe539c61d3"
+      ],
+      "inputs": {
+        "sources": [
+          {
+            "kind": "Expo",
+            "label": "Expo (EAS)",
+            "mode": "in-cli",
+            "matchedSignal": "found `expo` in package.json"
+          },
+          {
+            "kind": "Supabase",
+            "label": "Supabase",
+            "mode": "in-cli",
+            "matchedSignal": "found `@supabase/supabase-js` in package.json"
+          }
+        ]
+      },
+      "attempts": 0,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "optional": true,
+      "createdAt": "2026-11-09T20:24:21.450Z"
+    },
+    {
+      "id": "63ef1fe6-543c-49ba-94d0-a46189214c70",
+      "type": "install",
+      "label": "Add PostHog SDK",
+      "status": "done",
+      "dependsOn": [],
+      "inputs": {},
+      "attempts": 1,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "createdAt": "2026-11-09T20:24:32.421Z",
+      "startedAt": "2026-11-09T20:24:48.907Z",
+      "handoff": {
+        "goals": "Install the React Native PostHog SDK with the project's package manager, ensuring the resolved published package is declared for later integration steps.",
+        "did": "No files were edited. `package.json` already declares the client SDK as `posthog-react-native` at `^4.85.3`, so the SDK is available for the existing mobile analytics implementation and its funnels, screen views, identity, and event capture. No server-side PostHog event sender was found in scope for this install step.",
+        "forNextAgent": "Import the client library as `posthog-react-native`. The project is an Expo/React Native app using pnpm. Existing PostHog implementation files are `lib/analytics.ts` and `lib/analytics-provider.tsx`; preserve their established analytics contract unless the next task explicitly changes it. `react-native-svg` is not declared directly in package.json despite being a required peer noted by the framework commandments; assess and add it only if your assigned integration task requires resolving that peer.",
+        "filesTouched": [],
+        "evidence": "Read `package.json`: dependencies include `posthog-react-native: ^4.85.3`; `detect_package_manager` reports pnpm with install command `pnpm add`; source search confirms existing imports from `posthog-react-native` in `lib/analytics.ts` and `lib/analytics-provider.tsx`.",
+        "assumptions": "Assumed the existing manifest declaration was previously resolved into `pnpm-lock.yaml` and node_modules, as required by the task instruction to leave an already-installed SDK unchanged. Did not read the lockfile because the task prohibits reading it wholesale for version verification.",
+        "conflict": "",
+        "reportSection": "",
+        "packages": []
+      },
+      "finishedAt": "2026-11-09T20:25:05.084Z"
+    },
+    {
+      "id": "efc12336-0f32-43a7-aa60-5c048ddd7fdb",
+      "type": "init",
+      "label": "Initialize PostHog",
+      "status": "done",
+      "dependsOn": [],
+      "inputs": {},
+      "attempts": 1,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "createdAt": "2026-11-09T20:24:32.422Z",
+      "startedAt": "2026-11-09T20:24:48.908Z",
+      "handoff": {
+        "goals": "Initialize PostHog once for the Expo/React Native app, configure public environment variables through wizard tools, and ensure the environment key names are documented.",
+        "did": "Updated src/lib/analytics.ts so the singleton PostHog client reads EXPO_PUBLIC_POSTHOG_KEY and EXPO_PUBLIC_POSTHOG_HOST only from the Expo build environment, constructs only when both are present, and emits the required development-only missing-configuration errors while production remains a no-op. Updated src/lib/analytics-provider.tsx to preserve explicit Expo Router screen tracking while enabling touch autocapture; session recording remains at its default. Set the configured public PostHog key and host in .env.local through the wizard environment tool. .env.example already documented both public key names with placeholder values, so no change was necessary there. This supports lifecycle, touch-autocapture, manual $screen, identity, and existing product-event analytics.",
+        "forNextAgent": "Call sites should continue to use the helpers exported by src/lib/analytics.ts (capture, identify, resetIdentity, captureScreen), never construct another client. The singleton is passed to PostHogProvider by AnalyticsProvider, mounted in src/app/_layout.tsx around AuthGate. Expo Router screen tracking is manual via usePathname; touch autocapture is enabled. react-native-svg is not declared in package.json, despite being a required peer dependency of posthog-react-native; install it before native builds if it is not already intentionally supplied elsewhere.",
+        "filesTouched": [
+          "src/lib/analytics.ts",
+          "src/lib/analytics-provider.tsx",
+          ".env.local"
+        ],
+        "evidence": "Read the final client and provider source after edits. check_env_keys confirmed EXPO_PUBLIC_POSTHOG_KEY and EXPO_PUBLIC_POSTHOG_HOST are present in .env.local and documented in .env.example. package.json already declares posthog-react-native. No builds, linters, or tests were run, as instructed.",
+        "assumptions": "The existing Expo Router client/provider integration was intentional and is the project’s single initialization point. The user-provided public token and host are the configured values for this project.",
+        "conflict": "react-native-svg is missing from package.json; package installation was unavailable in this task's tool set.",
+        "reportSection": "",
+        "packages": [
+          "pnpm add react-native-svg"
+        ]
+      },
+      "finishedAt": "2026-11-09T20:25:35.856Z"
+    },
+    {
+      "id": "e7b56999-aa6d-4657-8908-83eb13596e8c",
+      "type": "identify",
+      "label": "Add user identification",
+      "status": "done",
+      "dependsOn": [
+        "63ef1fe6-543c-49ba-94d0-a46189214c70",
+        "efc12336-0f32-43a7-aa60-5c048ddd7fdb"
+      ],
+      "inputs": {},
+      "attempts": 1,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "createdAt": "2026-11-09T20:24:35.516Z",
+      "startedAt": "2026-11-09T20:25:38.709Z",
+      "handoff": {
+        "goals": "Ensure the Expo/React Native app establishes PostHog identity from its stable authenticated user id and clears that identity when the authenticated person changes.",
+        "did": "Updated `src/lib/auth.tsx` to retain the previous Supabase session user id in a ref inside the auth-state listener. It calls the existing `resetIdentity()` PostHog helper before exposing a signed-out session or a session for a different user, preventing later events and SDK-reported errors from being attributed to the prior account. Linked Apple/Google upgrades preserve the same Supabase id and do not reset, retaining the guest's analytics history. The pre-existing `useIdentifyUser(session.user.id, session.user.is_anonymous === true)` in `src/app/_layout.tsx` continues to identify using the stable Supabase primary key through the shared analytics helper.",
+        "forNextAgent": "No additional identity calls are needed at individual capture or error call sites: `WorkoutStoreGate` is inside `AuthGate` and identifies the active stable Supabase user id, while `AuthGate` resets before a sign-out or account switch. Do not put names or emails on capture event properties; use person properties if a later task deliberately adds them.",
+        "filesTouched": [
+          "src/lib/auth.tsx"
+        ],
+        "evidence": "Read the final `src/lib/auth.tsx`, `src/lib/analytics-provider.tsx`, and `src/app/_layout.tsx`. Verified the auth listener resets on `SIGNED_OUT` or a changed user id, and the existing identity hook is rendered under the session gate. No builds, linting, or tests were run as instructed.",
+        "assumptions": "Assumed Supabase emits its documented auth-state transitions for sign-out and account switching, and that its immutable `session.user.id` is the app's correct stable primary key. The existing PostHog helper/client setup supplied by upstream work is the single client initialization point.",
+        "conflict": "",
+        "reportSection": "",
+        "packages": []
+      },
+      "finishedAt": "2026-11-09T20:26:37.116Z"
+    },
+    {
+      "id": "9a146800-df01-4d3c-9ca9-62e51b971a91",
+      "type": "error-tracking",
+      "label": "Enable error tracking",
+      "status": "done",
+      "dependsOn": [
+        "63ef1fe6-543c-49ba-94d0-a46189214c70",
+        "efc12336-0f32-43a7-aa60-5c048ddd7fdb"
+      ],
+      "inputs": {},
+      "attempts": 1,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "createdAt": "2026-11-09T20:24:35.516Z",
+      "startedAt": "2026-11-09T20:25:38.711Z",
+      "handoff": {
+        "goals": "Make uncaught React Native application errors reach PostHog through the SDK's single global mechanism.",
+        "did": "Updated src/lib/analytics.ts at the existing PostHog singleton initialization. Added SDK errorTracking autocapture for uncaughtExceptions and unhandledRejections, which feed PostHog Error Tracking for errors that escape application code. Explicitly set console: [] so ordinary console logging is not ingested as an error-monitoring signal. No manual capture calls or additional boundaries were scattered across the app.",
+        "forNextAgent": "The global client initialization in src/lib/analytics.ts now covers JavaScript uncaught exceptions and unhandled promise rejections. Native crash capture was not enabled because it requires the optional @posthog/react-native-plugin and native symbol workflow, which are outside this instrument-only task and unavailable without dependency installation.",
+        "filesTouched": [
+          "src/lib/analytics.ts"
+        ],
+        "evidence": "Read the final edited singleton configuration and confirmed errorTracking.autocapture contains uncaughtExceptions: true, unhandledRejections: true, and console: []. No builds, tests, linters, or installs were run, as instructed.",
+        "assumptions": "Assumed posthog-react-native ^4.85.3 from the upstream handoff supports the documented errorTracking.autocapture initialization options.",
+        "conflict": "",
+        "reportSection": "",
+        "packages": []
+      },
+      "finishedAt": "2026-11-09T20:26:04.147Z"
+    },
+    {
+      "id": "9417690d-1476-4d04-8c9f-cf773ee3634f",
+      "type": "capture",
+      "label": "Instrument product events",
+      "status": "done",
+      "dependsOn": [
+        "e7b56999-aa6d-4657-8908-83eb13596e8c"
+      ],
+      "inputs": {},
+      "attempts": 1,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "createdAt": "2026-11-09T20:24:38.008Z",
+      "startedAt": "2026-11-09T20:26:39.998Z",
+      "handoff": {
+        "goals": "Identify and instrument meaningful user-action events for the Expo/React Native app, preserving the existing PostHog analytics contract and recording the event plan.",
+        "did": "Updated `src/lib/analytics.ts` to add the closed-union event name `programme_generated`. Updated `src/app/onboarding/building.tsx` to capture `programme_generated` only after a programme build succeeds, with non-PII booleans that distinguish a rework and an in-programme generation; this supports programme-generation conversion and rework analysis. Updated `src/features/programs/hooks.ts` so catalogue programme activation now captures the pre-existing `programme_selected` event just as resume already did, completing programme-selection funnel coverage. Created `.posthog-wizard-cache/.posthog-events.json` with the ten core product events: workout start/finish/discard, programme generation/selection/day edit, crew create/join/invite share, and workout-session share.",
+        "forNextAgent": "All capture calls use the shared `capture` helper and are plain captures because the upstream identity handoff confirms `AuthGate` has already bound the stable Supabase user id. No user-entered text or other PII was added to event properties. Existing workout, crew, programme-day-edit, and session-share captures were retained; review the new programme-generation and catalogue-selection paths along with the existing contract.",
+        "filesTouched": [
+          "src/lib/analytics.ts",
+          "src/app/onboarding/building.tsx",
+          "src/features/programs/hooks.ts",
+          ".posthog-wizard-cache/.posthog-events.json"
+        ],
+        "evidence": "Read the final analytics union, onboarding success handler, programme mutation handlers, and event-plan JSON after edits. Confirmed `programme_generated` is captured only in the successful build callback, `programme_selected` is captured in both resume and catalogue-selection success callbacks, and the plan JSON is valid by visual inspection. Per task instruction, no build, linter, or tests were run.",
+        "assumptions": "Assumed the shared analytics provider remains mounted under the authenticated/guest session gate as stated in the upstream identity handoff, so these client-side captures inherit the correct stable Supabase identity.",
+        "conflict": "",
+        "reportSection": "",
+        "packages": []
+      },
+      "finishedAt": "2026-11-09T20:27:41.054Z"
+    },
+    {
+      "id": "8b74dd0d-ea9c-4b5a-bbbd-4db71bddaa92",
+      "type": "ai-observability",
+      "label": "Add AI observability",
+      "status": "running",
+      "dependsOn": [
+        "9417690d-1476-4d04-8c9f-cf773ee3634f"
+      ],
+      "inputs": {},
+      "attempts": 1,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "optional": true,
+      "createdAt": "2026-11-09T20:24:40.188Z",
+      "startedAt": "2026-11-09T20:27:49.070Z"
+    },
+    {
+      "id": "fa06b82c-119d-4ebd-aaf4-d0c905abb392",
+      "type": "dashboard",
+      "label": "Build product dashboard",
+      "status": "done",
+      "dependsOn": [
+        "9417690d-1476-4d04-8c9f-cf773ee3634f"
+      ],
+      "inputs": {},
+      "attempts": 1,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "createdAt": "2026-11-09T20:24:40.189Z",
+      "startedAt": "2026-11-09T20:27:49.071Z",
+      "handoff": {
+        "goals": "Create a starter PostHog dashboard with a handful of insights based on the mobile app events instrumented by earlier workflow steps, then hand off its URL.",
+        "did": "Created the `Analytics basics (wizard)` dashboard in PostHog (ID 2327243) and attached five wizard-tagged insights: `Workout completion funnel (wizard)` using `workout_started` → `workout_finished`; `Workout activity (wizard)` tracking started, finished, and discarded workouts daily; `Programme activation (wizard)` using `programme_generated` → `programme_selected`; `Crew engagement (wizard)` tracking crew creation, invitation shares, and joins daily; and `Workout session shares (wizard)` tracking daily `session_shared` volume. These tiles provide core completion, engagement, programme activation, social activity, and sharing signals.",
+        "forNextAgent": "Dashboard URL for the final report: https://us.posthog.com/project/723386/dashboard/2327243. All dashboard and insight artifacts are tagged `wizard` and use the event contract from `.posthog-wizard-cache/.posthog-events.json`. The dashboard has five verified tiles. It currently has no production event activity, which is expected for the new integration; the saved definitions will populate automatically after app events arrive.",
+        "filesTouched": [],
+        "evidence": "PostHog `dashboard-get` confirmed dashboard ID 2327243 has five saved insight tiles, each tagged `wizard`, with the intended names. `insight-query` completed for each insight: activity trend views returned zero-valued daily rows over the last 30 days and the funnel views returned no data, confirming valid saved queries with no captured events yet.",
+        "assumptions": "Assumed the supplied prior-step event contract is authoritative and that new app event data has not yet been generated in the selected PostHog project.",
+        "conflict": "",
+        "reportSection": "## Starter analytics dashboard\n\nCreated [Analytics basics (wizard)](https://us.posthog.com/project/723386/dashboard/2327243) with five starter views: workout completion, workout activity, programme activation, crew engagement, and workout-session shares. The views use the instrumented product-event contract and will populate once the app sends events.\n",
+        "packages": []
+      },
+      "finishedAt": "2026-11-09T20:28:50.837Z"
+    },
+    {
+      "id": "53f7d235-557c-492d-a9d7-8fa869fb38b2",
+      "type": "logs",
+      "label": "Configure log capture",
+      "status": "pending",
+      "dependsOn": [
+        "8b74dd0d-ea9c-4b5a-bbbd-4db71bddaa92"
+      ],
+      "inputs": {},
+      "attempts": 0,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "optional": true,
+      "createdAt": "2026-11-09T20:24:42.787Z"
+    },
+    {
+      "id": "a111fdf5-e4c8-4c29-b745-27fe539c61d3",
+      "type": "review",
+      "label": "Review integration",
+      "status": "pending",
+      "dependsOn": [
+        "63ef1fe6-543c-49ba-94d0-a46189214c70",
+        "efc12336-0f32-43a7-aa60-5c048ddd7fdb",
+        "e7b56999-aa6d-4657-8908-83eb13596e8c",
+        "9a146800-df01-4d3c-9ca9-62e51b971a91",
+        "9417690d-1476-4d04-8c9f-cf773ee3634f",
+        "8b74dd0d-ea9c-4b5a-bbbd-4db71bddaa92",
+        "53f7d235-557c-492d-a9d7-8fa869fb38b2"
+      ],
+      "inputs": {},
+      "attempts": 0,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "createdAt": "2026-11-09T20:24:45.289Z"
+    },
+    {
+      "id": "5a355978-7364-42a5-97ba-39980c2e0990",
+      "type": "report",
+      "label": "Publish setup report",
+      "status": "pending",
+      "dependsOn": [
+        "fa06b82c-119d-4ebd-aaf4-d0c905abb392",
+        "a111fdf5-e4c8-4c29-b745-27fe539c61d3",
+        "638b68ef-abff-47cb-83e5-2cddda2ba3b4"
+      ],
+      "inputs": {},
+      "attempts": 0,
+      "maxAttempts": 2,
+      "enqueuedBy": "orchestrator",
+      "createdAt": "2026-11-09T20:24:47.456Z"
+    }
+  ]
+}

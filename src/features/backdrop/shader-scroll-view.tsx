@@ -22,9 +22,12 @@ const SLACK = 240;
  * `styles/header.ts`). Inside the scroll view, the first child draws
  * under everything else and ignores touches, so content is unaffected.
  *
- * The field moves (per the vibe's motion and speed) only while this
- * screen is the focused one, so the tabs and screens stacked underneath
- * aren't all running a shader at once. `animated` forces it either way.
+ * The field is still. Animating it means re-running a full-screen noise
+ * shader at device resolution every frame, which on an iPhone 15 Pro
+ * made the Program tab scroll in lurches and heated the phone, and it did
+ * so from underneath whatever was stacked on top. So pages ignore the
+ * vibe's Speed; only a screen that passes `animated` moves (the finish
+ * screen, briefly), and only while it's the focused one.
  *
  * Drop-in for `ScrollView`: same props and ref. The vibe's base colour
  * becomes the scroll view's background, over whatever `style` says.
@@ -44,9 +47,7 @@ export const ShaderScrollView = forwardRef<ScrollView, ScrollViewProps & { vibe:
         return () => setFocused(false);
       }, []),
     );
-    // Wave and blobs always move with speed; top light needs motion too.
-    const stillByDesign = settings.speed === 0 || (settings.shape === 'top' && settings.motion === 0);
-    const moving = animated ?? (focused && !stillByDesign);
+    const moving = animated === true && focused;
 
     // Content moves up by the offset as you scroll. Countering all of it
     // holds the field still against the window; countering less lets it

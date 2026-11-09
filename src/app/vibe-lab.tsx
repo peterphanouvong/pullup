@@ -26,7 +26,7 @@ const DIALS: { key: NumericKey; label: string; min: number; max: number; hint: s
   { key: 'scale', label: 'Scale', min: 0.4, max: 3, hint: 'Zoom. Bigger is calmer. Not used by top light.' },
   { key: 'rotation', label: 'Rotation', min: -45, max: 45, hint: 'Tilt of the field, in degrees.' },
   { key: 'motion', label: 'Motion', min: 0, max: 1, hint: 'Top light only: how much it moves. 0 is still.' },
-  { key: 'speed', label: 'Speed', min: 0, max: 1, hint: 'How fast it moves.' },
+  { key: 'speed', label: 'Speed', min: 0, max: 1, hint: 'How fast it moves. Only the finish screen animates; pages stay still (a moving full-screen shader made scrolling lag).' },
   { key: 'parallax', label: 'Parallax', min: 0, max: 1, hint: 'How much the light follows your scroll. 0 holds still.' },
   { key: 'offsetX', label: 'Shift X', min: -1.5, max: 1.5, hint: 'Where the light pools, left to right.' },
   { key: 'offsetY', label: 'Shift Y', min: -1.5, max: 1.5, hint: 'Where the light pools, top to bottom.' },

@@ -67,8 +67,9 @@ export const DEFAULTS_VERSION = 4;
 export const DEFAULT_VIBES: Record<Vibe, VibeSettings> = {
   // Peter's dials from Paper's Grain Gradient playground (wave shape),
   // with the light above the horizon and a blue family, one hue per page.
-  // Still by default (speed 0): a moving full-screen shader on every tab
-  // costs battery; the Vibe Lab's Speed dial turns it on.
+  // Pages are always still (see shader-scroll-view): a moving full-screen
+  // shader made scrolling lag. Speed only matters where `animated` is
+  // passed, the finish screen.
   // Electric blue: the house look.
   programme: {
     shape: 'wave',

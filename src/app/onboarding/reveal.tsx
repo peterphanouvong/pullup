@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSelector } from '@legendapp/state/react';
 import { haptics } from '@/lib/haptics';
 import { useThemedStyles } from '@/styles/use-theme';
@@ -23,16 +23,25 @@ import { useProgram } from '@/features/programs/hooks';
  * preview opens by.
  */
 export default function RevealScreen() {
-  const proposal = useSelector(proposal$);
+  // Read once: a rework replaces this screen with a fresh one, and the
+  // reset that finishing the interview does happens while this screen is
+  // still mounted underneath. Tracking the store live made it re-render
+  // with nothing and navigate during render.
+  const [proposal] = useState(() => proposal$.peek());
   const name = useSelector(() => draft$.name.get());
   const styles = useThemedStyles(createStyles);
   const program = useProgram(proposal?.programId ?? '');
   const [viewedWeek, setViewedWeek] = useState(1);
 
-  if (!proposal) {
-    router.replace('/onboarding');
-    return null;
-  }
+  // Landed here with nothing to show (a deep link, a reload): start over.
+  // Only while focused, so leaving the interview doesn't trigger it.
+  useFocusEffect(
+    useCallback(() => {
+      if (!proposal) router.replace('/onboarding');
+    }, [proposal]),
+  );
+
+  if (!proposal) return null;
   const { plan, programId } = proposal;
   const firstWeek = plan.weeks[0];
   const liftingDays = firstWeek.days.filter((d) => d.kind === 'lifting').length;
@@ -90,7 +99,9 @@ export default function RevealScreen() {
               days={week.days}
               onPressDay={(i) => {
                 haptics.tap();
-                router.push(`/program/${programId}/day/${week.days[i].id}`);
+                // A look, not a workout: the day page without its start
+                // and edit controls.
+                router.push({ pathname: '/program/[id]/day/[dayId]', params: { id: programId, dayId: week.days[i].id, preview: '1' } });
               }}
             />
           </>

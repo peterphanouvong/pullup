@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
 import { seedDisplayName } from '@/features/account/api';
-import { applyPlan, buildPlan } from './api';
+import { applyPlan, buildPlan, type BuildProgress } from './api';
 import type { TrainingBrief } from './brief';
 import { draft$, proposal$ } from './state';
 
@@ -18,13 +18,16 @@ export function useBuildProgram() {
       brief,
       note,
       programId,
+      onProgress,
     }: {
       brief: TrainingBrief;
       note: string | null;
       /** The instance to rework; null writes a new one. */
       programId: string | null;
+      /** Called as the coach writes, for the waiting screen. */
+      onProgress?: (progress: BuildProgress) => void;
     }) => {
-      const plan = await buildPlan(brief, note, programId);
+      const plan = await buildPlan(brief, note, programId, onProgress);
       const id = await applyPlan(plan, brief, programId);
       return { plan, programId: id };
     },
@@ -40,6 +43,8 @@ export function useBuildProgram() {
       }
       void queryClient.invalidateQueries({ queryKey: ['active-program', session.user.id] });
       void queryClient.invalidateQueries({ queryKey: ['programs'] });
+      // A rework rewrites the brief alongside the plan.
+      void queryClient.invalidateQueries({ queryKey: ['program-brief', result.programId] });
       void queryClient.invalidateQueries({ queryKey: ['program-history', session.user.id] });
     },
   });

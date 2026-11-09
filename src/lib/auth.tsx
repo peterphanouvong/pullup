@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
+import { resetIdentity } from './analytics';
 import { supabase } from './supabase';
 
 const SessionContext = createContext<Session | null>(null);
@@ -26,10 +27,22 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const identifiedUserId = useRef<string | null>(null);
   const styles = useThemedStyles(createStyles);
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      const nextUserId = next?.user.id ?? null;
+      // A linked provider preserves the guest's Supabase id, but signing out
+      // or switching to an existing account does not. Clear PostHog before
+      // AuthGate exposes the next session so its events and errors cannot be
+      // attributed to the person who just left.
+      if (event === 'SIGNED_OUT' || (identifiedUserId.current != null && nextUserId !== identifiedUserId.current)) {
+        resetIdentity();
+      }
+      identifiedUserId.current = nextUserId;
+      setSession(next);
+    });
     return () => data.subscription.unsubscribe();
   }, []);
 

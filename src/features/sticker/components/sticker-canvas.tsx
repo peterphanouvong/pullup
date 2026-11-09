@@ -8,6 +8,7 @@ import {
   Image as SkiaImage,
   Mask,
   Morphology,
+  Paint,
   Rect,
   Shadow,
   useCanvasRef,
@@ -65,44 +66,49 @@ export const StickerCanvas = forwardRef<StickerCanvasHandle, { uri: string; size
       )
     );
 
+    // The silhouette grown outward: the die-cut border, and the shape
+    // everything is clipped to.
+    const border = (
+      <Group layer>
+        <Morphology operator="dilate" radius={BORDER} />
+        {shape}
+      </Group>
+    );
+
     return (
       <Canvas ref={canvasRef} style={{ width: size, height: size }}>
         {image && (
           <>
-            {/* Die-cut border: the silhouette grown outward, in white, lifted
-                off the page by a soft shadow. */}
+            {/* The shadow on its own, under everything: it falls outside
+                the border, so it can't live in the clipped layer below. */}
             <Group>
-              <Shadow dx={0} dy={6} blur={10} color="rgba(0, 0, 0, 0.35)" />
-              <Group layer>
-                <Morphology operator="dilate" radius={BORDER} />
-                {shape}
-              </Group>
+              <Shadow dx={0} dy={6} blur={10} color="rgba(0, 0, 0, 0.35)" shadowOnly />
+              {border}
             </Group>
-            {/* The photo, graded. Round crop when there's no cutout. */}
-            {round ? (
-              <Mask mask={<Circle cx={size / 2} cy={size / 2} r={inner / 2} color="white" />}>
-                <SkiaImage image={image} x={INSET} y={INSET} width={inner} height={inner} fit="cover">
+            {/* The sticker itself, in one layer: border, the graded photo
+                (round crop when there's no cutout), grain blended over the
+                lot, then the layer clipped back to the border. The grain
+                has to be clipped this way: an overlay-blended rect inside a
+                `Mask` keeps its own blend mode and ignores the mask, which
+                left a faint grey square over the whole canvas. */}
+            <Group layer>
+              {border}
+              {round ? (
+                <Mask mask={<Circle cx={size / 2} cy={size / 2} r={inner / 2} color="white" />}>
+                  <SkiaImage image={image} x={INSET} y={INSET} width={inner} height={inner} fit="cover">
+                    <ColorMatrix matrix={FILM} />
+                  </SkiaImage>
+                </Mask>
+              ) : (
+                <SkiaImage image={image} x={INSET} y={INSET} width={inner} height={inner} fit="contain">
                   <ColorMatrix matrix={FILM} />
                 </SkiaImage>
-              </Mask>
-            ) : (
-              <SkiaImage image={image} x={INSET} y={INSET} width={inner} height={inner} fit="contain">
-                <ColorMatrix matrix={FILM} />
-              </SkiaImage>
-            )}
-            {/* Grain over the whole sticker, border included. */}
-            <Mask
-              mask={
-                <Group layer>
-                  <Morphology operator="dilate" radius={BORDER} />
-                  {shape}
-                </Group>
-              }
-            >
+              )}
               <Rect x={0} y={0} width={size} height={size} opacity={0.22} blendMode="overlay">
                 <FractalNoise freqX={0.9} freqY={0.9} octaves={2} seed={7} />
               </Rect>
-            </Mask>
+              <Group layer={<Paint blendMode="dstIn" />}>{border}</Group>
+            </Group>
           </>
         )}
       </Canvas>

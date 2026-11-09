@@ -4,7 +4,8 @@ import { ProgressSegments } from "@/components/ui/progress-segments";
 import { WeekDayCard } from "@/components/ui/week-day-card";
 import { WeekPills } from "@/components/ui/week-pills";
 import { QueryFallback } from "@/features/programs/components/query-fallback";
-import { useActiveProgram, useProgram, useSetProgramWeek } from "@/features/programs/hooks";
+import { useActiveProgram, useProgram, useProgramBrief, useSetProgramWeek } from "@/features/programs/hooks";
+import { promptRework } from "@/features/onboarding/rework";
 import { currentProgramPosition } from "@/features/programs/schedule";
 import type { ProgramDay } from "@/features/programs/types";
 import { MINIMIZED_BAR_CLEARANCE } from "@/features/workouts/components/minimized-workout-bar";
@@ -54,9 +55,13 @@ function metaFor(day: ProgramDay): string {
 function SettingsToolbar({
   programId,
   onStartEmpty,
+  onRework,
 }: {
   programId: string | null;
   onStartEmpty: () => void;
+  /** "Change something": only for a coach-written programme (one with
+   * saved answers to rewrite from). */
+  onRework?: () => void;
 }) {
   const theme = useTheme();
   return (
@@ -92,7 +97,12 @@ function SettingsToolbar({
               icon="list.bullet.rectangle"
               onPress={() => router.push(`/program/${programId}`)}
             >
-              View programme
+              View program
+            </Stack.Toolbar.MenuAction>
+          )}
+          {onRework != null && (
+            <Stack.Toolbar.MenuAction icon="wand.and.stars" onPress={onRework}>
+              Change something…
             </Stack.Toolbar.MenuAction>
           )}
           <Stack.Toolbar.MenuAction
@@ -114,6 +124,9 @@ export default function TodayScreen() {
   const styles = useThemedStyles(createStyles);
   const activeWorkout = useActiveWorkout();
   const setWeek = useSetProgramWeek();
+  const brief = useProgramBrief(active.data?.programId ?? null);
+  const activeId = active.data?.programId ?? null;
+  const onRework = activeId != null && brief.data != null ? () => promptRework(activeId, brief.data) : undefined;
   // Which programme week the screen shows. Null = follow the calendar's
   // current week; a number pins the view to that week (via the week pills).
   const [viewedWeekPosition, setViewedWeekPosition] = useState<number | null>(
@@ -260,7 +273,7 @@ export default function TodayScreen() {
     // content ScrollView by walking subviews[0] from the screen, so any View
     // between the screen and the ScrollView breaks the large-title collapse.
     <>
-      <SettingsToolbar programId={programId} onStartEmpty={handleStartEmpty} />
+      <SettingsToolbar programId={programId} onStartEmpty={handleStartEmpty} onRework={onRework} />
       <ShaderScrollView
         vibe="programme"
         style={styles.scroll}

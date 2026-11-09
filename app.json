@@ -10,7 +10,7 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.peterphanouvong.pullup",
-      "associatedDomains": ["applinks:pullup.expo.app"],
+      "associatedDomains": ["applinks:peterphanouvong-pullup.expo.app"],
       "userInterfaceStyle": "dark",
       "usesAppleSignIn": true,
       "infoPlist": {

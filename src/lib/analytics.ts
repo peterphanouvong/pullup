@@ -23,6 +23,7 @@ export type AnalyticsEvent =
   | 'workout_started'
   | 'workout_finished'
   | 'workout_discarded'
+  | 'programme_generated'
   | 'programme_selected'
   | 'programme_day_edited'
   | 'crew_created'
@@ -31,16 +32,38 @@ export type AnalyticsEvent =
   | 'session_shared';
 
 const apiKey = process.env.EXPO_PUBLIC_POSTHOG_KEY;
-const host = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
+const host = process.env.EXPO_PUBLIC_POSTHOG_HOST;
 
-/** The live client, or null when there's no key. Exported for the provider;
- * everything else should go through the helpers below. */
-export const posthog: PostHog | null = apiKey
+if (__DEV__ && !apiKey) {
+  console.error(
+    'EXPO_PUBLIC_POSTHOG_KEY variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once EXPO_PUBLIC_POSTHOG_KEY is configured',
+  );
+}
+
+if (__DEV__ && !host) {
+  console.error(
+    'EXPO_PUBLIC_POSTHOG_HOST variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once EXPO_PUBLIC_POSTHOG_HOST is configured',
+  );
+}
+
+/** The live client, or null when its build-time configuration is missing.
+ * Exported for the provider; everything else should go through the helpers
+ * below. */
+export const posthog: PostHog | null = apiKey && host
   ? new PostHog(apiKey, {
       host,
       // Lifecycle events (installed / opened / backgrounded) come free and
       // are the cheapest retention signal there is.
       captureAppLifecycleEvents: true,
+      // One global SDK handler reports errors that escape application code.
+      // Console output is intentionally excluded: it is not a monitoring signal.
+      errorTracking: {
+        autocapture: {
+          uncaughtExceptions: true,
+          unhandledRejections: true,
+          console: [],
+        },
+      },
     })
   : null;
 

@@ -11,10 +11,13 @@ import { buildPhaseTimeline } from '@/features/programs/mapping';
 import {
   useActiveProgram,
   useProgram,
+  useProgramBrief,
   useProgramHistory,
   useResumeProgram,
   useSelectProgram,
 } from '@/features/programs/hooks';
+import { NativeButton } from '@/components/ui/native-button';
+import { promptRework } from '@/features/onboarding/rework';
 
 export default function ProgramOverviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,6 +27,10 @@ export default function ProgramOverviewScreen() {
   const select = useSelectProgram();
   const resume = useResumeProgram();
   const styles = useThemedStyles(createStyles);
+  // Your own, coach-written instance can be reworked from here; a
+  // template or a copy of one has no saved answers to rewrite from.
+  const isOwnActive = active.data?.programId === id;
+  const brief = useProgramBrief(isOwnActive ? id : null);
 
   if (program.isPending || program.isError) {
     return (
@@ -54,8 +61,11 @@ export default function ProgramOverviewScreen() {
   const failed = select.isError || resume.isError;
 
   function makeMine() {
-    if (past != null) resume.mutate({ programId: past.id, weekPosition: past.resumeWeek });
-    else select.mutate({ programId: data.id });
+    // Chosen: back to the programme tab, where it now is. This screen
+    // sits in the root stack, so dismissing to the root lands on the tabs.
+    const done = { onSuccess: () => router.dismissTo('/') };
+    if (past != null) resume.mutate({ programId: past.id, weekPosition: past.resumeWeek }, done);
+    else select.mutate({ programId: data.id }, done);
   }
 
   // `Stack.Title` rather than an options object: the composition
@@ -83,6 +93,14 @@ export default function ProgramOverviewScreen() {
           onPress={makeMine}
         />
         {failed && <Text style={styles.error}>Couldn&apos;t switch to this program — try again.</Text>}
+        {isOwnActive && brief.data != null && (
+          <NativeButton
+            label="Change something"
+            variant="secondary"
+            systemImage="wand.and.stars"
+            onPress={() => promptRework(id, brief.data)}
+          />
+        )}
 
         <SectionLabel>Timeline</SectionLabel>
         <Card style={styles.timelineCard}>

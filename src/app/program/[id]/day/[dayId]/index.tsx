@@ -10,6 +10,9 @@ import { ExercisePlan } from '@/features/programs/components/exercise-plan';
 import { Markdown } from '@/features/programs/components/markdown';
 import { QueryFallback } from '@/features/programs/components/query-fallback';
 import { useActiveProgram, useProgram } from '@/features/programs/hooks';
+import { exerciseKey, personalBests, workoutCard } from '@/features/stats/stats';
+import { useMyLogbook } from '@/features/stats/hooks';
+import { bestLabel, sessionDate, shortDuration, thousands } from '@/features/profile/format';
 import type { DayKind } from '@/features/programs/types';
 import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
@@ -39,18 +42,24 @@ const KIND_BODY: Record<DayKind, string> = {
 
 /**
  * The workout preview: what a programme day asks for, before you commit to
- * it. Title and where it sits in the programme, one big Start, a stats
- * card (a placeholder until there's history to chart), then the exercises
- * with their set tables.
+ * it. Title and where it sits in the programme, one big Start, how this
+ * workout has gone so far (times done, your bests in its exercises), then
+ * the exercises with their set tables.
+ *
+ * `preview=1` (from the onboarding reveal) is a look and nothing more: no
+ * start, no edit, no history. The programme is already theirs at that
+ * point, so without it the page would offer all three.
  */
 export default function DayScreen() {
-  const { id, dayId } = useLocalSearchParams<{ id: string; dayId: string }>();
+  const { id, dayId, preview } = useLocalSearchParams<{ id: string; dayId: string; preview?: string }>();
+  const readOnly = preview === '1';
   const program = useProgram(id);
   const active = useActiveProgram();
   const session = useSession();
   const theme = useTheme();
   const styles = useThemedStyles(createStyles);
   const activeWorkout = useActiveWorkout();
+  const book = useMyLogbook();
 
   if (program.isPending || program.isError) {
     return (
@@ -78,7 +87,8 @@ export default function DayScreen() {
     );
   }
 
-  const isActiveProgram = active.data?.programId === id;
+  const isActiveProgram = active.data?.programId === id && !readOnly;
+  const stats = day.kind === 'lifting' && !readOnly ? dayStats(book, program.data.weeks, day) : null;
   // The live workout, when it's this very day.
   const resumable = activeWorkout != null && activeWorkout.program_day_id === dayId ? activeWorkout : null;
   const short = day.kind === 'lifting' ? shortVersionOf(day) : null;
@@ -167,13 +177,47 @@ export default function DayScreen() {
 
         {day.kind === 'lifting' && (
           <>
-        {/* Placeholder for the session's history (volume, reps, duration
-            over time) until there's a chart to put here. */}
-        <Card style={styles.statsCard}>
-          <SymbolView name="chart.bar.xaxis" size={40} tintColor={theme.colors.inkMuted} />
-          <Text style={styles.statsTitle}>Stats coming soon</Text>
-          <Text style={styles.statsBody}>Volume, reps and duration for this workout over time.</Text>
-        </Card>
+        {/* How this workout has gone: sessions done from this day (any
+            week of the programme), and your best in each of its exercises,
+            each a tap from its history. */}
+        {stats != null && (
+          <Card style={styles.statsCard}>
+            {stats.sessions === 0 ? (
+              <View style={styles.statsEmpty}>
+                <SymbolView name="chart.bar.xaxis" size={32} tintColor={theme.colors.inkMuted} />
+                <Text style={styles.statsTitle}>Not done yet</Text>
+                <Text style={styles.statsBody}>Your bests in these exercises show here after the first session.</Text>
+              </View>
+            ) : (
+              <View style={styles.statsRow}>
+                <Stat value={String(stats.sessions)} label={stats.sessions === 1 ? 'time done' : 'times done'} />
+                <Stat value={stats.last != null ? sessionDate(stats.last.workout.started_at, new Date()) : '—'} label="last" />
+                <Stat value={stats.last != null ? shortDuration(stats.last.durationSeconds) : '—'} label="took" />
+                {stats.last != null && stats.last.volumeKg > 0 && (
+                  <Stat value={`${thousands(stats.last.volumeKg)} kg`} label="lifted" />
+                )}
+              </View>
+            )}
+            {stats.bests.length > 0 && (
+              <View style={styles.bests}>
+                {stats.bests.map((b) => (
+                  <NativeButton
+                    key={b.key}
+                    variant="ghost"
+                    size="small"
+                    fullWidth={false}
+                    label={`${b.name} · ${bestLabel(b)}`}
+                    labelColor={theme.colors.ink}
+                    onPress={() => {
+                      haptics.tap();
+                      router.push({ pathname: '/stats/[key]', params: { key: b.key } });
+                    }}
+                  />
+                ))}
+              </View>
+            )}
+          </Card>
+        )}
 
         {day.notes != null && <Markdown>{day.notes}</Markdown>}
 
@@ -208,14 +252,46 @@ export default function DayScreen() {
   );
 }
 
+/** What a day's stats card shows: sessions logged from this day in any
+ * week of the programme (matched by name, since each week's copy has its
+ * own id), the latest of them, and the bests in its exercises. */
+function dayStats(book: ReturnType<typeof useMyLogbook>, weeks: { days: { id: string; name: string }[] }[], day: { name: string; exercises: { exerciseName: string }[] }) {
+  const dayIds = new Set(weeks.flatMap((w) => w.days.filter((d) => d.name === day.name).map((d) => d.id)));
+  const done = book.workouts.filter((w) => w.program_day_id != null && dayIds.has(w.program_day_id));
+  const last = done[0] != null ? workoutCard(book, done[0]) : null;
+  const bests = personalBests(book);
+  const wanted = new Set(day.exercises.map((e) => exerciseKey(e.exerciseName)));
+  return { sessions: done.length, last, bests: bests.filter((b) => wanted.has(b.key)) };
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  const styles = useThemedStyles(createStyles);
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue} numberOfLines={1}>
+        {value}
+      </Text>
+      <Text style={styles.statLabel} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 const createStyles = (theme: Theme) => StyleSheet.create({
   scroll: { flex: 1, backgroundColor: theme.colors.canvas },
   content: { padding: theme.spacing.lg, gap: theme.spacing.lg, paddingBottom: theme.spacing.xxl },
   subtitle: { ...theme.type.body, color: theme.colors.inkMuted },
   start: { gap: theme.spacing.sm },
-  statsCard: { alignItems: 'center', gap: theme.spacing.sm, paddingVertical: theme.spacing.xxl },
+  statsCard: { gap: theme.spacing.md },
+  statsEmpty: { alignItems: 'center', gap: theme.spacing.sm, paddingVertical: theme.spacing.md },
   statsTitle: { ...theme.type.heading, color: theme.colors.inkMuted },
   statsBody: { ...theme.type.caption, color: theme.colors.inkMuted, textAlign: 'center' },
+  statsRow: { flexDirection: 'row', gap: theme.spacing.sm },
+  stat: { flex: 1, gap: 2 },
+  statValue: { ...theme.type.heading, color: theme.colors.ink },
+  statLabel: { ...theme.type.caption, color: theme.colors.inkMuted },
+  bests: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.xs },
   exercisesHeader: {
     flexDirection: 'row',
     alignItems: 'center',

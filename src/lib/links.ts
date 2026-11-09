@@ -12,7 +12,7 @@
  * Changing this host means re-shipping the app: iOS only re-fetches the
  * association file on install or App Store update.
  */
-export const LINK_HOST = 'pullup.expo.app';
+export const LINK_HOST = 'peterphanouvong-pullup.expo.app';
 
 const BASE = `https://${LINK_HOST}`;
 

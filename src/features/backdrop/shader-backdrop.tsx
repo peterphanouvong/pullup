@@ -14,9 +14,9 @@ if (effect == null) console.error('[backdrop] grain gradient shader failed to co
  * its settings live from the vibe store, so the Vibe Lab's sliders show up
  * everywhere as they move.
  *
- * Still by default: a static shader costs nothing after its first paint.
- * `animated` drifts the blobs at the vibe's speed; use it on one screen at
- * a time (the finish screen), not the whole app.
+ * Still unless asked: a static shader costs nothing after its first paint.
+ * `animated` moves it at the vibe's speed, re-rendering every frame at
+ * device resolution; the finish screen is the only page that asks.
  */
 export function ShaderBackdrop({
   vibe,

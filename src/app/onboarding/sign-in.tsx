@@ -11,6 +11,7 @@ import type { Theme } from '@/styles/theme';
 import { useSignIn, useSignInProviders } from '@/features/account/use-sign-in';
 import { ShaderScrollView } from '@/features/backdrop/shader-scroll-view';
 import { useMarkOnboarded } from '@/features/onboarding/gate';
+import { leaveOnboarding } from '@/features/onboarding/leave';
 import { fetchActiveProgram } from '@/features/programs/api';
 
 /** Apple's button is a fixed height; ours match it so the stack reads as
@@ -49,7 +50,7 @@ export default function SignInScreen() {
         if (active != null) {
           haptics.success();
           await markOnboarded();
-          router.dismissAll();
+          leaveOnboarding();
         } else {
           router.replace('/onboarding/name');
         }
@@ -60,7 +61,7 @@ export default function SignInScreen() {
         // an account that has no programme. Sending them to the name
         // step here would drag an existing account through the interview
         // over a dropped request.
-        if (!cancelled) router.dismissAll();
+        if (!cancelled) leaveOnboarding();
       });
     return () => {
       cancelled = true;

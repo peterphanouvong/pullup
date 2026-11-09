@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useSession } from '@/lib/auth';
@@ -80,13 +80,21 @@ export default function SelfieScreen() {
         {cutout ? (
           <StickerCanvas ref={canvasRef} uri={cutout.uri} size={STICKER_SIZE} round={!cutout.lifted} />
         ) : (
-          <View style={styles.placeholder}>
+          // The circle is the obvious thing to tap, so it does what the
+          // button does.
+          <Pressable
+            style={({ pressed }) => [styles.placeholder, pressed && !busy && styles.placeholderPressed]}
+            onPress={() => void snap()}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel="Take a selfie"
+          >
             {busy ? (
               <ActivityIndicator />
             ) : (
               <SymbolView name="camera.fill" size={40} tintColor={theme.colors.inkMuted} />
             )}
-          </View>
+          </Pressable>
         )}
         {busy && cutout == null && <Text style={styles.hint}>Cutting you out…</Text>}
         {denied && (
@@ -113,5 +121,6 @@ const createStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  placeholderPressed: { opacity: 0.6 },
   hint: { ...theme.type.caption, color: theme.colors.inkMuted, textAlign: 'center', maxWidth: 280 },
 });

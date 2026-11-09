@@ -15,11 +15,10 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   return (
     <PostHogProvider
       client={posthog}
-      // Screens are reported from the router below, and touch autocapture
-      // records `$autocapture` events keyed on view hierarchy — noise, for
-      // an app whose meaningful actions are already named events. App
-      // lifecycle events are a client option, set where the client is built.
-      autocapture={{ captureScreens: false, captureTouches: false }}
+      // Expo Router owns screen names, so report those below rather than
+      // letting autocapture derive duplicate routes. Touch autocapture and
+      // session recording remain at their PostHog defaults.
+      autocapture={{ captureScreens: false, captureTouches: true }}
     >
       <ScreenTracker />
       {children}
