@@ -140,7 +140,7 @@ function json(body: unknown, status = 200): Response {
 function captureAiGeneration(distinctId: string, properties: Record<string, unknown>): void {
   if (!posthogProjectToken || !posthogHost) return;
 
-  void fetch(`${posthogHost.replace(/\/$/, '')}/i/v0/e/`, {
+  const capture = fetch(`${posthogHost.replace(/\/$/, '')}/i/v0/e/`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -149,6 +149,7 @@ function captureAiGeneration(distinctId: string, properties: Record<string, unkn
       properties: { distinct_id: distinctId, ...properties },
     }),
   }).catch(() => console.warn('PostHog AI Observability capture failed'));
+  EdgeRuntime.waitUntil(capture);
 }
 
 /** A programme as the model reads it: names, kinds and doses, no ids. */

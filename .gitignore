@@ -45,3 +45,4 @@ supabase/.temp/
 .env.local
 
 .claude/
+.posthog-wizard-cache/

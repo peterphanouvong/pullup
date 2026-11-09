@@ -1,5 +1,0 @@
-{
-  "provider": "anthropic",
-  "package": "manual-capture",
-  "otel_init_file": "supabase/functions/plan/index.ts"
-}
