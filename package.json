@@ -70,7 +70,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "verify-seed": "node --env-file=.env.local scripts/verify-seed.mjs"
+    "verify-seed": "node --env-file=.env.local scripts/verify-seed.mjs",
+    "waitlist": "node --env-file=.env.local scripts/waitlist-dashboard.mjs"
   },
   "private": true,
   "jest": {
