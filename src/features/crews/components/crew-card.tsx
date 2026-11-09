@@ -4,6 +4,8 @@ import { Card } from '@/components/ui/card';
 import { IconCircle } from '@/components/ui/icon-circle';
 import { useSession } from '@/lib/auth';
 import { haptics } from '@/lib/haptics';
+import { joinCrewLink } from '@/lib/links';
+import { capture } from '@/lib/analytics';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
 import { CREW_MAX_MEMBERS, pickCrewCover, type Crew } from '../api';
@@ -15,11 +17,11 @@ import { Avatar } from '@/features/sticker/components/avatar';
 
 const WEEKDAY_INITIALS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-/** The link opens the app straight onto the join prompt
- * (`src/app/join/[code].tsx`); the code is spelt out too, for anyone whose
- * messages app won't make a `pullup://` link tappable. */
+/** An https link, so the messages app makes it tappable, and iOS hands it
+ * straight to the app rather than the browser (see `lib/links.ts`). The code
+ * is still spelt out for anyone who ends up typing it in by hand. */
 export function inviteLink(code: string): string {
-  return `pullup://join/${code}`;
+  return joinCrewLink(code);
 }
 
 export function inviteMessage(name: string, code: string): string {
@@ -28,6 +30,7 @@ export function inviteMessage(name: string, code: string): string {
 
 export function shareInvite(name: string, code: string) {
   haptics.tap();
+  capture('crew_invite_shared', {});
   void Share.share({ message: inviteMessage(name, code) });
 }
 

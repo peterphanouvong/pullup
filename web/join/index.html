@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Join a crew on Pull Up</title>
+    <meta name="description" content="A crew invite for Pull Up." />
+    <meta name="color-scheme" content="dark" />
+    <!-- Open Graph, so the link unfurls as a card rather than a bare URL -->
+    <meta property="og:title" content="Join my crew on Pull Up" />
+    <meta property="og:description" content="See who's trained this week. Invite-only." />
+    <meta property="og:type" content="website" />
+    <style>
+      :root {
+        --canvas: #0b0b0c;
+        --ink: #f5f5f5;
+        --ink-muted: #8a8a8f;
+        --accent: #3d8bf7;
+        --glass: rgba(40, 40, 43, 0.72);
+        --glass-border: rgba(255, 255, 255, 0.1);
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: var(--canvas);
+        color: var(--ink);
+        font: 400 16px/1.5 -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        -webkit-font-smoothing: antialiased;
+      }
+      main { width: 100%; max-width: 380px; text-align: center; }
+      .eyebrow {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--ink-muted);
+        margin: 0 0 12px;
+      }
+      h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin: 0 0 8px; }
+      .lede { color: var(--ink-muted); margin: 0 0 28px; font-size: 15px; }
+      .code {
+        display: block;
+        font: 700 34px/1 ui-monospace, 'SF Mono', Menlo, monospace;
+        letter-spacing: 0.18em;
+        /* The letter-spacing adds a trailing gap; pull it back so the
+           characters sit centred in the card. */
+        text-indent: 0.18em;
+        background: var(--glass);
+        border: 1px solid var(--glass-border);
+        border-radius: 18px;
+        padding: 22px 16px;
+        margin: 0 0 24px;
+      }
+      .code[hidden] { display: none; }
+      a.cta {
+        display: block;
+        background: var(--accent);
+        color: #06121f;
+        font-weight: 700;
+        font-size: 17px;
+        text-decoration: none;
+        border-radius: 999px;
+        padding: 16px 24px;
+        margin-bottom: 16px;
+      }
+      .hint { color: var(--ink-muted); font-size: 13px; margin: 0; }
+      .hint strong { color: var(--ink); font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Pull&nbsp;Up · Crew invite</p>
+      <h1>You've been invited</h1>
+      <p class="lede">A crew is up to 8 mates who can see who's trained each week. Nothing else — no workouts, no weights.</p>
+
+      <code class="code" id="code" hidden></code>
+
+      <a class="cta" id="open" href="pullup://crew">Open in Pull&nbsp;Up</a>
+
+      <p class="hint" id="hint">
+        Don't have it yet? Pull Up is on TestFlight — once you're in, open
+        <strong>Crew</strong>, tap <strong>+</strong>, and enter the code above.
+      </p>
+    </main>
+
+    <script>
+      // On an iPhone with the app installed, iOS opens the app from the
+      // link itself (associated domain) and this page is never seen. It is
+      // the fallback: a second device, a desktop, or no app yet.
+      var code = new URLSearchParams(location.search).get('c');
+      if (code) {
+        code = code.trim().toUpperCase().slice(0, 12);
+        var el = document.getElementById('code');
+        el.textContent = code;
+        el.hidden = false;
+        document.getElementById('open').href = 'pullup://join/' + encodeURIComponent(code);
+      } else {
+        document.getElementById('hint').textContent =
+          'Open Crew in the app, tap +, and enter the code your mate sent you.';
+      }
+    </script>
+  </body>
+</html>

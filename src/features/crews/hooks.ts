@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
+import { capture } from '@/lib/analytics';
 import {
   createCrew,
   fetchCrewFeed,
@@ -64,12 +65,22 @@ function useCrewMutation<T, R>(fn: (arg: T) => Promise<R>) {
   });
 }
 
-export const useCreateCrew = () => useCrewMutation(createCrew);
+export const useCreateCrew = () =>
+  useCrewMutation(async (name: string) => {
+    const crew = await createCrew(name);
+    capture('crew_created', {});
+    return crew;
+  });
 export const useSetCrewCover = () =>
   useCrewMutation((input: { crewId: string; picked: { uri: string; mimeType: string } }) =>
     setCrewCover(input.crewId, input.picked),
   );
-export const useJoinCrew = () => useCrewMutation(joinCrew);
+export const useJoinCrew = () =>
+  useCrewMutation(async (code: string) => {
+    const crew = await joinCrew(code);
+    capture('crew_joined', {});
+    return crew;
+  });
 export const useLeaveCrew = () => useCrewMutation(leaveCrew);
 
 export function useCrewFeed(crewId: string, range: { fromIso: string; toIso: string }) {

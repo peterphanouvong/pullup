@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/lib/auth';
+import { capture } from '@/lib/analytics';
 import {
   fetchActiveProgram,
   fetchProgram,
@@ -72,6 +73,7 @@ export function useResumeProgram() {
     mutationFn: ({ programId, weekPosition }: { programId: string; weekPosition: number }) =>
       resumeProgram(session.user.id, programId, startDateForWeek(new Date(), weekPosition)),
     onSuccess: () => {
+      capture('programme_selected', {});
       queryClient.invalidateQueries({ queryKey: ['active-program', session.user.id] });
       queryClient.invalidateQueries({ queryKey: ['program-history', session.user.id] });
     },
@@ -126,7 +128,10 @@ export function useSaveDayExercises(programId: string) {
       drafts: DayExerciseDraft[];
       removedIds: string[];
     }) => saveDayExercises(dayId, drafts, removedIds),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['programs', programId] }),
+    onSuccess: (_data, variables) => {
+      capture('programme_day_edited', { exercise_count: variables.drafts.length });
+      void queryClient.invalidateQueries({ queryKey: ['programs', programId] });
+    },
   });
 }
 

@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { AuthGate, useSession } from '@/lib/auth';
+import { AnalyticsProvider, useIdentifyUser } from '@/lib/analytics-provider';
 import { nativeHeader } from '@/styles/header';
 import { useThemedStyles } from '@/styles/use-theme';
 import type { Theme } from '@/styles/theme';
@@ -36,6 +37,9 @@ const queryClient = new QueryClient();
 function WorkoutStoreGate({ children }: { children: ReactNode }) {
   const session = useSession();
   initWorkoutStore(session.user.id);
+  // Analytics follows the Supabase user id, so a guest who later signs in
+  // keeps one history rather than splitting into two people.
+  useIdentifyUser(session.user.id, session.user.is_anonymous === true);
   return (
     <Fragment key={session.user.id}>
       {children}
@@ -52,7 +56,7 @@ function WorkoutStoreGate({ children }: { children: ReactNode }) {
 // whenever an `options` prop changes identity, which re-configures the
 // native bar.
 const TABS_OPTIONS = { headerShown: false } as const;
-const PLAN_OPTIONS = { title: 'Plan' } as const;
+const PLAN_OPTIONS = { title: 'Program' } as const;
 const ACTIVITIES_OPTIONS = { title: 'Activity' } as const;
 const CALENDAR_OPTIONS = { title: 'Calendar' } as const;
 const VIBE_LAB_OPTIONS = { title: 'Vibe lab' } as const;
@@ -79,27 +83,29 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
       <QueryClientProvider client={queryClient}>
-        <AuthGate>
-          <WorkoutStoreGate>
-            {/* One header style for the whole app (see `styles/header.ts`);
-                a screen only names itself. Titles for the simple pushed
-                screens are declared here so they're right even while the
-                screen is still loading its data. */}
-            <Stack screenOptions={header}>
-              {/* Each tab runs its own stack, and owns its own bar. */}
-              <Stack.Screen name="(tabs)" options={TABS_OPTIONS} />
-              <Stack.Screen name="plan" options={PLAN_OPTIONS} />
-              <Stack.Screen name="activities" options={ACTIVITIES_OPTIONS} />
-              <Stack.Screen name="calendar" options={CALENDAR_OPTIONS} />
-              <Stack.Screen name="vibe-lab" options={VIBE_LAB_OPTIONS} />
-              <Stack.Screen name="stats/index" options={EXERCISES_OPTIONS} />
-              <Stack.Screen name="stats/[key]" options={EXERCISE_OPTIONS} />
-              <Stack.Screen name="person/[id]/index" options={PERSON_OPTIONS} />
-              <Stack.Screen name="person/[id]/[workoutId]" options={PERSON_WORKOUT_OPTIONS} />
-              <Stack.Screen name="onboarding" options={ONBOARDING_OPTIONS} />
-            </Stack>
-          </WorkoutStoreGate>
-        </AuthGate>
+        <AnalyticsProvider>
+          <AuthGate>
+            <WorkoutStoreGate>
+              {/* One header style for the whole app (see `styles/header.ts`);
+                  a screen only names itself. Titles for the simple pushed
+                  screens are declared here so they're right even while the
+                  screen is still loading its data. */}
+              <Stack screenOptions={header}>
+                {/* Each tab runs its own stack, and owns its own bar. */}
+                <Stack.Screen name="(tabs)" options={TABS_OPTIONS} />
+                <Stack.Screen name="plan" options={PLAN_OPTIONS} />
+                <Stack.Screen name="activities" options={ACTIVITIES_OPTIONS} />
+                <Stack.Screen name="calendar" options={CALENDAR_OPTIONS} />
+                <Stack.Screen name="vibe-lab" options={VIBE_LAB_OPTIONS} />
+                <Stack.Screen name="stats/index" options={EXERCISES_OPTIONS} />
+                <Stack.Screen name="stats/[key]" options={EXERCISE_OPTIONS} />
+                <Stack.Screen name="person/[id]/index" options={PERSON_OPTIONS} />
+                <Stack.Screen name="person/[id]/[workoutId]" options={PERSON_WORKOUT_OPTIONS} />
+                <Stack.Screen name="onboarding" options={ONBOARDING_OPTIONS} />
+              </Stack>
+            </WorkoutStoreGate>
+          </AuthGate>
+        </AnalyticsProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>
   );

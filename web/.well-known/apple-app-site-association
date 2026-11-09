@@ -1,0 +1,28 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["WX6X9AU2WP.com.peterphanouvong.pullup"],
+        "components": [
+          {
+            "/": "/join",
+            "?": { "c": "*" },
+            "comment": "A crew invite: /join?c=CODE opens the app on the join prompt"
+          },
+          {
+            "/": "/join",
+            "comment": "A bare /join, which lands on the Crew tab"
+          }
+        ]
+      },
+      {
+        "appID": "WX6X9AU2WP.com.peterphanouvong.pullup",
+        "paths": ["/join", "/join?*"]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["WX6X9AU2WP.com.peterphanouvong.pullup"]
+  }
+}

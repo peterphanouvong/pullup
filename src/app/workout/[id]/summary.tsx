@@ -6,6 +6,7 @@ import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { NativeButton } from '@/components/ui/native-button';
 import { haptics } from '@/lib/haptics';
+import { capture } from '@/lib/analytics';
 import { useSession } from '@/lib/auth';
 import { Screen } from '@/components/ui/screen';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -74,6 +75,7 @@ async function shareCardImage(cardRef: RefObject<View | null>): Promise<void> {
   try {
     const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
     if (await Sharing.isAvailableAsync()) {
+      capture('session_shared', {});
       await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share session' });
     }
   } catch {

@@ -12,6 +12,7 @@
  */
 
 import { haptics } from '@/lib/haptics';
+import { capture } from '@/lib/analytics';
 import { useSelector } from '@legendapp/state/react';
 import type { ProgramDay } from '@/features/programs/types';
 import { buildAddedExercise, buildReplacement, fillFromPrevious, moveExercise } from './edit';
@@ -54,6 +55,11 @@ export function startWorkoutFromDay(day: ProgramDay, programDayId: string, userI
   for (const exercise of exercises) workoutExercises$[exercise.id].set(exercise);
   for (const set of sets) workoutSets$[set.id].set(set);
 
+  capture('workout_started', {
+    source: 'programme',
+    exercise_count: exercises.length,
+    set_count: sets.length,
+  });
   return workout.id;
 }
 
@@ -117,6 +123,7 @@ export function startEmptyWorkout(userId: string): string {
     deleted: false,
   };
   workouts$[workout.id].set(workout);
+  capture('workout_started', { source: 'empty', exercise_count: 0, set_count: 0 });
   return workout.id;
 }
 
@@ -301,6 +308,14 @@ export function saveWorkout(
     updated_at: now.toISOString(),
   });
   skipRestTimer();
+  capture('workout_finished', {
+    // Seconds on the clock, not sets or volume: those live in Postgres
+    // already and are better joined there than copied into event props.
+    duration_seconds: Math.round(
+      (new Date(times.finished_at).getTime() - new Date(times.started_at).getTime()) / 1000,
+    ),
+    from_programme: workout.program_day_id != null,
+  });
 }
 
 /** Soft-deletes the workout, every live exercise under it, and every live set
@@ -310,6 +325,7 @@ export function saveWorkout(
  * currently-live exercises would silently skip those). */
 export function discardWorkout(id: string): void {
   if (workouts$[id].peek() == null) return;
+  capture('workout_discarded', {});
   const nowIso = new Date().toISOString();
   workouts$[id].assign({ deleted: true, updated_at: nowIso });
   // A rest timer started mid-workout must not survive discarding it.
